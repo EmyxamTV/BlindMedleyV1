@@ -60,7 +60,7 @@ export default function Lobby({ game, isHost, user }: Props) {
     // Fallback polling pour synchroniser la liste des joueurs (nouveaux arrivants)
     const interval = setInterval(() => {
       router.reload({ only: ['game'] })
-    }, 5000)
+    }, 2000)
 
     return () => {
       subscription.delete()
@@ -68,10 +68,14 @@ export default function Lobby({ game, isHost, user }: Props) {
     }
   }, [game.id])
 
-  // Sync players si Inertia reload
+  // Sync players + détecter démarrage si SSE raté
   useEffect(() => {
     setPlayers(game.players)
-  }, [game.players])
+    if (game.status !== 'waiting') {
+      unlockAudio()
+      router.visit(`/game/${game.id}/play`)
+    }
+  }, [game.players, game.status])
 
   return (
     <div className="lobby-page">
