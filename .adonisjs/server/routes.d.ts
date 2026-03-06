@@ -1,0 +1,91 @@
+import '@adonisjs/core/types/http'
+
+type ParamValue = string | number | bigint | boolean
+
+export type ScannedRoutes = {
+  ALL: {
+    'home': { paramsTuple?: []; params?: {} }
+    'new_account.create': { paramsTuple?: []; params?: {} }
+    'new_account.store': { paramsTuple?: []; params?: {} }
+    'session.create': { paramsTuple?: []; params?: {} }
+    'session.store': { paramsTuple?: []; params?: {} }
+    'session.destroy': { paramsTuple?: []; params?: {} }
+    'spotify.redirect': { paramsTuple?: []; params?: {} }
+    'spotify.callback': { paramsTuple?: []; params?: {} }
+    'profile.show': { paramsTuple?: []; params?: {} }
+    'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'profile.update': { paramsTuple?: []; params?: {} }
+    'leaderboard.index': { paramsTuple?: []; params?: {} }
+    'game.index': { paramsTuple?: []; params?: {} }
+    'game.create': { paramsTuple?: []; params?: {} }
+    'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.dashboard': { paramsTuple?: []; params?: {} }
+    'admin.users': { paramsTuple?: []; params?: {} }
+    'admin.ban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.playlists': { paramsTuple?: []; params?: {} }
+    'admin.playlists.import': { paramsTuple?: []; params?: {} }
+    'admin.playlists.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+  }
+  GET: {
+    'home': { paramsTuple?: []; params?: {} }
+    'new_account.create': { paramsTuple?: []; params?: {} }
+    'session.create': { paramsTuple?: []; params?: {} }
+    'spotify.redirect': { paramsTuple?: []; params?: {} }
+    'spotify.callback': { paramsTuple?: []; params?: {} }
+    'profile.show': { paramsTuple?: []; params?: {} }
+    'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'leaderboard.index': { paramsTuple?: []; params?: {} }
+    'game.index': { paramsTuple?: []; params?: {} }
+    'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.dashboard': { paramsTuple?: []; params?: {} }
+    'admin.users': { paramsTuple?: []; params?: {} }
+    'admin.playlists': { paramsTuple?: []; params?: {} }
+  }
+  HEAD: {
+    'home': { paramsTuple?: []; params?: {} }
+    'new_account.create': { paramsTuple?: []; params?: {} }
+    'session.create': { paramsTuple?: []; params?: {} }
+    'spotify.redirect': { paramsTuple?: []; params?: {} }
+    'spotify.callback': { paramsTuple?: []; params?: {} }
+    'profile.show': { paramsTuple?: []; params?: {} }
+    'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'leaderboard.index': { paramsTuple?: []; params?: {} }
+    'game.index': { paramsTuple?: []; params?: {} }
+    'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.dashboard': { paramsTuple?: []; params?: {} }
+    'admin.users': { paramsTuple?: []; params?: {} }
+    'admin.playlists': { paramsTuple?: []; params?: {} }
+  }
+  POST: {
+    'new_account.store': { paramsTuple?: []; params?: {} }
+    'session.store': { paramsTuple?: []; params?: {} }
+    'session.destroy': { paramsTuple?: []; params?: {} }
+    'profile.update': { paramsTuple?: []; params?: {} }
+    'game.create': { paramsTuple?: []; params?: {} }
+    'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.ban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.playlists.import': { paramsTuple?: []; params?: {} }
+    'admin.playlists.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+  }
+}
+declare module '@adonisjs/core/types/http' {
+  export interface RoutesList extends ScannedRoutes {}
+}
