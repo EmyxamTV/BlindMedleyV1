@@ -29,6 +29,7 @@ export class GameService {
       hostId: options.hostId,
       status: 'waiting',
       currentRound: 0,
+      publicId: this.generatePublicId(),
       code: options.mode === 'private' ? this.generateCode() : null,
     })
 
@@ -82,7 +83,7 @@ export class GameService {
     await game.merge({ status: 'starting', startedAt: DateTime.now() }).save()
 
     // Notifier le lobby que la partie démarre
-    transmit.broadcast(`game/${game.id}`, { event: 'game_starting' })
+    transmit.broadcast(`game/${game.publicId}`, { event: 'game_starting' })
 
     // Démarrer le premier round après un countdown de 3s
     setTimeout(() => this.startRound(game.id, 1).catch(console.error), 3000)
@@ -105,7 +106,7 @@ export class GameService {
     // Broadcaster le round à tous les joueurs
     const serverNow = Date.now()
     const roundPayload = await roundService.buildClientPayload(round, serverNow)
-    transmit.broadcast(`game/${game.id}`, { event: 'round_started', ...roundPayload })
+    transmit.broadcast(`game/${game.publicId}`, { event: 'round_started', ...roundPayload })
 
     // Planifier la fin du round
     setTimeout(() => this.endRound(game.id, roundNumber).catch(console.error), game.roundDurationMs)
@@ -128,7 +129,7 @@ export class GameService {
 
     // Broadcaster la révélation de la bonne réponse
     const revealPayload = roundService.buildRevealPayload(round)
-    transmit.broadcast(`game/${game.id}`, { event: 'round_revealed', ...revealPayload })
+    transmit.broadcast(`game/${game.publicId}`, { event: 'round_revealed', ...revealPayload })
 
     if (roundNumber >= game.roundCount) {
       await this.finishGame(game.id)
@@ -164,7 +165,7 @@ export class GameService {
       .save()
 
     // Broadcaster en premier — la partie est terminée quoi qu'il arrive
-    transmit.broadcast(`game/${game.id}`, { event: 'game_finished' })
+    transmit.broadcast(`game/${game.publicId}`, { event: 'game_finished' })
 
     // Mettre à jour les profils XP (non bloquant)
     for (const player of players) {
@@ -231,7 +232,7 @@ export class GameService {
       .where('game_id', params.gameId)
       .preload('user', (q) => q.preload('profile'))
 
-    transmit.broadcast(`game/${game.id}`, {
+    transmit.broadcast(`game/${game.publicId}`, {
       event: 'scores_updated',
       players: updatedPlayers.map((p) => ({
         userId: p.userId,
@@ -250,6 +251,10 @@ export class GameService {
     }
 
     return result
+  }
+
+  private generatePublicId(): string {
+    return crypto.randomBytes(6).toString('hex') // 12 hex chars
   }
 
   private generateCode(): string {

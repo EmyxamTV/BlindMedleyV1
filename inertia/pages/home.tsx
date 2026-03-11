@@ -57,6 +57,7 @@ export default function Home({ user }: InertiaProps) {
 
       <section className="how-it-works">
         <h2>Comment ça marche</h2>
+        <p>Simple, rapide, addictif.</p>
         <div className="steps">
           <div className="step">
             <span className="step-num">1</span>

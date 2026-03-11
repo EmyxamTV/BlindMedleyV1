@@ -17,21 +17,14 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
 
   const user = props.user
   const isAdmin = user?.role === 'admin' || user?.role === 'moderator'
+  const displayName = (user as any)?.fullName?.split(' ')[0] || user?.initials || '??'
 
   return (
     <>
       <header className="navbar">
         <div className="navbar-inner">
           <Link route="home" className="navbar-logo">
-            <svg width="110" height="20" viewBox="0 0 195 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M180 37.5v-30h-7.5V0H195v7.5h-7.5v30H180ZM150 15V7.5h-15V0h15v7.5h7.5V15H150Zm-15 22.5V30h-7.5V7.5h7.5V30h15v7.5h-15Zm15-7.5v-7.5h7.5V30H150ZM82.5 37.5v-30H90V0h15v7.5h7.5v30H105v-15H90v15h-7.5ZM90 15h15V7.8H90V15ZM45 37.5V0h22.5v7.5h-15V15h15v7.5h-15V30h15v7.5H45ZM0 37.5V0h22.5v7.5H30V15h-7.5v15H30v7.5h-7.5V30H15v-7.5H7.5v15H0ZM7.5 15h14.7V7.5H7.5V15Z" fill="url(#logo-grad)" />
-              <defs>
-                <linearGradient id="logo-grad" x1="0" y1="0" x2="195" y2="38" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#a78bfa" />
-                  <stop offset="1" stopColor="#f472b6" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <span className="navbar-logo-text">BLINDMEDLEY</span>
           </Link>
 
           {user && (
@@ -56,7 +49,7 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
                 )}
                 <Link route="profile.show" className="user-pill">
                   <span className="user-avatar">{user.initials}</span>
-                  <span className="user-name">{user.initials}</span>
+                  <span className="user-name">{displayName}</span>
                 </Link>
                 <Form route="session.destroy">
                   <button type="submit" className="logout-btn" title="Se déconnecter">
@@ -77,6 +70,32 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
       </header>
 
       <main className="main-content">{children}</main>
+
+      {/* Navigation mobile */}
+      {user && (
+        <nav className="mobile-nav">
+          <Link route="game.index" className="mobile-nav-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Jouer
+          </Link>
+          <Link route="leaderboard.index" className="mobile-nav-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+            Classement
+          </Link>
+          <Link route="profile.show" className="mobile-nav-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Profil
+          </Link>
+        </nav>
+      )}
 
       <Toaster position="top-center" richColors theme="dark" />
     </>

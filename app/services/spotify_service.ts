@@ -127,8 +127,16 @@ export class SpotifyService {
       const records = await Promise.all(
         chunk.map(async (t) => {
           const artist = t.artists.map((a) => a.name).join(', ')
-          // Spotify ne fournit plus de preview_url — on cherche sur Deezer
-          const previewUrl = t.preview_url ?? await this.getDeezerPreview(t.name, artist)
+
+          // Récupérer le track existant pour ne pas écraser un preview_url valide
+          const existing = await TrackCache.findBy('spotifyId', t.id)
+          const existingPreview = existing?.previewUrl ?? null
+
+          // Chercher un nouveau preview uniquement si nécessaire
+          let previewUrl: string | null = existingPreview
+          if (!previewUrl) {
+            previewUrl = t.preview_url ?? await this.getDeezerPreview(t.name, artist)
+          }
 
           return TrackCache.updateOrCreate(
             { spotifyId: t.id },

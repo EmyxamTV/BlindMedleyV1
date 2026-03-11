@@ -29,17 +29,59 @@ interface Props extends InertiaProps {
   myActiveGameId: number | null
 }
 
-function DifficultyStars({ level }: { level: number }) {
+const GENRE_COLORS: Record<string, string> = {
+  pop:      'linear-gradient(135deg, #ec4899, #f43f5e)',
+  rock:     'linear-gradient(135deg, #6366f1, #4338ca)',
+  rap:      'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+  'hip-hop':'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+  electro:  'linear-gradient(135deg, #06b6d4, #3b82f6)',
+  electronic:'linear-gradient(135deg, #06b6d4, #3b82f6)',
+  jazz:     'linear-gradient(135deg, #f59e0b, #d97706)',
+  classique:'linear-gradient(135deg, #10b981, #059669)',
+  rnb:      'linear-gradient(135deg, #f472b6, #ec4899)',
+  metal:    'linear-gradient(135deg, #374151, #111827)',
+  indie:    'linear-gradient(135deg, #34d399, #10b981)',
+  latino:   'linear-gradient(135deg, #f97316, #ef4444)',
+  default:  'linear-gradient(135deg, #7c3aed, #ec4899)',
+}
+
+function genreColor(genre: string | null): string {
+  if (!genre) return GENRE_COLORS.default
+  const key = genre.toLowerCase()
+  return GENRE_COLORS[key] ?? GENRE_COLORS.default
+}
+
+function genreEmoji(genre: string | null): string {
+  if (!genre) return '🎵'
+  const g = genre.toLowerCase()
+  if (g.includes('pop')) return '🌟'
+  if (g.includes('rock')) return '🎸'
+  if (g.includes('rap') || g.includes('hip')) return '🎤'
+  if (g.includes('electro')) return '⚡'
+  if (g.includes('jazz')) return '🎷'
+  if (g.includes('class')) return '🎻'
+  if (g.includes('r&b') || g.includes('rnb')) return '🎙️'
+  if (g.includes('metal')) return '🤘'
+  if (g.includes('indie')) return '🌿'
+  if (g.includes('latin')) return '💃'
+  return '🎵'
+}
+
+function DifficultyDots({ level }: { level: number }) {
   return (
-    <span className="difficulty-stars">
+    <div className="diff-dots">
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < level ? 'star-on' : 'star-off'}>
-          ★
-        </span>
+        <span key={i} className={`diff-dot ${i < level ? 'on' : ''}`} />
       ))}
-    </span>
+    </div>
   )
 }
+
+const MODE_CONFIG = {
+  solo:    { emoji: '🎯', label: 'Solo',   desc: 'Entraîne-toi seul' },
+  public:  { emoji: '🌍', label: 'Public', desc: 'Rejoignable par tous' },
+  private: { emoji: '🔒', label: 'Privé',  desc: 'Invitation par code' },
+} as const
 
 export default function GameIndex({ playlists, publicGames, myActiveGameId }: Props) {
   const [tab, setTab] = useState<'create' | 'join' | 'public'>('create')
@@ -56,8 +98,12 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
 
   return (
     <div className="game-index">
-      <div className="game-index-header">
-        <h1>Jouer</h1>
+      {/* Header */}
+      <div className="gi-header">
+        <div>
+          <h1 className="gi-title">Jouer</h1>
+          <p className="gi-sub">Crée ou rejoins une partie et teste tes connaissances musicales.</p>
+        </div>
         {myActiveGameId && (
           <Link route="game.play" routeParams={{ id: myActiveGameId }} className="btn btn-primary">
             Reprendre ma partie →
@@ -65,152 +111,207 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
         )}
       </div>
 
+      {/* Tabs */}
       <div className="tabs">
         <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>
-          Créer une partie
+          Créer
         </button>
         <button className={`tab ${tab === 'join' ? 'active' : ''}`} onClick={() => setTab('join')}>
-          Rejoindre avec un code
+          Code
         </button>
         <button className={`tab ${tab === 'public' ? 'active' : ''}`} onClick={() => setTab('public')}>
-          Parties publiques ({publicGames.length})
+          Public
+          {publicGames.length > 0 && (
+            <span className="tab-badge">{publicGames.length}</span>
+          )}
         </button>
       </div>
 
-      {/* Onglet Créer */}
+      {/* ── CRÉER ── */}
       {tab === 'create' && (
-        <Form route="game.create" method="post" className="create-form">
+        <Form route="game.create" method="post">
           {({ errors }) => (
-            <>
-              <div className="form-section">
-                <h3>Mode de jeu</h3>
-                <div className="mode-selector">
-                  {(['solo', 'public', 'private'] as const).map((m) => (
-                    <label key={m} className="mode-option">
-                      <input
-                        type="radio"
-                        name="mode"
-                        value={m}
-                        defaultChecked={m === 'solo'}
-                        onChange={() => setMode(m)}
-                      />
-                      <span className="mode-label">
-                        {m === 'solo' && 'Solo'}
-                        {m === 'public' && 'Public'}
-                        {m === 'private' && 'Privé'}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+            <div className="create-layout">
 
-              <div className="form-section">
-                <h3>Playlist</h3>
+              {/* Mode */}
+              <section className="gi-section">
+                <h2 className="gi-section-title">Mode de jeu</h2>
+                <div className="mode-grid">
+                  {(['solo', 'public', 'private'] as const).map((m) => {
+                    const cfg = MODE_CONFIG[m]
+                    return (
+                      <label key={m} className={`mode-card ${mode === m ? 'selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="mode"
+                          value={m}
+                          defaultChecked={m === 'solo'}
+                          onChange={() => setMode(m)}
+                        />
+                        <span className="mode-card-emoji">{cfg.emoji}</span>
+                        <span className="mode-card-name">{cfg.label}</span>
+                        <span className="mode-card-desc">{cfg.desc}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </section>
+
+              {/* Playlists */}
+              <section className="gi-section">
+                <h2 className="gi-section-title">Choisir une playlist</h2>
                 {playlists.length === 0 ? (
                   <p className="empty-state">Aucune playlist disponible. Un admin doit en importer via Spotify.</p>
                 ) : (
-                  <div className="playlist-grid">
+                  <div className="pl-grid">
                     {playlists.map((p) => (
                       <label
                         key={p.id}
-                        className={`playlist-card ${selectedPlaylist === p.id ? 'selected' : ''}`}
+                        className={`pl-card ${selectedPlaylist === p.id ? 'selected' : ''}`}
                         onClick={() => setSelectedPlaylist(p.id)}
                       >
                         <input type="radio" name="playlistId" value={p.id} required />
-                        <div className="playlist-card-body">
-                          <strong>{p.name}</strong>
-                          <span>{p.trackCount} titres</span>
-                          {p.genre && <span className="genre-tag">{p.genre}</span>}
-                          <DifficultyStars level={p.difficulty} />
+
+                        {/* Header coloré */}
+                        <div
+                          className="pl-card-header"
+                          style={{ background: genreColor(p.genre) }}
+                        >
+                          <span className="pl-card-emoji">{genreEmoji(p.genre)}</span>
+                          {selectedPlaylist === p.id && (
+                            <span className="pl-card-check">✓</span>
+                          )}
+                        </div>
+
+                        {/* Body */}
+                        <div className="pl-card-body">
+                          <span className="pl-card-name">{p.name}</span>
+                          <div className="pl-card-meta">
+                            {p.genre && <span className="pl-genre">{p.genre}</span>}
+                            <span className="pl-tracks">{p.trackCount} titres</span>
+                          </div>
+                          <DifficultyDots level={p.difficulty} />
                         </div>
                       </label>
                     ))}
                   </div>
                 )}
-                {errors.playlistId && <div className="field-error">{errors.playlistId}</div>}
-              </div>
+                {errors.playlistId && <div className="field-error" style={{ marginTop: '0.5rem' }}>{errors.playlistId}</div>}
+              </section>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Nombre de rounds</label>
-                  <select name="roundCount" defaultValue="10">
-                    <option value="5">5 rounds</option>
-                    <option value="10">10 rounds</option>
-                    <option value="15">15 rounds</option>
-                    <option value="20">20 rounds</option>
-                  </select>
-                </div>
-                {mode !== 'solo' && (
+              {/* Options */}
+              <section className="gi-section">
+                <h2 className="gi-section-title">Options</h2>
+                <div className="options-row">
                   <div className="form-group">
-                    <label>Joueurs max</label>
-                    <select name="maxPlayers" defaultValue="8">
-                      {[2, 4, 6, 8, 10].map((n) => (
-                        <option key={n} value={n}>{n} joueurs</option>
-                      ))}
+                    <label>Rounds</label>
+                    <select name="roundCount" defaultValue="10">
+                      <option value="5">5 rounds</option>
+                      <option value="10">10 rounds</option>
+                      <option value="15">15 rounds</option>
+                      <option value="20">20 rounds</option>
                     </select>
                   </div>
-                )}
-                <div className="form-group">
-                  <label>Difficulté</label>
-                  <select name="difficulty" defaultValue="2">
-                    <option value="1">Facile</option>
-                    <option value="2">Normal</option>
-                    <option value="3">Difficile</option>
-                    <option value="4">Expert</option>
-                    <option value="5">Légendaire</option>
-                  </select>
+                  {mode !== 'solo' && (
+                    <div className="form-group">
+                      <label>Joueurs max</label>
+                      <select name="maxPlayers" defaultValue="8">
+                        {[2, 4, 6, 8, 10].map((n) => (
+                          <option key={n} value={n}>{n} joueurs</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div className="form-group">
+                    <label>Difficulté</label>
+                    <select name="difficulty" defaultValue="2">
+                      <option value="1">Facile</option>
+                      <option value="2">Normal</option>
+                      <option value="3">Difficile</option>
+                      <option value="4">Expert</option>
+                      <option value="5">Légendaire</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
+              </section>
 
-              <button type="submit" className="btn btn-primary btn-lg" disabled={playlists.length === 0}>
-                Créer la partie
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg"
+                disabled={playlists.length === 0 || selectedPlaylist === null}
+              >
+                Lancer la partie
               </button>
-            </>
+            </div>
           )}
         </Form>
       )}
 
-      {/* Onglet Code */}
+      {/* ── CODE ── */}
       {tab === 'join' && (
-        <div className="join-form-wrap">
-          <form className="join-form" onSubmit={handleJoinCode}>
-            <label>Code de la partie</label>
-            <input
-              type="text"
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="EX: A1B2C3"
-              maxLength={8}
-              className="code-input"
-            />
-            <button type="submit" className="btn btn-primary btn-lg" disabled={!joinCode.trim()}>
-              Rejoindre
-            </button>
-          </form>
+        <div className="join-wrap">
+          <div className="join-card">
+            <div className="join-icon">🔑</div>
+            <h2>Rejoindre avec un code</h2>
+            <p>Entre le code à 6 caractères fourni par l'hôte.</p>
+            <form onSubmit={handleJoinCode} className="join-form">
+              <input
+                type="text"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                placeholder="A1B2C3"
+                maxLength={8}
+                className="code-input"
+                autoFocus
+              />
+              <button type="submit" className="btn btn-primary btn-lg btn-full" disabled={!joinCode.trim()}>
+                Rejoindre
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Onglet Public */}
+      {/* ── PUBLIC ── */}
       {tab === 'public' && (
-        <div className="public-games">
+        <div className="public-list">
           {publicGames.length === 0 ? (
-            <p className="empty-state">Aucune partie publique en attente. Crée-en une !</p>
+            <div className="empty-card">
+              <span className="empty-icon">🎮</span>
+              <p>Aucune partie publique en attente.</p>
+              <button className="btn btn-ghost btn-sm" onClick={() => setTab('create')}>
+                Créer une partie →
+              </button>
+            </div>
           ) : (
             publicGames.map((g) => (
-              <div key={g.id} className="public-game-card">
-                <div className="pgc-info">
-                  <strong>{g.playlistName}</strong>
-                  <span className="pgc-host">par {g.hostUsername}</span>
-                  <DifficultyStars level={g.difficulty} />
+              <div key={g.id} className="pgc">
+                <div className="pgc-left">
+                  <div className="pgc-playlist">{g.playlistName}</div>
+                  <div className="pgc-details">
+                    <span className="pgc-host">par {g.hostUsername}</span>
+                    <span className="pgc-sep">·</span>
+                    <span className="pgc-players">
+                      {g.playerCount}/{g.maxPlayers} joueurs
+                    </span>
+                    <span className="pgc-sep">·</span>
+                    <span className={`mode-badge mode-${g.mode}`}>{g.mode}</span>
+                  </div>
                 </div>
-                <div className="pgc-meta">
-                  <span className="pgc-players">
-                    {g.playerCount}/{g.maxPlayers} joueurs
-                  </span>
+                <div className="pgc-right">
+                  <div className="pgc-diff">
+                    {Array.from({ length: g.difficulty }, (_, i) => (
+                      <span key={i} className="pgc-dot" />
+                    ))}
+                  </div>
+                  <Form route="game.join" routeParams={{ id: g.id }} method="post">
+                    {() => (
+                      <button type="submit" className="btn btn-primary btn-sm">
+                        Rejoindre
+                      </button>
+                    )}
+                  </Form>
                 </div>
-                <Form route="game.join" routeParams={{ id: g.id }} method="post">
-                  {() => <button type="submit" className="btn btn-primary">Rejoindre</button>}
-                </Form>
               </div>
             ))
           )}

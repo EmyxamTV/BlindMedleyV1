@@ -14,6 +14,9 @@ export default class Game extends BaseModel {
   declare id: number
 
   @column()
+  declare publicId: string | null
+
+  @column()
   declare code: string | null
 
   @column()

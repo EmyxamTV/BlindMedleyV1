@@ -29,7 +29,11 @@ export class XpService {
   }
 
   async awardXp(userId: number, amount: number, player: GamePlayer): Promise<void> {
-    const profile = await Profile.query().where('user_id', userId).firstOrFail()
+    let profile = await Profile.query().where('user_id', userId).first()
+    if (!profile) {
+      // Filet de sécurité : créer le profil s'il n'existe pas encore
+      profile = await Profile.create({ userId })
+    }
 
     let newXp = profile.xp + amount
     let newLevel = profile.level

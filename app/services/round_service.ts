@@ -14,11 +14,14 @@ export class RoundService {
       .limit(count)
 
     if (tracks.length < count) {
-      // Fallback : tracks sans preview (mode titre uniquement)
-      tracks = await TrackCache.query()
+      // Compléter (sans remplacer) avec des tracks sans preview — mode titre uniquement
+      const usedIds = tracks.map((t) => t.id)
+      const extra = await TrackCache.query()
         .whereHas('playlists', (q) => q.where('playlists.id', playlistId))
+        .whereNotIn('id', usedIds.length > 0 ? usedIds : [0])
         .orderByRaw('RANDOM()')
-        .limit(count)
+        .limit(count - tracks.length)
+      tracks = [...tracks, ...extra]
     }
 
     if (tracks.length < count) {

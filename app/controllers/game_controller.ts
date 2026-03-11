@@ -7,6 +7,11 @@ import roundService from '#services/round_service'
 import { createGameValidator, submitAnswerValidator } from '#validators/game_validators'
 
 export default class GameController {
+  // ── Résoudre un publicId → Game (lève 404 si introuvable) ─────────────
+  private async resolveGame(publicId: string): Promise<Game> {
+    return Game.query().where('public_id', publicId).firstOrFail()
+  }
+
   // Page lobby / création
   async index({ inertia, auth }: HttpContext) {
     const playlists = await Playlist.query().where('is_active', true).orderBy('name')
@@ -29,7 +34,7 @@ export default class GameController {
     return inertia.render('game/index', {
       playlists: playlists.map((p) => ({ id: p.id, name: p.name, trackCount: p.trackCount, genre: p.genre, difficulty: p.difficulty })),
       publicGames: publicGames.map((g) => ({
-        id: g.id,
+        id: g.publicId ?? g.id,
         code: g.code,
         mode: g.mode,
         playlistName: g.playlist?.name ?? '?',
@@ -39,7 +44,7 @@ export default class GameController {
         difficulty: g.difficulty,
         createdAt: g.createdAt,
       })),
-      myActiveGameId: myActiveGame?.gameId ?? null,
+      myActiveGameId: myActiveGame?.game?.publicId ?? null,
     })
   }
 
@@ -56,14 +61,14 @@ export default class GameController {
       hostId: auth.user!.id,
     })
 
-    return response.redirect().toRoute('game.lobby', { id: game.id })
+    return response.redirect().toRoute('game.lobby', { id: game.publicId })
   }
 
   // Page lobby d'une partie
   async lobby({ inertia, params, auth }: HttpContext) {
-    const { game } = await gameService.getGameState(params.id)
+    const resolved = await this.resolveGame(params.id)
+    const { game } = await gameService.getGameState(resolved.id)
 
-    // Vérifier que l'utilisateur est dans la partie
     const isPlayer = game.players.some((p) => p.userId === auth.user!.id)
     if (!isPlayer && game.mode !== 'public') {
       return inertia.render('errors/not_found', {})
@@ -78,25 +83,28 @@ export default class GameController {
   // Rejoindre une partie publique ou avec un code
   async join({ request, params, auth, response, session }: HttpContext) {
     const code = request.input('code') as string | undefined
-    let gameId = params.id
+    let game: Game
 
     if (code) {
-      const game = await Game.query().where('code', code).where('status', 'waiting').first()
-      if (!game) {
+      const found = await Game.query().where('code', code).where('status', 'waiting').first()
+      if (!found) {
         session.flash('error', 'Code de partie invalide ou partie démarrée')
         return response.redirect().back()
       }
-      gameId = game.id
+      game = found
+    } else {
+      game = await this.resolveGame(params.id)
     }
 
-    await gameService.joinGame(gameId, auth.user!.id)
-    return response.redirect().toRoute('game.lobby', { id: gameId })
+    await gameService.joinGame(game.id, auth.user!.id)
+    return response.redirect().toRoute('game.lobby', { id: game.publicId })
   }
 
   // Démarrer la partie (hôte seulement)
   async start({ params, auth, response, session }: HttpContext) {
     try {
-      await gameService.startGame(params.id, auth.user!.id)
+      const game = await this.resolveGame(params.id)
+      await gameService.startGame(game.id, auth.user!.id)
       return response.redirect().toRoute('game.play', { id: params.id })
     } catch (err) {
       session.flash('error', err.message)
@@ -106,7 +114,8 @@ export default class GameController {
 
   // Page de jeu
   async play({ inertia, params, auth }: HttpContext) {
-    const { game, currentRound } = await gameService.getGameState(params.id)
+    const resolved = await this.resolveGame(params.id)
+    const { game, currentRound } = await gameService.getGameState(resolved.id)
 
     const isPlayer = game.players.some((p) => p.userId === auth.user!.id)
     if (!isPlayer) {
@@ -124,7 +133,6 @@ export default class GameController {
       const serverNow = Date.now()
       roundPayload = await roundService.buildClientPayload(currentRound, serverNow)
 
-      // Vérifier si le joueur a déjà répondu à ce round
       const answered = await GamePlayer.query()
         .where('id', myPlayer.id)
         .whereHas('answers', (q) => q.where('round_id', currentRound.id))
@@ -146,19 +154,19 @@ export default class GameController {
     })
   }
 
-  // Soumettre une réponse (polling ou form)
+  // Soumettre une réponse
   async answer({ request, params, auth, response }: HttpContext) {
+    const resolved = await this.resolveGame(params.id)
     const payload = await request.validateUsing(submitAnswerValidator)
 
     const result = await gameService.submitAnswer({
-      gameId: params.id,
+      gameId: resolved.id,
       userId: auth.user!.id,
       roundNumber: payload.roundNumber,
       answerTrackId: payload.answerTrackId ?? null,
       answerText: payload.answerText ?? null,
     })
 
-    // Retourner JSON pour les requêtes AJAX
     if (request.accepts(['json'])) {
       return response.json({ success: true, ...result })
     }
@@ -169,7 +177,7 @@ export default class GameController {
   // Page résultats
   async results({ inertia, params, auth }: HttpContext) {
     const game = await Game.query()
-      .where('id', params.id)
+      .where('public_id', params.id)
       .where('status', 'finished')
       .preload('players', (q) =>
         q.orderBy('rank').preload('user', (uq) => uq.preload('profile'))
@@ -181,7 +189,7 @@ export default class GameController {
 
     return inertia.render('game/results', {
       game: {
-        id: game.id,
+        id: game.publicId,
         mode: game.mode,
         playlistName: game.playlist?.name ?? '?',
         roundCount: game.roundCount,
@@ -204,7 +212,8 @@ export default class GameController {
 
   // API: état courant de la partie (polling)
   async state({ params, response }: HttpContext) {
-    const { game, currentRound } = await gameService.getGameState(params.id)
+    const resolved = await this.resolveGame(params.id)
+    const { game, currentRound } = await gameService.getGameState(resolved.id)
     const serverNow = Date.now()
 
     let roundPayload = null
@@ -228,7 +237,7 @@ export default class GameController {
 
   private serializeGame(game: Game) {
     return {
-      id: game.id,
+      id: game.publicId ?? String(game.id),
       code: game.code,
       mode: game.mode,
       status: game.status,
