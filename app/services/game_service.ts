@@ -46,6 +46,37 @@ export class GameService {
     return game
   }
 
+  async leaveGame(gameId: number, userId: number): Promise<void> {
+    const game = await Game.findOrFail(gameId)
+    if (game.status === 'finished' || game.status === 'cancelled') return
+
+    const player = await GamePlayer.query()
+      .where('game_id', gameId)
+      .where('user_id', userId)
+      .first()
+    if (!player) return
+
+    await player.merge({ isConnected: false, leftAt: DateTime.now() }).save()
+
+    // Vérifier s'il reste des joueurs connectés
+    const connected = await GamePlayer.query()
+      .where('game_id', gameId)
+      .where('is_connected', true)
+      .count('* as total')
+
+    if (Number(connected[0].$extras.total) === 0) {
+      // Plus personne → annuler la partie
+      await game
+        .merge({
+          status: game.status === 'active' ? 'finished' : 'cancelled',
+          finishedAt: DateTime.now(),
+        })
+        .save()
+
+      transmit.broadcast(`game/${game.publicId}`, { event: 'game_finished' })
+    }
+  }
+
   async joinGame(gameId: number, userId: number): Promise<GamePlayer> {
     const game = await Game.findOrFail(gameId)
 

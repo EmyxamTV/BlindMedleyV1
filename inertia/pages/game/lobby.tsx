@@ -44,6 +44,17 @@ function unlockAudio() {
 export default function Lobby({ game, isHost, user }: Props) {
   const [players, setPlayers] = useState<Player[]>(game.players)
 
+  // Signaler le départ quand le joueur ferme/quitte la page
+  useEffect(() => {
+    const sendLeave = () => navigator.sendBeacon(`/game/${game.id}/leave`, '')
+    window.addEventListener('beforeunload', sendLeave)
+    window.addEventListener('pagehide', sendLeave)
+    return () => {
+      window.removeEventListener('beforeunload', sendLeave)
+      window.removeEventListener('pagehide', sendLeave)
+    }
+  }, [game.id])
+
   useEffect(() => {
     const transmit = new Transmit({ baseUrl: window.location.origin })
     const subscription = transmit.subscription(`game/${game.id}`)

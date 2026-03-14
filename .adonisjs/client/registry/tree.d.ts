@@ -32,6 +32,7 @@ export interface ApiDefinition {
     start: typeof routes['game.start']
     play: typeof routes['game.play']
     answer: typeof routes['game.answer']
+    leave: typeof routes['game.leave']
     results: typeof routes['game.results']
     state: typeof routes['game.state']
   }

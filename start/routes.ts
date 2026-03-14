@@ -57,6 +57,7 @@ router
     router.post('/game/:id/start', [GameController, 'start']).as('game.start')
     router.get('/game/:id/play', [GameController, 'play']).as('game.play')
     router.post('/game/:id/answer', [GameController, 'answer']).as('game.answer')
+    router.post('/game/:id/leave', [GameController, 'leave']).as('game.leave')
     router.get('/game/:id/results', [GameController, 'results']).as('game.results')
     router.get('/game/:id/state', [GameController, 'state']).as('game.state')
   })

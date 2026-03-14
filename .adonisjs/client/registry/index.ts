@@ -120,6 +120,12 @@ const routes = {
     tokens: [{"old":"/game/:id/answer","type":0,"val":"game","end":""},{"old":"/game/:id/answer","type":1,"val":"id","end":""},{"old":"/game/:id/answer","type":0,"val":"answer","end":""}],
     types: placeholder as Registry['game.answer']['types'],
   },
+  'game.leave': {
+    methods: ["POST"],
+    pattern: '/game/:id/leave',
+    tokens: [{"old":"/game/:id/leave","type":0,"val":"game","end":""},{"old":"/game/:id/leave","type":1,"val":"id","end":""},{"old":"/game/:id/leave","type":0,"val":"leave","end":""}],
+    types: placeholder as Registry['game.leave']['types'],
+  },
   'game.results': {
     methods: ["GET","HEAD"],
     pattern: '/game/:id/results',

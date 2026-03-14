@@ -235,6 +235,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['answer']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'game.leave': {
+    methods: ["POST"]
+    pattern: '/game/:id/leave'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['leave']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['leave']>>>
+    }
+  }
   'game.results': {
     methods: ["GET","HEAD"]
     pattern: '/game/:id/results'

@@ -174,6 +174,17 @@ export default class GameController {
     return response.redirect().toRoute('game.play', { id: params.id })
   }
 
+  // Quitter une partie
+  async leave({ params, auth, response }: HttpContext) {
+    try {
+      const resolved = await this.resolveGame(params.id)
+      await gameService.leaveGame(resolved.id, auth.user!.id)
+    } catch {
+      // Ignorer — le joueur quitte, pas besoin de bloquer
+    }
+    return response.json({ ok: true })
+  }
+
   // Page résultats
   async results({ inertia, params, auth }: HttpContext) {
     const game = await Game.query()

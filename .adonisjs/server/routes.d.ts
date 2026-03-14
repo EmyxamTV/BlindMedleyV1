@@ -23,6 +23,7 @@ export type ScannedRoutes = {
     'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.dashboard': { paramsTuple?: []; params?: {} }
@@ -79,6 +80,7 @@ export type ScannedRoutes = {
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.ban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

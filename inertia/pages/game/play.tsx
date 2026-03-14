@@ -138,6 +138,17 @@ export default function Play({ game, myPlayer: initialMyPlayer, round, serverNow
   const [gameStatus, setGameStatus] = useState(game.status)
   const [revealed, setRevealed] = useState<{ title: string; artist: string } | null>(null)
 
+  // Signaler le départ quand le joueur ferme/quitte la page
+  useEffect(() => {
+    const sendLeave = () => navigator.sendBeacon(`/game/${game.id}/leave`, '')
+    window.addEventListener('beforeunload', sendLeave)
+    window.addEventListener('pagehide', sendLeave)
+    return () => {
+      window.removeEventListener('beforeunload', sendLeave)
+      window.removeEventListener('pagehide', sendLeave)
+    }
+  }, [game.id])
+
   // Fallback polling — tourne en permanence pour rattraper les SSE manqués
   useEffect(() => {
     const interval = setInterval(async () => {
