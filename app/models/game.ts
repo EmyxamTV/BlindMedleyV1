@@ -8,6 +8,8 @@ import Round from '#models/round'
 
 export type GameMode = 'solo' | 'public' | 'private' | 'matchmaking'
 export type GameStatus = 'waiting' | 'starting' | 'active' | 'finished' | 'cancelled'
+export type AnswerMode = 'choices' | 'text'
+export type AnswerTarget = 'title' | 'artist' | 'both' | 'separate'
 
 export default class Game extends BaseModel {
   @column({ isPrimary: true })
@@ -21,6 +23,12 @@ export default class Game extends BaseModel {
 
   @column()
   declare mode: GameMode
+
+  @column()
+  declare answerMode: AnswerMode
+
+  @column()
+  declare answerTarget: AnswerTarget
 
   @column()
   declare status: GameStatus

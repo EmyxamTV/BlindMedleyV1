@@ -78,11 +78,59 @@ const routes = {
     tokens: [{"old":"/leaderboard","type":0,"val":"leaderboard","end":""}],
     types: placeholder as Registry['leaderboard.index']['types'],
   },
+  'friends.request': {
+    methods: ["POST"],
+    pattern: '/friends/:userId/request',
+    tokens: [{"old":"/friends/:userId/request","type":0,"val":"friends","end":""},{"old":"/friends/:userId/request","type":1,"val":"userId","end":""},{"old":"/friends/:userId/request","type":0,"val":"request","end":""}],
+    types: placeholder as Registry['friends.request']['types'],
+  },
+  'friends.accept': {
+    methods: ["POST"],
+    pattern: '/friends/:id/accept',
+    tokens: [{"old":"/friends/:id/accept","type":0,"val":"friends","end":""},{"old":"/friends/:id/accept","type":1,"val":"id","end":""},{"old":"/friends/:id/accept","type":0,"val":"accept","end":""}],
+    types: placeholder as Registry['friends.accept']['types'],
+  },
+  'friends.decline': {
+    methods: ["POST"],
+    pattern: '/friends/:id/decline',
+    tokens: [{"old":"/friends/:id/decline","type":0,"val":"friends","end":""},{"old":"/friends/:id/decline","type":1,"val":"id","end":""},{"old":"/friends/:id/decline","type":0,"val":"decline","end":""}],
+    types: placeholder as Registry['friends.decline']['types'],
+  },
+  'practice.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/practice',
+    tokens: [{"old":"/practice","type":0,"val":"practice","end":""}],
+    types: placeholder as Registry['practice.index']['types'],
+  },
+  'bandle.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/bandle',
+    tokens: [{"old":"/bandle","type":0,"val":"bandle","end":""}],
+    types: placeholder as Registry['bandle.index']['types'],
+  },
+  'practice.question': {
+    methods: ["GET","HEAD"],
+    pattern: '/practice/question',
+    tokens: [{"old":"/practice/question","type":0,"val":"practice","end":""},{"old":"/practice/question","type":0,"val":"question","end":""}],
+    types: placeholder as Registry['practice.question']['types'],
+  },
+  'practice.preview': {
+    methods: ["GET","HEAD"],
+    pattern: '/audio/preview',
+    tokens: [{"old":"/audio/preview","type":0,"val":"audio","end":""},{"old":"/audio/preview","type":0,"val":"preview","end":""}],
+    types: placeholder as Registry['practice.preview']['types'],
+  },
   'game.index': {
     methods: ["GET","HEAD"],
     pattern: '/game',
     tokens: [{"old":"/game","type":0,"val":"game","end":""}],
     types: placeholder as Registry['game.index']['types'],
+  },
+  'game.starter_playlist': {
+    methods: ["POST"],
+    pattern: '/game/starter-playlist',
+    tokens: [{"old":"/game/starter-playlist","type":0,"val":"game","end":""},{"old":"/game/starter-playlist","type":0,"val":"starter-playlist","end":""}],
+    types: placeholder as Registry['game.starter_playlist']['types'],
   },
   'game.create': {
     methods: ["POST"],
@@ -131,6 +179,12 @@ const routes = {
     pattern: '/game/:id/results',
     tokens: [{"old":"/game/:id/results","type":0,"val":"game","end":""},{"old":"/game/:id/results","type":1,"val":"id","end":""},{"old":"/game/:id/results","type":0,"val":"results","end":""}],
     types: placeholder as Registry['game.results']['types'],
+  },
+  'game.replay': {
+    methods: ["POST"],
+    pattern: '/game/:id/replay',
+    tokens: [{"old":"/game/:id/replay","type":0,"val":"game","end":""},{"old":"/game/:id/replay","type":1,"val":"id","end":""},{"old":"/game/:id/replay","type":0,"val":"replay","end":""}],
+    types: placeholder as Registry['game.replay']['types'],
   },
   'game.state': {
     methods: ["GET","HEAD"],

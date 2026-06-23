@@ -24,8 +24,22 @@ export interface ApiDefinition {
   leaderboard: {
     index: typeof routes['leaderboard.index']
   }
+  friends: {
+    request: typeof routes['friends.request']
+    accept: typeof routes['friends.accept']
+    decline: typeof routes['friends.decline']
+  }
+  practice: {
+    index: typeof routes['practice.index']
+    question: typeof routes['practice.question']
+    preview: typeof routes['practice.preview']
+  }
+  bandle: {
+    index: typeof routes['bandle.index']
+  }
   game: {
     index: typeof routes['game.index']
+    starterPlaylist: typeof routes['game.starter_playlist']
     create: typeof routes['game.create']
     lobby: typeof routes['game.lobby']
     join: typeof routes['game.join']
@@ -34,6 +48,7 @@ export interface ApiDefinition {
     answer: typeof routes['game.answer']
     leave: typeof routes['game.leave']
     results: typeof routes['game.results']
+    replay: typeof routes['game.replay']
     state: typeof routes['game.state']
   }
   admin: {

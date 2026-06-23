@@ -19,6 +19,8 @@ export class RoundService {
       const extra = await TrackCache.query()
         .whereHas('playlists', (q) => q.where('playlists.id', playlistId))
         .whereNotIn('id', usedIds.length > 0 ? usedIds : [0])
+        .where('has_preview', true)
+        .whereNotNull('preview_url')
         .orderByRaw('RANDOM()')
         .limit(count - tracks.length)
       tracks = [...tracks, ...extra]
@@ -69,7 +71,7 @@ export class RoundService {
   }
 
   // Construire le payload envoyé au client — JAMAIS le titre ou l'ID réel
-  async buildClientPayload(round: Round, serverNow: number) {
+  async buildClientPayload(round: Round, serverNow: number, answerMode: 'choices' | 'text' = 'choices') {
     if (!round.track) await round.load('track')
 
     // Charger les distractors (sans révéler le bon)
@@ -89,12 +91,12 @@ export class RoundService {
     return {
       roundNumber: round.roundNumber,
       roundToken: round.roundToken,
-      previewUrl: round.track.previewUrl,
+      previewUrl: round.track.previewUrl ? `/audio/preview?trackId=${round.trackId}` : null,
       coverUrl: round.track.coverUrl, // Révéler la cover est OK pour l'ambiance
       startsAt: round.startsAt?.toMillis() ?? serverNow,
       endsAt: round.endsAt?.toMillis() ?? serverNow + 30000,
       serverNow,
-      choices,
+      choices: answerMode === 'choices' ? choices : [],
     }
   }
 

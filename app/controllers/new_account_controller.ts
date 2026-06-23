@@ -13,7 +13,7 @@ export default class NewAccountController {
     const user = await User.create({ ...payload })
 
     // Créer le profil dès l'inscription pour que les stats soient bien enregistrées
-    const defaultUsername = payload.fullName.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
+    const defaultUsername = (payload.fullName ?? '').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
     await Profile.create({
       userId: user.id,
       username: defaultUsername || `joueur${user.id}`,

@@ -93,6 +93,72 @@ export class DeezerService {
     return playlist
   }
 
+  /**
+   * Create the built-in starter playlist used by a new installation.
+   * Deezer's public chart provides previews, so a lobby is playable immediately.
+   */
+  async importStarterPlaylist(): Promise<Playlist> {
+    const chart = await this.fetch<{ tracks: { data: DeezerTrack[] } }>('/chart/0?limit=100')
+    const tracks = chart.tracks.data.filter((track) => Boolean(track.preview))
+
+    if (tracks.length < 5) {
+      throw new Error('La selection Deezer ne contient pas assez de titres jouables. Reessayez dans un instant.')
+    }
+
+    const playlist = await Playlist.updateOrCreate(
+      { spotifyId: 'deezer:starter-chart' },
+      {
+        name: 'Hits du moment',
+        description: 'Selection publique Deezer mise a jour automatiquement.',
+        coverUrl: tracks[0]?.album.cover_medium ?? null,
+        trackCount: tracks.length,
+        isActive: true,
+        genre: 'Pop',
+        difficulty: 2,
+        lastSyncedAt: DateTime.now(),
+      }
+    )
+
+    const records: TrackCache[] = []
+    for (const chunk of this.chunks(tracks, 10)) {
+      const batch = await Promise.all(
+        chunk.map((track) =>
+          TrackCache.updateOrCreate(
+            { spotifyId: `deezer:${track.id}` },
+            {
+              title: track.title,
+              artist: track.artist.name,
+              album: track.album.title,
+              previewUrl: track.preview,
+              coverUrl: track.album.cover_medium ?? null,
+              durationMs: track.duration * 1000,
+              releaseYear: track.album.release_date
+                ? Number.parseInt(track.album.release_date.substring(0, 4))
+                : null,
+              hasPreview: true,
+              metadata: track as unknown as Record<string, unknown>,
+              cachedAt: DateTime.now(),
+              expiresAt: DateTime.now().plus({ days: 30 }),
+            }
+          )
+        )
+      )
+      records.push(...batch)
+    }
+
+    await playlist.related('tracks').sync(
+      records.reduce(
+        (acc, track, index) => {
+          acc[track.id] = { position: index + 1 }
+          return acc
+        },
+        {} as Record<number, { position: number }>
+      )
+    )
+
+    return playlist.merge({ trackCount: records.length, isActive: true }).save()
+  }
+
   /** Recherche une preview Deezer pour un titre+artiste (utilisé comme fallback Spotify) */
   async getPreview(title: string, artist: string): Promise<string | null> {
     try {

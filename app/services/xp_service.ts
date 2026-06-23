@@ -2,6 +2,7 @@ import Profile from '#models/profile'
 import Achievement from '#models/achievement'
 import { DateTime } from 'luxon'
 import type GamePlayer from '#models/game_player'
+import leaderboardService from '#services/leaderboard_service'
 
 // XP nécessaire pour chaque niveau
 function xpForLevel(level: number): number {
@@ -66,6 +67,8 @@ export class XpService {
         bestStreak: Math.max(profile.bestStreak, player.bestStreak),
       })
       .save()
+
+    await leaderboardService.addScore(userId, player.score, profile.country)
 
     // Vérifier les achievements
     await this.checkAchievements(userId, profile, player)

@@ -1,17 +1,28 @@
 import Game from '#models/game'
 import GamePlayer from '#models/game_player'
 import Round from '#models/round'
+import TrackCache from '#models/track_cache'
 import roundService from '#services/round_service'
 import scoreService from '#services/score_service'
 import xpService from '#services/xp_service'
 import { DateTime } from 'luxon'
 import crypto from 'node:crypto'
-import type { GameMode } from '#models/game'
+import type { AnswerMode, AnswerTarget, GameMode } from '#models/game'
 import transmit from '@adonisjs/transmit/services/main'
 
 export class GameService {
+  private readonly durationByDifficulty: Record<number, number> = {
+    1: 30_000,
+    2: 25_000,
+    3: 20_000,
+    4: 15_000,
+    5: 10_000,
+  }
+
   async createGame(options: {
     mode: GameMode
+    answerMode?: AnswerMode
+    answerTarget?: AnswerTarget
     playlistId: number
     difficulty?: number
     maxPlayers?: number
@@ -19,13 +30,26 @@ export class GameService {
     roundDurationMs?: number
     hostId: number
   }): Promise<Game> {
+    const availableTracks = await TrackCache.query()
+      .whereHas('playlists', (query) => query.where('playlists.id', options.playlistId))
+      .where('has_preview', true)
+      .whereNotNull('preview_url')
+      .count('* as total')
+
+    if (Number(availableTracks[0].$extras.total) < (options.roundCount ?? 10)) {
+      throw new Error('Cette playlist ne contient pas assez de titres pour le nombre de rounds choisi.')
+    }
+
     const game = await Game.create({
       mode: options.mode,
+      answerMode: options.answerMode ?? 'choices',
+      answerTarget: options.answerTarget ?? 'both',
       playlistId: options.playlistId,
       difficulty: options.difficulty ?? 2,
       maxPlayers: options.mode === 'solo' ? 1 : (options.maxPlayers ?? 8),
       roundCount: options.roundCount ?? 10,
-      roundDurationMs: options.roundDurationMs ?? 30000,
+      roundDurationMs:
+        options.roundDurationMs ?? this.durationByDifficulty[options.difficulty ?? 2] ?? 25_000,
       hostId: options.hostId,
       status: 'waiting',
       currentRound: 0,
@@ -136,7 +160,7 @@ export class GameService {
 
     // Broadcaster le round à tous les joueurs
     const serverNow = Date.now()
-    const roundPayload = await roundService.buildClientPayload(round, serverNow)
+    const roundPayload = await roundService.buildClientPayload(round, serverNow, game.answerMode)
     transmit.broadcast(`game/${game.publicId}`, { event: 'round_started', ...roundPayload })
 
     // Planifier la fin du round
@@ -256,9 +280,31 @@ export class GameService {
       answerTrackId: params.answerTrackId,
       answerText: params.answerText,
       serverReceivedAt,
+      allowRetry: game.answerMode === 'text',
+      answerTarget: game.answerTarget,
     })
 
     // Broadcaster la mise à jour des scores
+    if (result.correct) {
+      transmit.broadcast(`game/${game.publicId}`, {
+        event: 'answer_submitted',
+        userId: params.userId,
+        roundNumber: params.roundNumber,
+        responseMs: result.responseMs,
+        isCorrect: true,
+      })
+    }
+
+    if (game.answerTarget === 'separate' && (result.titleFound || result.artistFound)) {
+      transmit.broadcast(`game/${game.publicId}`, {
+        event: 'answer_progress',
+        userId: params.userId,
+        roundNumber: params.roundNumber,
+        titleFound: Boolean(result.titleFound),
+        artistFound: Boolean(result.artistFound),
+      })
+    }
+
     const updatedPlayers = await GamePlayer.query()
       .where('game_id', params.gameId)
       .preload('user', (q) => q.preload('profile'))
@@ -277,7 +323,7 @@ export class GameService {
 
     // En mode solo : déclencher la fin du round dès que le joueur a répondu
     // revealedAt dans endRound empêche la double exécution si le timer normal se déclenche après
-    if (game.mode === 'solo') {
+    if (game.mode === 'solo' && (game.answerMode !== 'text' || result.correct)) {
       setTimeout(() => this.endRound(game.id, params.roundNumber).catch(console.error), 1500)
     }
 

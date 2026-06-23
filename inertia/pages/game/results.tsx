@@ -1,4 +1,4 @@
-import { Link } from '@adonisjs/inertia/react'
+import { Form, Link } from '@adonisjs/inertia/react'
 import type { InertiaProps } from '~/types'
 
 interface PlayerResult {
@@ -15,7 +15,7 @@ interface PlayerResult {
 
 interface Props extends InertiaProps {
   game: {
-    id: number
+    id: string
     mode: string
     playlistName: string
     roundCount: number
@@ -113,9 +113,9 @@ export default function Results({ game, players, myXpEarned }: Props) {
       </table>
 
       <div className="results-actions">
-        <Link route="game.index" className="btn btn-primary">
-          Rejouer
-        </Link>
+        <Form route="game.replay" routeParams={{ id: game.id }} method="post">
+          {() => <button type="submit" className="btn btn-primary">Rejouer</button>}
+        </Form>
         <Link route="leaderboard.index" className="btn btn-ghost">
           Classement général
         </Link>

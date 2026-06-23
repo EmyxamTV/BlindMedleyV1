@@ -31,6 +31,7 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
       errors: ctx.inertia.always(this.getValidationErrors(ctx)),
       flash: ctx.inertia.always({
         error: error,
+        success: session?.flashMessages.get('success'),
       }),
       user: ctx.inertia.always(auth?.user ? UserTransformer.transform(auth.user) : undefined),
     }

@@ -2,8 +2,11 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Game from '#models/game'
 import GamePlayer from '#models/game_player'
 import Playlist from '#models/playlist'
+import Round from '#models/round'
+import Answer from '#models/answer'
 import gameService from '#services/game_service'
 import roundService from '#services/round_service'
+import deezerService from '#services/deezer_service'
 import { createGameValidator, submitAnswerValidator } from '#validators/game_validators'
 
 export default class GameController {
@@ -14,7 +17,16 @@ export default class GameController {
 
   // Page lobby / création
   async index({ inertia, auth }: HttpContext) {
-    const playlists = await Playlist.query().where('is_active', true).orderBy('name')
+    let playlists = await Playlist.query().where('is_active', true).orderBy('name')
+
+    if (playlists.length === 0) {
+      try {
+        await deezerService.importStarterPlaylist()
+        playlists = await Playlist.query().where('is_active', true).orderBy('name')
+      } catch {
+        // Deezer unavailable: the client keeps the manual fallback action.
+      }
+    }
 
     const publicGames = await Game.query()
       .where('status', 'waiting')
@@ -49,19 +61,37 @@ export default class GameController {
   }
 
   // Créer une partie
-  async create({ request, auth, response }: HttpContext) {
+  async create({ request, auth, response, session }: HttpContext) {
     const payload = await request.validateUsing(createGameValidator)
 
-    const game = await gameService.createGame({
-      mode: payload.mode as 'solo' | 'public' | 'private',
-      playlistId: payload.playlistId,
-      difficulty: payload.difficulty,
-      maxPlayers: payload.maxPlayers,
-      roundCount: payload.roundCount,
-      hostId: auth.user!.id,
-    })
+    try {
+      const game = await gameService.createGame({
+        mode: payload.mode as 'solo' | 'public' | 'private',
+        answerMode: payload.answerMode as 'choices' | 'text' | undefined,
+        answerTarget: payload.answerTarget as 'title' | 'artist' | 'both' | 'separate' | undefined,
+        playlistId: payload.playlistId,
+        difficulty: payload.difficulty,
+        maxPlayers: payload.maxPlayers,
+        roundCount: payload.roundCount,
+        hostId: auth.user!.id,
+      })
 
-    return response.redirect().toRoute('game.lobby', { id: game.publicId })
+      return response.redirect().toRoute('game.lobby', { id: game.publicId! })
+    } catch (error) {
+      session.flash('error', error instanceof Error ? error.message : 'Impossible de creer la partie.')
+      return response.redirect().back()
+    }
+  }
+
+  async createStarterPlaylist({ response, session }: HttpContext) {
+    try {
+      await deezerService.importStarterPlaylist()
+      session.flash('success', 'Playlist de demarrage prete. Tu peux maintenant lancer une partie.')
+    } catch (error) {
+      session.flash('error', error instanceof Error ? error.message : 'Impossible de charger la playlist de demarrage.')
+    }
+
+    return response.redirect().toRoute('game.index')
   }
 
   // Page lobby d'une partie
@@ -97,7 +127,7 @@ export default class GameController {
     }
 
     await gameService.joinGame(game.id, auth.user!.id)
-    return response.redirect().toRoute('game.lobby', { id: game.publicId })
+    return response.redirect().toRoute('game.lobby', { id: game.publicId! })
   }
 
   // Démarrer la partie (hôte seulement)
@@ -131,11 +161,11 @@ export default class GameController {
     let roundPayload = null
     if (currentRound && currentRound.startsAt) {
       const serverNow = Date.now()
-      roundPayload = await roundService.buildClientPayload(currentRound, serverNow)
+      roundPayload = await roundService.buildClientPayload(currentRound, serverNow, game.answerMode)
 
       const answered = await GamePlayer.query()
         .where('id', myPlayer.id)
-        .whereHas('answers', (q) => q.where('round_id', currentRound.id))
+        .whereHas('answers', (q) => q.where('round_id', currentRound.id).where('is_correct', true))
         .first()
       ;(roundPayload as Record<string, unknown>).alreadyAnswered = Boolean(answered)
     }
@@ -144,12 +174,14 @@ export default class GameController {
       game: this.serializeGame(game),
       myPlayer: {
         id: myPlayer.id,
+        userId: myPlayer.userId,
         score: myPlayer.score,
         streak: myPlayer.streak,
         correct: myPlayer.correct,
         incorrect: myPlayer.incorrect,
       },
       round: roundPayload,
+      history: await this.getHistory(resolved.id),
       serverNow: Date.now(),
     })
   }
@@ -222,6 +254,34 @@ export default class GameController {
   }
 
   // API: état courant de la partie (polling)
+  async replay({ params, auth, response, session }: HttpContext) {
+    try {
+      const previousGame = await Game.query()
+        .where('public_id', params.id)
+        .where('status', 'finished')
+        .firstOrFail()
+
+      if (!previousGame.playlistId) throw new Error('PLAYLIST_NOT_FOUND')
+
+      const game = await gameService.createGame({
+        mode: previousGame.mode as 'solo' | 'public' | 'private',
+        answerMode: previousGame.answerMode,
+        answerTarget: previousGame.answerTarget,
+        playlistId: previousGame.playlistId,
+        difficulty: previousGame.difficulty,
+        maxPlayers: previousGame.maxPlayers,
+        roundCount: previousGame.roundCount,
+        roundDurationMs: previousGame.roundDurationMs,
+        hostId: auth.user!.id,
+      })
+
+      return response.redirect().toRoute('game.lobby', { id: game.publicId! })
+    } catch (error) {
+      session.flash('error', error instanceof Error ? error.message : 'Impossible de relancer cette partie.')
+      return response.redirect().back()
+    }
+  }
+
   async state({ params, response }: HttpContext) {
     const resolved = await this.resolveGame(params.id)
     const { game, currentRound } = await gameService.getGameState(resolved.id)
@@ -229,8 +289,31 @@ export default class GameController {
 
     let roundPayload = null
     if (currentRound?.startsAt) {
-      roundPayload = await roundService.buildClientPayload(currentRound, serverNow)
+      roundPayload = await roundService.buildClientPayload(currentRound, serverNow, game.answerMode)
     }
+
+    const answerPings = currentRound
+      ? await Answer.query()
+          .where('round_id', currentRound.id)
+          .where('is_correct', true)
+          .select(['user_id', 'response_ms', 'is_correct'])
+          .then((answers) => answers.map((answer) => ({
+            userId: answer.userId,
+            responseMs: answer.responseMs,
+            isCorrect: answer.isCorrect,
+          })))
+      : []
+
+    const answerProgress = currentRound && game.answerTarget === 'separate'
+      ? await Answer.query()
+          .where('round_id', currentRound.id)
+          .select(['user_id', 'title_correct', 'artist_correct'])
+          .then((answers) => answers.map((answer) => ({
+            userId: answer.userId,
+            titleFound: Boolean(answer.titleCorrect),
+            artistFound: Boolean(answer.artistCorrect),
+          })))
+      : []
 
     return response.json({
       status: game.status,
@@ -243,7 +326,25 @@ export default class GameController {
         score: p.score,
         streak: p.streak,
       })),
+      answerPings,
+      answerProgress,
+      history: await this.getHistory(resolved.id),
     })
+  }
+
+  private async getHistory(gameId: number) {
+    const rounds = await Round.query()
+      .where('game_id', gameId)
+      .whereNotNull('revealed_at')
+      .preload('track')
+      .orderBy('round_number', 'desc')
+
+    return rounds.map((round) => ({
+      roundNumber: round.roundNumber,
+      title: round.track.title,
+      artist: round.track.artist,
+      coverUrl: round.track.coverUrl,
+    }))
   }
 
   private serializeGame(game: Game) {
@@ -251,6 +352,8 @@ export default class GameController {
       id: game.publicId ?? String(game.id),
       code: game.code,
       mode: game.mode,
+      answerMode: game.answerMode,
+      answerTarget: game.answerTarget,
       status: game.status,
       playlistName: game.playlist?.name ?? '?',
       difficulty: game.difficulty,

@@ -30,6 +30,8 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
           {user && (
             <nav className="navbar-nav">
               <Link route="game.index" className="nav-link">Jouer</Link>
+              <Link route="practice.index" className="nav-link">Entraînement</Link>
+              <Link route="bandle.index" className="nav-link">Progressif</Link>
               <Link route="leaderboard.index" className="nav-link">Classement</Link>
               <Link route="profile.show" className="nav-link">Profil</Link>
             </nav>
@@ -79,6 +81,12 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
             Jouer
+          </Link>
+          <Link route="practice.index" className="mobile-nav-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2v20M2 12h20"/>
+            </svg>
+            Solo
           </Link>
           <Link route="leaderboard.index" className="mobile-nav-link">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -7,6 +7,8 @@ const SpotifyOAuthController = () => import('#controllers/spotify_oauth_controll
 const ProfileController = () => import('#controllers/profile_controller')
 const GameController = () => import('#controllers/game_controller')
 const LeaderboardController = () => import('#controllers/leaderboard_controller')
+const PracticeController = () => import('#controllers/practice_controller')
+const FriendshipController = () => import('#controllers/friendship_controller')
 const AdminController = () => import('#controllers/admin/admin_controller')
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
@@ -47,10 +49,28 @@ router
   .as('leaderboard.index')
   .use(middleware.auth())
 
+router
+  .group(() => {
+    router.post('/friends/:userId/request', [FriendshipController, 'request']).as('friends.request')
+    router.post('/friends/:id/accept', [FriendshipController, 'accept']).as('friends.accept')
+    router.post('/friends/:id/decline', [FriendshipController, 'decline']).as('friends.decline')
+  })
+  .use(middleware.auth())
+
+router
+  .group(() => {
+    router.get('/practice', [PracticeController, 'index']).as('practice.index')
+    router.get('/bandle', [PracticeController, 'bandle']).as('bandle.index')
+    router.get('/practice/question', [PracticeController, 'question']).as('practice.question')
+    router.get('/audio/preview', [PracticeController, 'preview']).as('practice.preview')
+  })
+  .use(middleware.auth())
+
 // ─── Game ─────────────────────────────────────────────────────────────────────
 router
   .group(() => {
     router.get('/game', [GameController, 'index']).as('game.index')
+    router.post('/game/starter-playlist', [GameController, 'createStarterPlaylist']).as('game.starter_playlist')
     router.post('/game', [GameController, 'create']).as('game.create')
     router.get('/game/:id', [GameController, 'lobby']).as('game.lobby')
     router.post('/game/:id/join', [GameController, 'join']).as('game.join')
@@ -59,6 +79,7 @@ router
     router.post('/game/:id/answer', [GameController, 'answer']).as('game.answer')
     router.post('/game/:id/leave', [GameController, 'leave']).as('game.leave')
     router.get('/game/:id/results', [GameController, 'results']).as('game.results')
+    router.post('/game/:id/replay', [GameController, 'replay']).as('game.replay')
     router.get('/game/:id/state', [GameController, 'state']).as('game.state')
   })
   .use(middleware.auth())

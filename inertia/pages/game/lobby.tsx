@@ -3,6 +3,7 @@ import { Form, Link } from '@adonisjs/inertia/react'
 import { router } from '@inertiajs/react'
 import { Transmit } from '@adonisjs/transmit-client'
 import type { InertiaProps } from '~/types'
+import { createRealtimeUid } from '~/lib/realtime'
 
 interface Player {
   id: number
@@ -56,7 +57,10 @@ export default function Lobby({ game, isHost, user }: Props) {
   }, [game.id])
 
   useEffect(() => {
-    const transmit = new Transmit({ baseUrl: window.location.origin })
+    const transmit = new Transmit({
+      baseUrl: window.location.origin,
+      uidGenerator: createRealtimeUid,
+    })
     const subscription = transmit.subscription(`game/${game.id}`)
 
     subscription.create().then(() => {

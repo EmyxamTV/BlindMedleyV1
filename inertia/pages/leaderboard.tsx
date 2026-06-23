@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { router } from '@inertiajs/react'
+import { Form } from '@adonisjs/inertia/react'
 import type { InertiaProps } from '~/types'
 
 interface Entry {
@@ -18,6 +19,9 @@ interface Props extends InertiaProps {
   entries: Entry[]
   myRank: number | null
   friendsLeaderboard: Entry[]
+  search: string
+  searchResults: { userId: number; username: string; avatarUrl: string | null; relationship: { id: number; status: string; incoming: boolean } | null }[]
+  incomingRequests: { id: number; username: string; avatarUrl: string | null }[]
 }
 
 const PERIODS = [
@@ -51,11 +55,17 @@ function EntryRow({ entry, isMe }: { entry: Entry; isMe: boolean }) {
   )
 }
 
-export default function Leaderboard({ period, country, entries, myRank, friendsLeaderboard, user }: Props) {
+export default function Leaderboard({ period, country, entries, myRank, friendsLeaderboard, search, searchResults, incomingRequests, user }: Props) {
   const [activeTab, setActiveTab] = useState<'global' | 'friends'>('global')
+  const [query, setQuery] = useState(search)
 
   function changePeriod(p: string) {
     router.get('/leaderboard', { period: p, country: country ?? undefined })
+  }
+
+  function searchFriends(event: React.FormEvent) {
+    event.preventDefault()
+    router.get('/leaderboard', { period, country: country ?? undefined, search: query }, { preserveState: true })
   }
 
   return (
@@ -109,13 +119,41 @@ export default function Leaderboard({ period, country, entries, myRank, friendsL
           ))}
 
         {activeTab === 'friends' &&
-          (friendsLeaderboard.length === 0 ? (
-            <p className="empty-state">Pas encore d'amis dans le classement.</p>
-          ) : (
-            friendsLeaderboard.map((e) => (
-              <EntryRow key={e.userId} entry={e} isMe={e.userId === user?.id} />
-            ))
-          ))}
+          <>
+            <section className="friends-panel">
+              <h2>Ajouter des amis</h2>
+              <form className="friend-search" onSubmit={searchFriends}>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un pseudo" minLength={2} />
+                <button className="btn btn-primary btn-sm" type="submit">Rechercher</button>
+              </form>
+              {searchResults.map((player) => (
+                <div className="friend-result" key={player.userId}>
+                  {player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className="friend-avatar">{player.username[0].toUpperCase()}</span>}
+                  <strong>{player.username}</strong>
+                  {player.relationship?.status === 'accepted' ? <span className="friend-status">Ami</span>
+                    : player.relationship?.incoming ? <Form route="friends.accept" routeParams={{ id: player.relationship.id }}><button className="btn btn-primary btn-sm">Accepter</button></Form>
+                    : player.relationship ? <span className="friend-status">Demande envoyée</span>
+                    : <Form route="friends.request" routeParams={{ userId: player.userId }}><button className="btn btn-ghost btn-sm">Ajouter</button></Form>}
+                </div>
+              ))}
+              {search.length >= 2 && searchResults.length === 0 && <p className="empty-state">Aucun joueur trouvé.</p>}
+            </section>
+
+            {incomingRequests.length > 0 && (
+              <section className="friends-panel">
+                <h2>Demandes reçues</h2>
+                {incomingRequests.map((request) => <div className="friend-result" key={request.id}>
+                  {request.avatarUrl ? <img src={request.avatarUrl} alt="" /> : <span className="friend-avatar">{request.username[0].toUpperCase()}</span>}
+                  <strong>{request.username}</strong>
+                  <Form route="friends.accept" routeParams={{ id: request.id }}><button className="btn btn-primary btn-sm">Accepter</button></Form>
+                  <Form route="friends.decline" routeParams={{ id: request.id }}><button className="btn btn-ghost btn-sm">Refuser</button></Form>
+                </div>)}
+              </section>
+            )}
+
+            {friendsLeaderboard.length === 0 ? <p className="empty-state">Pas encore d'amis classés.</p>
+              : friendsLeaderboard.map((e) => <EntryRow key={e.userId} entry={e} isMe={e.userId === user?.id} />)}
+          </>}
       </div>
     </div>
   )

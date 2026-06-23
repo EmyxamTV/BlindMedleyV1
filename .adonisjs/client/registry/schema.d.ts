@@ -151,6 +151,90 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leaderboard_controller').default['index']>>>
     }
   }
+  'friends.request': {
+    methods: ["POST"]
+    pattern: '/friends/:userId/request'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { userId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['request']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['request']>>>
+    }
+  }
+  'friends.accept': {
+    methods: ["POST"]
+    pattern: '/friends/:id/accept'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['accept']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['accept']>>>
+    }
+  }
+  'friends.decline': {
+    methods: ["POST"]
+    pattern: '/friends/:id/decline'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['decline']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['decline']>>>
+    }
+  }
+  'practice.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/practice'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['index']>>>
+    }
+  }
+  'bandle.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/bandle'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['bandle']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['bandle']>>>
+    }
+  }
+  'practice.question': {
+    methods: ["GET","HEAD"]
+    pattern: '/practice/question'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['question']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['question']>>>
+    }
+  }
+  'practice.preview': {
+    methods: ["GET","HEAD"]
+    pattern: '/audio/preview'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['preview']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['preview']>>>
+    }
+  }
   'game.index': {
     methods: ["GET","HEAD"]
     pattern: '/game'
@@ -161,6 +245,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['index']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['index']>>>
+    }
+  }
+  'game.starter_playlist': {
+    methods: ["POST"]
+    pattern: '/game/starter-playlist'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['createStarterPlaylist']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['createStarterPlaylist']>>>
     }
   }
   'game.create': {
@@ -257,6 +353,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['results']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['results']>>>
+    }
+  }
+  'game.replay': {
+    methods: ["POST"]
+    pattern: '/game/:id/replay'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['replay']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['replay']>>>
     }
   }
   'game.state': {

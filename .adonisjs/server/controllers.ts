@@ -7,9 +7,11 @@ export const controllers = {
   admin: {
     Admin: () => import('#controllers/admin/admin_controller'),
   },
+  Friendship: () => import('#controllers/friendship_controller'),
   Game: () => import('#controllers/game_controller'),
   Leaderboard: () => import('#controllers/leaderboard_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
+  Practice: () => import('#controllers/practice_controller'),
   Profile: () => import('#controllers/profile_controller'),
   Session: () => import('#controllers/session_controller'),
   SpotifyOauth: () => import('#controllers/spotify_oauth_controller'),

@@ -17,6 +17,7 @@ declare module '@adonisjs/inertia/types' {
     'admin/users': ExtractProps<(typeof import('../../inertia/pages/admin/users.tsx'))['default']>
     'auth/login': ExtractProps<(typeof import('../../inertia/pages/auth/login.tsx'))['default']>
     'auth/signup': ExtractProps<(typeof import('../../inertia/pages/auth/signup.tsx'))['default']>
+    'bandle': ExtractProps<(typeof import('../../inertia/pages/bandle.tsx'))['default']>
     'errors/not_found': ExtractProps<(typeof import('../../inertia/pages/errors/not_found.tsx'))['default']>
     'errors/server_error': ExtractProps<(typeof import('../../inertia/pages/errors/server_error.tsx'))['default']>
     'game/index': ExtractProps<(typeof import('../../inertia/pages/game/index.tsx'))['default']>
@@ -25,6 +26,7 @@ declare module '@adonisjs/inertia/types' {
     'game/results': ExtractProps<(typeof import('../../inertia/pages/game/results.tsx'))['default']>
     'home': ExtractProps<(typeof import('../../inertia/pages/home.tsx'))['default']>
     'leaderboard': ExtractProps<(typeof import('../../inertia/pages/leaderboard.tsx'))['default']>
+    'practice': ExtractProps<(typeof import('../../inertia/pages/practice.tsx'))['default']>
     'profile': ExtractProps<(typeof import('../../inertia/pages/profile.tsx'))['default']>
   }
 }

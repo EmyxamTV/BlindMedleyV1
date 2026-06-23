@@ -2,6 +2,7 @@ import Round from '#models/round'
 import GamePlayer from '#models/game_player'
 import Answer from '#models/answer'
 import { DateTime } from 'luxon'
+import type { AnswerTarget } from '#models/game'
 
 const MAX_SCORE_PER_ROUND = 1000
 const SPEED_BONUS_MAX = 500
@@ -9,6 +10,10 @@ const COMBO_MULTIPLIERS = [1, 1, 1.2, 1.5, 2, 2.5] // index = streak
 
 export interface AnswerResult {
   correct: boolean
+  partial?: boolean
+  partialFound?: 'title' | 'artist' | null
+  titleFound?: boolean
+  artistFound?: boolean
   scoreEarned: number
   responseMs: number
   flags: string[]
@@ -21,6 +26,8 @@ export class ScoreService {
     answerTrackId: number | null
     answerText: string | null
     serverReceivedAt: number
+    allowRetry?: boolean
+    answerTarget?: AnswerTarget
   }): Promise<AnswerResult> {
     const { round, gamePlayer, serverReceivedAt } = params
 
@@ -38,15 +45,19 @@ export class ScoreService {
       .where('round_id', round.id)
       .where('game_player_id', gamePlayer.id)
       .first()
-    if (existing) {
+    if (existing?.isCorrect) {
       throw new Error('ALREADY_ANSWERED')
     }
 
     // Temps de réponse — calculé côté serveur uniquement
     const responseMs = serverReceivedAt - round.startsAt.toMillis()
 
+    if (params.answerTarget === 'separate' && params.answerText) {
+      return this.processSeparateAnswer({ round, gamePlayer, existing, answerText: params.answerText, responseMs })
+    }
+
     // Validation de la réponse
-    const isCorrect = await this.validateAnswer(round, params.answerTrackId, params.answerText)
+    const isCorrect = await this.validateAnswer(round, params.answerTrackId, params.answerText, params.answerTarget)
 
     // Score calculé côté serveur
     const scoreEarned = isCorrect ? this.calculateScore(responseMs, gamePlayer.streak, round.game?.roundDurationMs ?? 30000) : 0
@@ -55,6 +66,19 @@ export class ScoreService {
     const flags = this.detectSuspiciousFlags(responseMs, isCorrect, gamePlayer)
 
     // Persister la réponse
+    if (params.allowRetry && !isCorrect) {
+      await gamePlayer.merge({ incorrect: gamePlayer.incorrect + 1, streak: 0 }).save()
+      return { correct: false, scoreEarned: 0, responseMs, flags }
+    }
+
+    if (params.allowRetry) {
+      await Answer.query()
+        .where('round_id', round.id)
+        .where('game_player_id', gamePlayer.id)
+        .where('is_correct', false)
+        .delete()
+    }
+
     await Answer.create({
       roundId: round.id,
       gamePlayerId: gamePlayer.id,
@@ -90,10 +114,82 @@ export class ScoreService {
     return { correct: isCorrect, scoreEarned, responseMs, flags }
   }
 
+  private async processSeparateAnswer(params: {
+    round: Round
+    gamePlayer: GamePlayer
+    existing: Answer | null
+    answerText: string
+    responseMs: number
+  }): Promise<AnswerResult> {
+    const { round, gamePlayer, existing, answerText, responseMs } = params
+    const matches = await this.getTextMatches(round, answerText)
+    const titleNew = matches.title && !existing?.titleCorrect
+    const artistNew = matches.artist && !existing?.artistCorrect
+
+    if (!titleNew && !artistNew) {
+      await gamePlayer.merge({ incorrect: gamePlayer.incorrect + 1, streak: 0 }).save()
+      return { correct: false, scoreEarned: 0, responseMs, flags: this.detectSuspiciousFlags(responseMs, false, gamePlayer) }
+    }
+
+    const titleCorrect = Boolean(existing?.titleCorrect || matches.title)
+    const artistCorrect = Boolean(existing?.artistCorrect || matches.artist)
+    const complete = titleCorrect && artistCorrect
+    const baseScore = this.calculateScore(responseMs, gamePlayer.streak, round.game?.roundDurationMs ?? 30000)
+    const scoreEarned = Math.floor((baseScore * (Number(titleNew) + Number(artistNew))) / 2)
+    const flags = this.detectSuspiciousFlags(responseMs, true, gamePlayer)
+
+    if (existing) {
+      await existing.merge({
+        answerText,
+        isCorrect: complete,
+        titleCorrect,
+        artistCorrect,
+        scoreEarned: existing.scoreEarned + scoreEarned,
+        responseMs,
+        suspiciousFlags: flags,
+        submittedAt: DateTime.now(),
+      }).save()
+    } else {
+      await Answer.create({
+        roundId: round.id,
+        gamePlayerId: gamePlayer.id,
+        userId: gamePlayer.userId,
+        answerText,
+        answerTrackId: null,
+        isCorrect: complete,
+        titleCorrect,
+        artistCorrect,
+        scoreEarned,
+        responseMs,
+        suspiciousFlags: flags,
+        submittedAt: DateTime.now(),
+      })
+    }
+
+    await gamePlayer.merge({
+      score: gamePlayer.score + scoreEarned,
+      correct: gamePlayer.correct + (complete ? 1 : 0),
+      streak: complete ? gamePlayer.streak + 1 : gamePlayer.streak,
+      bestStreak: complete ? Math.max(gamePlayer.bestStreak, gamePlayer.streak + 1) : gamePlayer.bestStreak,
+    }).save()
+
+    return {
+      correct: complete,
+      partial: !complete,
+      partialFound: titleNew ? 'title' : 'artist',
+      titleFound: titleCorrect,
+      artistFound: artistCorrect,
+      scoreEarned,
+      responseMs,
+      flags,
+    }
+  }
+
   private async validateAnswer(
     round: Round,
     answerTrackId: number | null,
-    answerText: string | null
+    answerText: string | null,
+    answerTarget: AnswerTarget = 'both'
   ): Promise<boolean> {
     if (!round.track) {
       await round.load('track')
@@ -105,13 +201,57 @@ export class ScoreService {
     }
 
     if (answerText) {
-      const normalized = this.normalizeText(answerText)
-      const correctTitle = this.normalizeText(correctTrack.title)
-      const correctArtist = this.normalizeText(correctTrack.artist)
-      return normalized === correctTitle || normalized.includes(correctTitle) || correctTitle.includes(normalized) || normalized === correctArtist
+      const { title: titleMatches, artist: artistMatches } = await this.getTextMatches(round, answerText)
+
+      if (answerTarget === 'title') return titleMatches
+      if (answerTarget === 'artist') return artistMatches
+      return titleMatches && artistMatches
     }
 
     return false
+  }
+
+  private async getTextMatches(round: Round, answerText: string): Promise<{ title: boolean; artist: boolean }> {
+    if (!round.track) await round.load('track')
+    const normalized = this.normalizeText(answerText)
+    return {
+      title: this.matchesTextAnswer(normalized, this.normalizeText(round.track.title)),
+      artist: this.matchesTextAnswer(normalized, this.normalizeText(round.track.artist)),
+    }
+  }
+
+  private matchesTextAnswer(answer: string, expected: string): boolean {
+    return (
+      answer === expected ||
+      answer.includes(expected) ||
+      expected.includes(answer) ||
+      this.isCloseAnswer(answer, expected)
+    )
+  }
+
+  private isCloseAnswer(answer: string, expected: string): boolean {
+    if (answer.length < 3 || expected.length < 3) return false
+    const maxDistance = Math.max(1, Math.floor(expected.length * 0.2))
+    if (Math.abs(answer.length - expected.length) > maxDistance) return false
+    return this.levenshtein(answer, expected) <= maxDistance
+  }
+
+  private levenshtein(left: string, right: string): number {
+    const previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+    for (let row = 1; row <= left.length; row++) {
+      let diagonal = previous[0]
+      previous[0] = row
+      for (let column = 1; column <= right.length; column++) {
+        const above = previous[column]
+        previous[column] = Math.min(
+          previous[column] + 1,
+          previous[column - 1] + 1,
+          diagonal + (left[row - 1] === right[column - 1] ? 0 : 1)
+        )
+        diagonal = above
+      }
+    }
+    return previous[right.length]
   }
 
   private calculateScore(responseMs: number, streak: number, roundDurationMs: number): number {

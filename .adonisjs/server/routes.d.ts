@@ -16,7 +16,15 @@ export type ScannedRoutes = {
     'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.update': { paramsTuple?: []; params?: {} }
     'leaderboard.index': { paramsTuple?: []; params?: {} }
+    'friends.request': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
+    'friends.accept': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'practice.index': { paramsTuple?: []; params?: {} }
+    'bandle.index': { paramsTuple?: []; params?: {} }
+    'practice.question': { paramsTuple?: []; params?: {} }
+    'practice.preview': { paramsTuple?: []; params?: {} }
     'game.index': { paramsTuple?: []; params?: {} }
+    'game.starter_playlist': { paramsTuple?: []; params?: {} }
     'game.create': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -25,6 +33,7 @@ export type ScannedRoutes = {
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.dashboard': { paramsTuple?: []; params?: {} }
     'admin.users': { paramsTuple?: []; params?: {} }
@@ -44,6 +53,10 @@ export type ScannedRoutes = {
     'profile.show': { paramsTuple?: []; params?: {} }
     'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'leaderboard.index': { paramsTuple?: []; params?: {} }
+    'practice.index': { paramsTuple?: []; params?: {} }
+    'bandle.index': { paramsTuple?: []; params?: {} }
+    'practice.question': { paramsTuple?: []; params?: {} }
+    'practice.preview': { paramsTuple?: []; params?: {} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -62,6 +75,10 @@ export type ScannedRoutes = {
     'profile.show': { paramsTuple?: []; params?: {} }
     'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'leaderboard.index': { paramsTuple?: []; params?: {} }
+    'practice.index': { paramsTuple?: []; params?: {} }
+    'bandle.index': { paramsTuple?: []; params?: {} }
+    'practice.question': { paramsTuple?: []; params?: {} }
+    'practice.preview': { paramsTuple?: []; params?: {} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -76,11 +93,16 @@ export type ScannedRoutes = {
     'session.store': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
     'profile.update': { paramsTuple?: []; params?: {} }
+    'friends.request': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
+    'friends.accept': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.starter_playlist': { paramsTuple?: []; params?: {} }
     'game.create': { paramsTuple?: []; params?: {} }
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.ban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

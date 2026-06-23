@@ -29,12 +29,14 @@ export class AchievementSchema extends BaseModel {
 }
 
 export class AnswerSchema extends BaseModel {
-  static $columns = ['answerText', 'answerTrackId', 'gamePlayerId', 'id', 'isCorrect', 'responseMs', 'roundId', 'scoreEarned', 'submittedAt', 'suspiciousFlags', 'userId'] as const
+  static $columns = ['answerText', 'answerTrackId', 'artistCorrect', 'gamePlayerId', 'id', 'isCorrect', 'responseMs', 'roundId', 'scoreEarned', 'submittedAt', 'suspiciousFlags', 'titleCorrect', 'userId'] as const
   $columns = AnswerSchema.$columns
   @column()
   declare answerText: string | null
   @column()
   declare answerTrackId: number | null
+  @column()
+  declare artistCorrect: boolean
   @column()
   declare gamePlayerId: number
   @column({ isPrimary: true })
@@ -51,6 +53,8 @@ export class AnswerSchema extends BaseModel {
   declare submittedAt: DateTime
   @column()
   declare suspiciousFlags: string | null
+  @column()
+  declare titleCorrect: boolean
   @column()
   declare userId: number
 }
@@ -102,8 +106,12 @@ export class GamePlayerSchema extends BaseModel {
 }
 
 export class GameSchema extends BaseModel {
-  static $columns = ['code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
+  static $columns = ['answerMode', 'answerTarget', 'code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
   $columns = GameSchema.$columns
+  @column()
+  declare answerMode: string
+  @column()
+  declare answerTarget: string
   @column()
   declare code: string | null
   @column.dateTime({ autoCreate: true })

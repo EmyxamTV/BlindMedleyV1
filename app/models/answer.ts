@@ -29,6 +29,12 @@ export default class Answer extends BaseModel {
   declare isCorrect: boolean
 
   @column()
+  declare titleCorrect: boolean
+
+  @column()
+  declare artistCorrect: boolean
+
+  @column()
   declare scoreEarned: number
 
   @column()

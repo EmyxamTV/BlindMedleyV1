@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Form, Link } from '@adonisjs/inertia/react'
 import { router } from '@inertiajs/react'
 import type { InertiaProps } from '~/types'
@@ -88,6 +88,14 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
   const [selectedPlaylist, setSelectedPlaylist] = useState<number | null>(null)
   const [joinCode, setJoinCode] = useState('')
   const [mode, setMode] = useState<'solo' | 'public' | 'private'>('solo')
+  const [answerMode, setAnswerMode] = useState<'choices' | 'text'>('choices')
+  const [answerTarget, setAnswerTarget] = useState<'title' | 'artist' | 'both' | 'separate'>('both')
+
+  useEffect(() => {
+    if (tab !== 'public') return
+    const interval = window.setInterval(() => router.reload({ only: ['publicGames'] }), 5_000)
+    return () => window.clearInterval(interval)
+  }, [tab])
 
   function handleJoinCode(e: React.FormEvent) {
     e.preventDefault()
@@ -157,11 +165,56 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                 </div>
               </section>
 
+              {answerMode === 'text' && (
+                <section className="gi-section">
+                  <h2 className="gi-section-title">Réponse à trouver</h2>
+                  <div className="mode-grid answer-mode-grid">
+                    <label className={`mode-card ${answerTarget === 'title' ? 'selected' : ''}`}>
+                      <input type="radio" name="answerTarget" value="title" checked={answerTarget === 'title'} onChange={() => setAnswerTarget('title')} />
+                      <span className="mode-card-name">Titre</span><span className="mode-card-desc">Trouver uniquement le titre</span>
+                    </label>
+                    <label className={`mode-card ${answerTarget === 'artist' ? 'selected' : ''}`}>
+                      <input type="radio" name="answerTarget" value="artist" checked={answerTarget === 'artist'} onChange={() => setAnswerTarget('artist')} />
+                      <span className="mode-card-name">Artiste</span><span className="mode-card-desc">Trouver uniquement l’artiste</span>
+                    </label>
+                    <label className={`mode-card ${answerTarget === 'both' ? 'selected' : ''}`}>
+                      <input type="radio" name="answerTarget" value="both" checked={answerTarget === 'both'} onChange={() => setAnswerTarget('both')} />
+                      <span className="mode-card-name">Les deux</span><span className="mode-card-desc">Titre et artiste requis</span>
+                    </label>
+                    <label className={`mode-card ${answerTarget === 'separate' ? 'selected' : ''}`}>
+                      <input type="radio" name="answerTarget" value="separate" checked={answerTarget === 'separate'} onChange={() => setAnswerTarget('separate')} />
+                      <span className="mode-card-name">Points séparés</span><span className="mode-card-desc">Des points pour le titre, puis pour l’artiste</span>
+                    </label>
+                  </div>
+                </section>
+              )}
+
+              <section className="gi-section">
+                <h2 className="gi-section-title">Type de réponse</h2>
+                <div className="mode-grid answer-mode-grid">
+                  <label className={`mode-card ${answerMode === 'choices' ? 'selected' : ''}`}>
+                    <input type="radio" name="answerMode" value="choices" checked={answerMode === 'choices'} onChange={() => setAnswerMode('choices')} />
+                    <span className="mode-card-name">QCM</span><span className="mode-card-desc">Quatre réponses proposées</span>
+                  </label>
+                  <label className={`mode-card ${answerMode === 'text' ? 'selected' : ''}`}>
+                    <input type="radio" name="answerMode" value="text" checked={answerMode === 'text'} onChange={() => setAnswerMode('text')} />
+                    <span className="mode-card-name">Blind test</span><span className="mode-card-desc">Écris le titre ou l’artiste</span>
+                  </label>
+                </div>
+              </section>
+
               {/* Playlists */}
               <section className="gi-section">
                 <h2 className="gi-section-title">Choisir une playlist</h2>
                 {playlists.length === 0 ? (
-                  <p className="empty-state">Aucune playlist disponible. Un admin doit en importer via Spotify.</p>
+                  <div className="empty-card game-empty-playlist">
+                    <span className="empty-icon">🎵</span>
+                    <p>Aucune playlist n’est encore disponible.</p>
+                    <Form route="game.starter_playlist">
+                      {() => <button type="submit" className="btn btn-primary">Charger les hits de démarrage</button>}
+                    </Form>
+                    <small>Une sélection publique Deezer avec extraits audio sera ajoutée à cette instance.</small>
+                  </div>
                 ) : (
                   <div className="pl-grid">
                     {playlists.map((p) => (
@@ -225,11 +278,11 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                   <div className="form-group">
                     <label>Difficulté</label>
                     <select name="difficulty" defaultValue="2">
-                      <option value="1">Facile</option>
-                      <option value="2">Normal</option>
-                      <option value="3">Difficile</option>
-                      <option value="4">Expert</option>
-                      <option value="5">Légendaire</option>
+                      <option value="1">Facile · 30 secondes</option>
+                      <option value="2">Normal · 25 secondes</option>
+                      <option value="3">Difficile · 20 secondes</option>
+                      <option value="4">Expert · 15 secondes</option>
+                      <option value="5">Légendaire · 10 secondes</option>
                     </select>
                   </div>
                 </div>
