@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Link, Form } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface AdminUser {
+interface AdminUser extends Record<string, JSONDataTypes> {
   id: number;
   email: string;
   fullName: string | null;
@@ -13,7 +14,7 @@ interface AdminUser {
   createdAt: string;
 }
 
-interface Meta {
+interface Meta extends Record<string, JSONDataTypes> {
   total: number;
   perPage: number;
   currentPage: number;

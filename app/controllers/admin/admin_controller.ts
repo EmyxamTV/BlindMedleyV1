@@ -2,8 +2,8 @@ import type { HttpContext } from "@adonisjs/core/http";
 import User from "#models/user";
 import Game from "#models/game";
 import Playlist from "#models/playlist";
-import spotifyService from "#services/spotify_service";
-import deezerService from "#services/deezer_service";
+import { SpotifyService } from "#services/spotify_service";
+import { DeezerService } from "#services/deezer_service";
 import GameTransformer from "#transformers/game_transformer";
 import PlaylistTransformer from "#transformers/playlist_transformer";
 import UserTransformer from "#transformers/user_transformer";
@@ -14,9 +14,16 @@ import {
   importPlaylistValidator,
   suspendUserValidator,
 } from "#validators/admin_validators";
+import { inject } from "@adonisjs/core";
 
+@inject()
 export default class AdminController {
-  async dashboard({ inertia, serialize }: HttpContext) {
+  constructor(
+    private readonly spotifyService: SpotifyService,
+    private readonly deezerService: DeezerService,
+  ) {}
+
+  async dashboard({ inertia }: HttpContext) {
     const [totalUsers, totalGames, activePlaylists] = await Promise.all([
       User.query().count("* as total"),
       Game.query().count("* as total"),
@@ -29,27 +36,17 @@ export default class AdminController {
       .preload("playlist")
       .limit(5);
 
-    const serializedRecentGames = await serialize.withoutWrapping(
-      GameTransformer.transform(recentGames),
-    );
-
     return inertia.render("admin/dashboard", {
       stats: {
         totalUsers: Number(totalUsers[0].$extras.total),
         totalGames: Number(totalGames[0].$extras.total),
         activePlaylists: Number(activePlaylists[0].$extras.total),
       },
-      recentGames: serializedRecentGames.map((game) => ({
-        id: game.numericId,
-        mode: game.mode,
-        status: game.status,
-        playlistName: game.playlistName,
-        createdAt: game.createdAt ?? "",
-      })),
-    } as never);
+      recentGames: GameTransformer.transform(recentGames),
+    });
   }
 
-  async users({ inertia, request, serialize }: HttpContext) {
+  async users({ inertia, request }: HttpContext) {
     const {
       page = 1,
       search,
@@ -72,11 +69,11 @@ export default class AdminController {
     const users = await query.paginate(page, 20);
 
     return inertia.render("admin/users", {
-      users: await serialize.withoutWrapping(UserTransformer.transform(users.all())),
+      users: UserTransformer.transform(users.all()),
       meta: users.getMeta(),
       search: search ?? "",
       statusFilter: status ?? "",
-    } as never);
+    });
   }
 
   async banUser({ params, request, response, session }: HttpContext) {
@@ -118,11 +115,11 @@ export default class AdminController {
     return response.redirect().back();
   }
 
-  async playlists({ inertia, serialize }: HttpContext) {
+  async playlists({ inertia }: HttpContext) {
     const playlists = await Playlist.query().orderBy("created_at", "desc");
     return inertia.render("admin/playlists", {
-      playlists: await serialize.withoutWrapping(PlaylistTransformer.transform(playlists)),
-    } as never);
+      playlists: PlaylistTransformer.transform(playlists),
+    });
   }
 
   async importPlaylist({ request, response, session }: HttpContext) {
@@ -131,7 +128,7 @@ export default class AdminController {
     // Deezer : https://www.deezer.com/fr/playlist/1234567890
     const deezerMatch = url.match(/deezer\.com\/(?:[a-z]+\/)?playlist\/(\d+)/);
     if (deezerMatch) {
-      await deezerService.importPlaylist(deezerMatch[1]);
+      await this.deezerService.importPlaylist(deezerMatch[1]);
       session.flash("success", "Playlist Deezer importée avec succès");
       return response.redirect().back();
     }
@@ -139,7 +136,7 @@ export default class AdminController {
     // Spotify : https://open.spotify.com/playlist/xxxxx
     const spotifyMatch = url.match(/playlist\/([a-zA-Z0-9]+)/);
     if (spotifyMatch) {
-      await spotifyService.importPlaylist(spotifyMatch[1]);
+      await this.spotifyService.importPlaylist(spotifyMatch[1]);
       session.flash("success", "Playlist Spotify importée avec succès (previews Deezer)");
       return response.redirect().back();
     }

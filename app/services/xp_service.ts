@@ -2,14 +2,18 @@ import Profile from "#models/profile";
 import Achievement from "#models/achievement";
 import { DateTime } from "luxon";
 import type GamePlayer from "#models/game_player";
-import leaderboardService from "#services/leaderboard_service";
+import { LeaderboardService } from "#services/leaderboard_service";
+import { inject } from "@adonisjs/core";
 
 // XP nécessaire pour chaque niveau
 function xpForLevel(level: number): number {
   return Math.floor(100 * Math.pow(1.4, level - 1));
 }
 
+@inject()
 export class XpService {
+  constructor(private readonly leaderboardService: LeaderboardService) {}
+
   calculateGameXp(player: GamePlayer, rank: number, totalPlayers: number): number {
     let xp = 10; // base
 
@@ -70,7 +74,7 @@ export class XpService {
       })
       .save();
 
-    await leaderboardService.addScore(userId, player.score, profile.country);
+    await this.leaderboardService.addScore(userId, player.score, profile.country);
 
     // Vérifier les achievements
     await this.checkAchievements(userId, profile, player);
@@ -122,5 +126,3 @@ export class XpService {
     }
   }
 }
-
-export default new XpService();

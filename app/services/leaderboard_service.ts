@@ -1,7 +1,8 @@
 import LeaderboardSnapshot from "#models/leaderboard_snapshot";
 import { DateTime } from "luxon";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-export interface LeaderboardEntry {
+export interface LeaderboardEntry extends Record<string, JSONDataTypes> {
   rank: number;
   userId: number;
   username: string;
@@ -123,5 +124,3 @@ export class LeaderboardService {
     return `monthly:${now.year}-${String(now.month).padStart(2, "0")}`;
   }
 }
-
-export default new LeaderboardService();

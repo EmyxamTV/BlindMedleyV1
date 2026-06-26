@@ -7,7 +7,7 @@ import UserTransformer from "#transformers/user_transformer";
 import { updateProfileValidator } from "#validators/profile_validators";
 
 export default class ProfileController {
-  async show({ inertia, params, auth, serialize }: HttpContext) {
+  async show({ inertia, params, auth }: HttpContext) {
     const user = await User.query()
       .where("id", params.id ?? auth.user!.id)
       .preload("profile")
@@ -20,15 +20,11 @@ export default class ProfileController {
       .orderBy("joined_at", "desc")
       .limit(10);
 
-    const profileUser = await serialize.withoutWrapping(UserTransformer.transform(user));
-
     return inertia.render("profile", {
-      profileUser: {
-        ...profileUser,
-        isCurrentUser: auth.user?.id === user.id,
-      },
-      recentGames: await serialize.withoutWrapping(GamePlayerTransformer.transform(recentGames)),
-    } as never);
+      profileUser: UserTransformer.transform(user),
+      isCurrentUser: auth.user?.id === user.id,
+      recentGames: GamePlayerTransformer.transform(recentGames),
+    });
   }
 
   async update({ request, auth, response, session }: HttpContext) {

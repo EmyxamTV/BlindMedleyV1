@@ -4,7 +4,7 @@ import { loginValidator } from "#validators/user";
 
 export default class SessionController {
   async create({ inertia }: HttpContext) {
-    return inertia.render("auth/login", {} as never);
+    return inertia.render("auth/login", {});
   }
 
   async store({ request, auth, response }: HttpContext) {

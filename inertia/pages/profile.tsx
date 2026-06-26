@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Form } from "@adonisjs/inertia/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface ProfileData {
+interface ProfileData extends Record<string, JSONDataTypes> {
   id: number;
   username: string;
   avatarUrl: string | null;
@@ -20,7 +21,7 @@ interface ProfileData {
   favoriteGenres: string[];
 }
 
-interface RecentGame {
+interface RecentGame extends Record<string, JSONDataTypes> {
   id: number;
   mode: string;
   status: string;
@@ -33,7 +34,7 @@ interface RecentGame {
   playedAt: string;
 }
 
-interface Achievement {
+interface Achievement extends Record<string, JSONDataTypes> {
   id: number;
   key: string;
   name: string;
@@ -42,17 +43,17 @@ interface Achievement {
   color: string | null;
 }
 
-interface ProfileUser {
+interface ProfileUser extends Record<string, JSONDataTypes> {
   id: number;
   fullName: string | null;
   initials: string;
   profile: ProfileData | null;
   achievements: Achievement[];
-  isCurrentUser: boolean;
 }
 
 interface Props extends InertiaProps {
   profileUser: ProfileUser;
+  isCurrentUser: boolean;
   recentGames: RecentGame[];
 }
 
@@ -65,7 +66,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default function Profile({ profileUser, recentGames }: Props) {
+export default function Profile({ profileUser, isCurrentUser, recentGames }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const profile = profileUser.profile;
   const accuracy =
@@ -109,7 +110,7 @@ export default function Profile({ profileUser, recentGames }: Props) {
           )}
         </div>
 
-        {profileUser.isCurrentUser && (
+        {isCurrentUser && (
           <div className="profile-edit-btn">
             <button className="btn btn-ghost btn-sm" onClick={() => setEditOpen(true)}>
               Modifier
@@ -176,7 +177,7 @@ export default function Profile({ profileUser, recentGames }: Props) {
       </div>
 
       {/* Edit modal */}
-      {profileUser.isCurrentUser && (
+      {isCurrentUser && (
         <div
           className={`modal ${editOpen ? "open" : ""}`}
           onClick={(e) => e.target === e.currentTarget && setEditOpen(false)}

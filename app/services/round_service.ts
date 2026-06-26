@@ -159,5 +159,3 @@ export class RoundService {
     return a;
   }
 }
-
-export default new RoundService();

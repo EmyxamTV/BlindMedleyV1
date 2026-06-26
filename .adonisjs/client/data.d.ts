@@ -6,10 +6,60 @@
 /// <reference path="./manifest.d.ts" />
 import type { InferData, InferVariants } from '@adonisjs/core/types/transformers'
 import type { InferSharedProps } from '@adonisjs/inertia/types'
+import type AchievementTransformer from '#transformers/achievement_transformer'
+import type AnswerTransformer from '#transformers/answer_transformer'
+import type FriendshipTransformer from '#transformers/friendship_transformer'
+import type GamePlayerTransformer from '#transformers/game_player_transformer'
+import type GameTransformer from '#transformers/game_transformer'
+import type LeaderboardSnapshotTransformer from '#transformers/leaderboard_snapshot_transformer'
+import type PlaylistTransformer from '#transformers/playlist_transformer'
+import type ProfileTransformer from '#transformers/profile_transformer'
+import type RoundTransformer from '#transformers/round_transformer'
+import type TrackCacheTransformer from '#transformers/track_cache_transformer'
 import type UserTransformer from '#transformers/user_transformer'
 import type InertiaMiddleware from '#middleware/inertia_middleware'
 
 export namespace Data {
+  export type Achievement = InferData<AchievementTransformer>
+  export namespace Achievement {
+    export type Variants = InferVariants<AchievementTransformer>
+  }
+  export type Answer = InferData<AnswerTransformer>
+  export namespace Answer {
+    export type Variants = InferVariants<AnswerTransformer>
+  }
+  export type Friendship = InferData<FriendshipTransformer>
+  export namespace Friendship {
+    export type Variants = InferVariants<FriendshipTransformer>
+  }
+  export type GamePlayer = InferData<GamePlayerTransformer>
+  export namespace GamePlayer {
+    export type Variants = InferVariants<GamePlayerTransformer>
+  }
+  export type Game = InferData<GameTransformer>
+  export namespace Game {
+    export type Variants = InferVariants<GameTransformer>
+  }
+  export type LeaderboardSnapshot = InferData<LeaderboardSnapshotTransformer>
+  export namespace LeaderboardSnapshot {
+    export type Variants = InferVariants<LeaderboardSnapshotTransformer>
+  }
+  export type Playlist = InferData<PlaylistTransformer>
+  export namespace Playlist {
+    export type Variants = InferVariants<PlaylistTransformer>
+  }
+  export type Profile = InferData<ProfileTransformer>
+  export namespace Profile {
+    export type Variants = InferVariants<ProfileTransformer>
+  }
+  export type Round = InferData<RoundTransformer>
+  export namespace Round {
+    export type Variants = InferVariants<RoundTransformer>
+  }
+  export type TrackCache = InferData<TrackCacheTransformer>
+  export namespace TrackCache {
+    export type Variants = InferVariants<TrackCacheTransformer>
+  }
   export type User = InferData<UserTransformer>
   export namespace User {
     export type Variants = InferVariants<UserTransformer>

@@ -1,15 +1,19 @@
 import type { HttpContext } from "@adonisjs/core/http";
-import spotifyService from "#services/spotify_service";
+import { SpotifyService } from "#services/spotify_service";
 import User from "#models/user";
 import Profile from "#models/profile";
 import { DateTime } from "luxon";
 import env from "#start/env";
 import { spotifyCallbackValidator } from "#validators/spotify_validators";
+import { inject } from "@adonisjs/core";
 
+@inject()
 export default class SpotifyOAuthController {
+  constructor(private readonly spotifyService: SpotifyService) {}
+
   async redirect({ response }: HttpContext) {
     const redirectUri = `${env.get("APP_URL")}/auth/spotify/callback`;
-    const url = spotifyService.buildSpotifyAuthUrl(redirectUri);
+    const url = this.spotifyService.buildSpotifyAuthUrl(redirectUri);
     return response.redirect(url);
   }
 
@@ -25,8 +29,8 @@ export default class SpotifyOAuthController {
 
     const redirectUri = `${env.get("APP_URL")}/auth/spotify/callback`;
 
-    const tokens = await spotifyService.exchangeCode(code, redirectUri);
-    const spotifyProfile = await spotifyService.getSpotifyProfile(tokens.accessToken);
+    const tokens = await this.spotifyService.exchangeCode(code, redirectUri);
+    const spotifyProfile = await this.spotifyService.getSpotifyProfile(tokens.accessToken);
 
     // Chercher un user existant par spotify_id ou créer
     let user = await User.query().where("spotify_id", spotifyProfile.id).first();

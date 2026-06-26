@@ -195,5 +195,3 @@ export class DeezerService {
     }
   }
 }
-
-export default new DeezerService();

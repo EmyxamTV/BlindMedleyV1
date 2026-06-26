@@ -265,5 +265,3 @@ export class SpotifyService {
     return res.json() as Promise<{ id: string; display_name: string; images: { url: string }[] }>;
   }
 }
-
-export default new SpotifyService();

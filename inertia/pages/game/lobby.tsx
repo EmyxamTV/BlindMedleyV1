@@ -4,8 +4,9 @@ import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
 import type { InertiaProps } from "~/types";
 import { createRealtimeUid } from "~/lib/realtime";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface Player {
+interface Player extends Record<string, JSONDataTypes> {
   id: number;
   userId: number;
   username: string;
@@ -15,7 +16,7 @@ interface Player {
   isConnected: boolean;
 }
 
-interface Game {
+interface Game extends Record<string, JSONDataTypes> {
   id: number;
   code: string | null;
   mode: string;

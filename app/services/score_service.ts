@@ -317,5 +317,3 @@ export class ScoreService {
       .trim();
   }
 }
-
-export default new ScoreService();

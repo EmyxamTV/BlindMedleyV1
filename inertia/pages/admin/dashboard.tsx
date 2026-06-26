@@ -1,15 +1,19 @@
 import { Link } from "@adonisjs/inertia/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
+
+interface RecentGame extends Record<string, JSONDataTypes> {
+  id: string;
+  numericId: number;
+  mode: string;
+  status: string;
+  playlistName: string;
+  createdAt: string | null;
+}
 
 interface Props extends InertiaProps {
   stats: { totalUsers: number; totalGames: number; activePlaylists: number };
-  recentGames: {
-    id: number;
-    mode: string;
-    status: string;
-    playlistName: string;
-    createdAt: string;
-  }[];
+  recentGames: RecentGame[];
 }
 
 const STAT_ICONS = {
@@ -161,9 +165,9 @@ export default function AdminDashboard({ stats, recentGames }: Props) {
                 </tr>
               ) : (
                 recentGames.map((g) => (
-                  <tr key={g.id}>
+                  <tr key={g.numericId}>
                     <td>
-                      <span className="admin-id">#{g.id}</span>
+                      <span className="admin-id">#{g.numericId}</span>
                     </td>
                     <td>
                       <span className={`mode-badge mode-${g.mode}`}>{g.mode}</span>
@@ -174,7 +178,9 @@ export default function AdminDashboard({ stats, recentGames }: Props) {
                         {statusLabel(g.status)}
                       </span>
                     </td>
-                    <td className="td-date">{new Date(g.createdAt).toLocaleDateString("fr-FR")}</td>
+                    <td className="td-date">
+                      {g.createdAt ? new Date(g.createdAt).toLocaleDateString("fr-FR") : ""}
+                    </td>
                   </tr>
                 ))
               )}

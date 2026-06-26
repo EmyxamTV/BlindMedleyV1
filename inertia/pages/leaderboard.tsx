@@ -2,8 +2,9 @@ import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { Form } from "@adonisjs/inertia/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface Entry {
+interface Entry extends Record<string, JSONDataTypes> {
   rank: number;
   userId: number;
   username: string;
@@ -24,9 +25,13 @@ interface Props extends InertiaProps {
     userId: number;
     username: string;
     avatarUrl: string | null;
-    relationship: { id: number; status: string; incoming: boolean } | null;
   }[];
-  incomingRequests: { id: number; username: string; avatarUrl: string | null }[];
+  relationshipByUserId: Record<string, { id: number; status: string; incoming: boolean }>;
+  incomingRequests: {
+    id: number;
+    requesterId: number;
+    requester?: { username: string; avatarUrl: string | null };
+  }[];
 }
 
 const PERIODS = [
@@ -68,6 +73,7 @@ export default function Leaderboard({
   friendsLeaderboard,
   search,
   searchResults,
+  relationshipByUserId,
   incomingRequests,
   user,
 }: Props) {
@@ -86,6 +92,8 @@ export default function Leaderboard({
       { preserveState: true },
     );
   }
+
+  const relationshipFor = (userId: number) => relationshipByUserId[String(userId)] ?? null;
 
   return (
     <div className="leaderboard-page">
@@ -160,13 +168,16 @@ export default function Leaderboard({
                     <span className="friend-avatar">{player.username[0].toUpperCase()}</span>
                   )}
                   <strong>{player.username}</strong>
-                  {player.relationship?.status === "accepted" ? (
+                  {relationshipFor(player.userId)?.status === "accepted" ? (
                     <span className="friend-status">Ami</span>
-                  ) : player.relationship?.incoming ? (
-                    <Form route="friends.accept" routeParams={{ id: player.relationship.id }}>
+                  ) : relationshipFor(player.userId)?.incoming ? (
+                    <Form
+                      route="friends.accept"
+                      routeParams={{ id: relationshipFor(player.userId)!.id }}
+                    >
                       <button className="btn btn-primary btn-sm">Accepter</button>
                     </Form>
-                  ) : player.relationship ? (
+                  ) : relationshipFor(player.userId) ? (
                     <span className="friend-status">Demande envoyée</span>
                   ) : (
                     <Form route="friends.request" routeParams={{ userId: player.userId }}>
@@ -185,12 +196,17 @@ export default function Leaderboard({
                 <h2>Demandes reçues</h2>
                 {incomingRequests.map((request) => (
                   <div className="friend-result" key={request.id}>
-                    {request.avatarUrl ? (
-                      <img src={request.avatarUrl} alt="" />
+                    {request.requester?.avatarUrl ? (
+                      <img src={request.requester.avatarUrl} alt="" />
                     ) : (
-                      <span className="friend-avatar">{request.username[0].toUpperCase()}</span>
+                      <span className="friend-avatar">
+                        {(request.requester?.username ??
+                          `Joueur ${request.requesterId}`)[0].toUpperCase()}
+                      </span>
                     )}
-                    <strong>{request.username}</strong>
+                    <strong>
+                      {request.requester?.username ?? `Joueur ${request.requesterId}`}
+                    </strong>
                     <Form route="friends.accept" routeParams={{ id: request.id }}>
                       <button className="btn btn-primary btn-sm">Accepter</button>
                     </Form>

@@ -2,15 +2,33 @@ import Game from "#models/game";
 import GamePlayer from "#models/game_player";
 import Round from "#models/round";
 import TrackCache from "#models/track_cache";
-import roundService from "#services/round_service";
-import scoreService from "#services/score_service";
-import xpService from "#services/xp_service";
+import { RoundService } from "#services/round_service";
+import { ScoreService } from "#services/score_service";
+import { XpService } from "#services/xp_service";
 import { DateTime } from "luxon";
 import crypto from "node:crypto";
-import type { AnswerMode, AnswerTarget, GameMode } from "#models/game";
 import transmit from "@adonisjs/transmit/services/main";
+import { inject } from "@adonisjs/core";
+import type { CreateGamePayload, SubmitAnswerPayload } from "#validators/game_validators";
 
+type CreateGameOptions = CreateGamePayload & {
+  hostId: number;
+  roundDurationMs?: number;
+};
+
+type SubmitAnswerParams = SubmitAnswerPayload & {
+  gameId: number;
+  userId: number;
+};
+
+@inject()
 export class GameService {
+  constructor(
+    private readonly roundService: RoundService,
+    private readonly scoreService: ScoreService,
+    private readonly xpService: XpService,
+  ) {}
+
   private readonly durationByDifficulty: Record<number, number> = {
     1: 30_000,
     2: 25_000,
@@ -19,17 +37,7 @@ export class GameService {
     5: 10_000,
   };
 
-  async createGame(options: {
-    mode: GameMode;
-    answerMode?: AnswerMode;
-    answerTarget?: AnswerTarget;
-    playlistId: number;
-    difficulty?: number;
-    maxPlayers?: number;
-    roundCount?: number;
-    roundDurationMs?: number;
-    hostId: number;
-  }): Promise<Game> {
+  async createGame(options: CreateGameOptions): Promise<Game> {
     const availableTracks = await TrackCache.query()
       .whereHas("playlists", (query) => query.where("playlists.id", options.playlistId))
       .where("has_preview", true)
@@ -67,7 +75,7 @@ export class GameService {
     });
 
     // Pré-générer tous les rounds
-    await roundService.pregenerateRounds(game.id, options.playlistId, game.roundCount);
+    await this.roundService.pregenerateRounds(game.id, options.playlistId, game.roundCount);
 
     return game;
   }
@@ -157,12 +165,16 @@ export class GameService {
       .where("round_number", roundNumber)
       .firstOrFail();
 
-    await roundService.startRound(round, game.roundDurationMs);
+    await this.roundService.startRound(round, game.roundDurationMs);
     await game.merge({ status: "active", currentRound: roundNumber }).save();
 
     // Broadcaster le round à tous les joueurs
     const serverNow = Date.now();
-    const roundPayload = await roundService.buildClientPayload(round, serverNow, game.answerMode);
+    const roundPayload = await this.roundService.buildClientPayload(
+      round,
+      serverNow,
+      game.answerMode,
+    );
     transmit.broadcast(`game/${game.publicId}`, { event: "round_started", ...roundPayload });
 
     // Planifier la fin du round
@@ -185,10 +197,10 @@ export class GameService {
     // Éviter la double exécution (solo : timer annulé mais callback déjà parti)
     if (round.revealedAt) return;
 
-    await roundService.revealRound(round);
+    await this.roundService.revealRound(round);
 
     // Broadcaster la révélation de la bonne réponse
-    const revealPayload = roundService.buildRevealPayload(round);
+    const revealPayload = this.roundService.buildRevealPayload(round);
     transmit.broadcast(`game/${game.publicId}`, { event: "round_revealed", ...revealPayload });
 
     if (roundNumber >= game.roundCount) {
@@ -209,7 +221,7 @@ export class GameService {
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       const rank = i + 1;
-      const xpEarned = xpService.calculateGameXp(player, rank, players.length);
+      const xpEarned = this.xpService.calculateGameXp(player, rank, players.length);
       await player.merge({ rank, xpEarned }).save();
     }
 
@@ -227,7 +239,7 @@ export class GameService {
 
     // Mettre à jour les profils XP (non bloquant)
     for (const player of players) {
-      xpService.awardXp(player.userId, player.xpEarned, player).catch(console.error);
+      this.xpService.awardXp(player.userId, player.xpEarned, player).catch(console.error);
     }
 
     return finishedGame;
@@ -252,13 +264,7 @@ export class GameService {
     return { game, currentRound };
   }
 
-  async submitAnswer(params: {
-    gameId: number;
-    userId: number;
-    roundNumber: number;
-    answerTrackId: number | null;
-    answerText: string | null;
-  }) {
+  async submitAnswer(params: SubmitAnswerParams) {
     const serverReceivedAt = Date.now();
 
     const game = await Game.findOrFail(params.gameId);
@@ -277,11 +283,11 @@ export class GameService {
         .firstOrFail(),
     ]);
 
-    const result = await scoreService.processAnswer({
+    const result = await this.scoreService.processAnswer({
       round,
       gamePlayer,
-      answerTrackId: params.answerTrackId,
-      answerText: params.answerText,
+      answerTrackId: params.answerTrackId ?? null,
+      answerText: params.answerText ?? null,
       serverReceivedAt,
       allowRetry: game.answerMode === "text",
       answerTarget: game.answerTarget,
@@ -341,5 +347,3 @@ export class GameService {
     return crypto.randomBytes(3).toString("hex").toUpperCase();
   }
 }
-
-export default new GameService();

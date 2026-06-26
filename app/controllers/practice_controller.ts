@@ -1,18 +1,22 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import TrackCache from "#models/track_cache";
 import { Readable } from "node:stream";
-import deezerService from "#services/deezer_service";
+import { DeezerService } from "#services/deezer_service";
 import TrackCacheTransformer from "#transformers/track_cache_transformer";
 import { previewQueryValidator } from "#validators/practice_validators";
+import { inject } from "@adonisjs/core";
 
 /** A short, no-lobby training mode inspired by the quick games in Blinest. */
+@inject()
 export default class PracticeController {
+  constructor(private readonly deezerService: DeezerService) {}
+
   async index({ inertia }: HttpContext) {
-    return inertia.render("practice", {} as never);
+    return inertia.render("practice", {});
   }
 
   async bandle({ inertia }: HttpContext) {
-    return inertia.render("bandle", {} as never);
+    return inertia.render("bandle", {});
   }
 
   async question({ response, serialize }: HttpContext) {
@@ -58,7 +62,7 @@ export default class PracticeController {
 
     let upstream = await fetch(url, { headers: { "User-Agent": "BlindMedley/1.0" } });
     if (!upstream.ok) {
-      const refreshed = await deezerService.getPreview(track.title, track.artist);
+      const refreshed = await this.deezerService.getPreview(track.title, track.artist);
       if (refreshed) {
         rawUrl = refreshed;
         url = new URL(rawUrl);
@@ -70,6 +74,8 @@ export default class PracticeController {
 
     response.header("Content-Type", upstream.headers.get("content-type") ?? "audio/mpeg");
     response.header("Cache-Control", "public, max-age=3600");
-    return response.stream(Readable.fromWeb(upstream.body as never));
+    return response.stream(
+      Readable.fromWeb(upstream.body as unknown as Parameters<typeof Readable.fromWeb>[0]),
+    );
   }
 }

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, Form } from "@adonisjs/inertia/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface AdminPlaylist {
+interface AdminPlaylist extends Record<string, JSONDataTypes> {
   id: number;
   name: string;
   spotifyId: string | null;

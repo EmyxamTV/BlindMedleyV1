@@ -1,7 +1,8 @@
 import { Form, Link } from "@adonisjs/inertia/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface PlayerResult {
+interface PlayerResult extends Record<string, JSONDataTypes> {
   rank: number | null;
   username: string;
   avatarUrl: string | null;

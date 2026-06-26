@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import type { InertiaProps } from "~/types";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface Playlist {
+interface Playlist extends Record<string, JSONDataTypes> {
   id: number;
   name: string;
   trackCount: number;
@@ -11,8 +12,8 @@ interface Playlist {
   difficulty: number;
 }
 
-interface PublicGame {
-  id: number;
+interface PublicGame extends Record<string, JSONDataTypes> {
+  id: string;
   code: string | null;
   mode: string;
   playlistName: string;
@@ -26,7 +27,7 @@ interface PublicGame {
 interface Props extends InertiaProps {
   playlists: Playlist[];
   publicGames: PublicGame[];
-  myActiveGameId: number | null;
+  myActiveGameId: string | null;
 }
 
 const GENRE_COLORS: Record<string, string> = {

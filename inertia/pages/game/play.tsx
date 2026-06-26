@@ -3,15 +3,16 @@ import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
 import type { InertiaProps } from "~/types";
 import { createRealtimeUid } from "~/lib/realtime";
+import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
-interface Choice {
+interface Choice extends Record<string, JSONDataTypes> {
   choiceToken: string;
   trackId: number;
   title: string;
   artist: string;
 }
 
-interface Round {
+interface Round extends Record<string, JSONDataTypes> {
   roundNumber: number;
   roundToken: string;
   previewUrl: string | null;
@@ -23,7 +24,7 @@ interface Round {
   alreadyAnswered?: boolean;
 }
 
-interface MyPlayer {
+interface MyPlayer extends Record<string, JSONDataTypes> {
   id: number;
   userId: number;
   score: number;
@@ -32,7 +33,7 @@ interface MyPlayer {
   incorrect: number;
 }
 
-interface ScoreEntry {
+interface ScoreEntry extends Record<string, JSONDataTypes> {
   userId: number;
   username: string;
   score: number;
@@ -41,20 +42,20 @@ interface ScoreEntry {
   incorrect?: number;
 }
 
-interface HistoryTrack {
+interface HistoryTrack extends Record<string, JSONDataTypes> {
   roundNumber: number;
   title: string;
   artist: string;
   coverUrl: string | null;
 }
 
-interface AnswerPing {
+interface AnswerPing extends Record<string, JSONDataTypes> {
   userId: number;
   responseMs: number;
   isCorrect?: boolean;
 }
 
-interface AnswerProgress {
+interface AnswerProgress extends Record<string, JSONDataTypes> {
   userId: number;
   titleFound: boolean;
   artistFound: boolean;
@@ -124,7 +125,7 @@ function TrackLinks({
   );
 }
 
-interface Game {
+interface Game extends Record<string, JSONDataTypes> {
   id: number;
   mode: string;
   answerMode: "choices" | "text";
