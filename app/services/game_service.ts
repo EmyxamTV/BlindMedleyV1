@@ -1,7 +1,6 @@
 import Game from "#models/game";
 import GamePlayer from "#models/game_player";
 import Round from "#models/round";
-import TrackCache from "#models/track_cache";
 import { RoundService } from "#services/round_service";
 import { ScoreService } from "#services/score_service";
 import { XpService } from "#services/xp_service";
@@ -38,18 +37,6 @@ export class GameService {
   };
 
   async createGame(options: CreateGameOptions): Promise<Game> {
-    const availableTracks = await TrackCache.query()
-      .whereHas("playlists", (query) => query.where("playlists.id", options.playlistId))
-      .where("has_preview", true)
-      .whereNotNull("preview_url")
-      .count("* as total");
-
-    if (Number(availableTracks[0].$extras.total) < (options.roundCount ?? 10)) {
-      throw new Error(
-        "Cette playlist ne contient pas assez de titres pour le nombre de rounds choisi.",
-      );
-    }
-
     const game = await Game.create({
       mode: options.mode,
       answerMode: options.answerMode ?? "choices",
@@ -112,9 +99,7 @@ export class GameService {
   }
 
   async joinGame(gameId: number, userId: number): Promise<GamePlayer> {
-    const game = await Game.findOrFail(gameId);
-
-    if (game.status !== "waiting") throw new Error("GAME_NOT_WAITING");
+    const game = await Game.query().where("id", gameId).where("status", "waiting").firstOrFail();
 
     const playerCount = await GamePlayer.query().where("game_id", gameId).count("* as total");
     if (Number(playerCount[0].$extras.total) >= game.maxPlayers) {
@@ -135,10 +120,11 @@ export class GameService {
   }
 
   async startGame(gameId: number, hostId: number): Promise<Game> {
-    const game = await Game.findOrFail(gameId);
-
-    if (game.hostId !== hostId) throw new Error("NOT_HOST");
-    if (game.status !== "waiting") throw new Error("GAME_NOT_WAITING");
+    const game = await Game.query()
+      .where("id", gameId)
+      .where("host_id", hostId)
+      .where("status", "waiting")
+      .firstOrFail();
 
     const playerCount = await GamePlayer.query().where("game_id", gameId).count("* as total");
     if (game.mode !== "solo" && Number(playerCount[0].$extras.total) < 2) {
@@ -267,9 +253,11 @@ export class GameService {
   async submitAnswer(params: SubmitAnswerParams) {
     const serverReceivedAt = Date.now();
 
-    const game = await Game.findOrFail(params.gameId);
-    if (game.status !== "active") throw new Error("GAME_NOT_ACTIVE");
-    if (game.currentRound !== params.roundNumber) throw new Error("WRONG_ROUND");
+    const game = await Game.query()
+      .where("id", params.gameId)
+      .where("status", "active")
+      .where("current_round", params.roundNumber)
+      .firstOrFail();
 
     const [round, gamePlayer] = await Promise.all([
       Round.query()
