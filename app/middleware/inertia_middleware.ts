@@ -1,7 +1,7 @@
-import type { HttpContext } from '@adonisjs/core/http'
-import type { NextFn } from '@adonisjs/core/types/http'
-import UserTransformer from '#transformers/user_transformer'
-import BaseInertiaMiddleware from '@adonisjs/inertia/inertia_middleware'
+import type { HttpContext } from "@adonisjs/core/http";
+import type { NextFn } from "@adonisjs/core/types/http";
+import UserTransformer from "#transformers/user_transformer";
+import BaseInertiaMiddleware from "@adonisjs/inertia/inertia_middleware";
 
 export default class InertiaMiddleware extends BaseInertiaMiddleware {
   share(ctx: HttpContext) {
@@ -13,15 +13,15 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
      * In that case, we must always assume that HttpContext is not fully hydrated
      * with all the properties
      */
-    const { session, auth } = ctx as Partial<HttpContext>
+    const { session, auth } = ctx as Partial<HttpContext>;
 
     /**
      * Fetching the first error from the flash messages
      */
-    const errorsBag = session?.flashMessages.get('errorsBag') ?? {}
+    const errorsBag = session?.flashMessages.get("errorsBag") ?? {};
     const error: string | undefined = Object.keys(errorsBag)
-      .filter((code) => code !== 'E_VALIDATION_ERROR')
-      .map((code) => errorsBag[code])[0]
+      .filter((code) => code !== "E_VALIDATION_ERROR")
+      .map((code) => errorsBag[code])[0];
 
     /**
      * Data shared with all Inertia pages. Make sure you are using
@@ -31,23 +31,23 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
       errors: ctx.inertia.always(this.getValidationErrors(ctx)),
       flash: ctx.inertia.always({
         error: error,
-        success: session?.flashMessages.get('success'),
+        success: session?.flashMessages.get("success"),
       }),
       user: ctx.inertia.always(auth?.user ? UserTransformer.transform(auth.user) : undefined),
-    }
+    };
   }
 
   async handle(ctx: HttpContext, next: NextFn) {
-    await this.init(ctx)
+    await this.init(ctx);
 
-    const output = await next()
-    this.dispose(ctx)
+    const output = await next();
+    this.dispose(ctx);
 
-    return output
+    return output;
   }
 }
 
-declare module '@adonisjs/inertia/types' {
-  type MiddlewareSharedProps = InferSharedProps<InertiaMiddleware>
+declare module "@adonisjs/inertia/types" {
+  type MiddlewareSharedProps = InferSharedProps<InertiaMiddleware>;
   export interface SharedProps extends MiddlewareSharedProps {}
 }

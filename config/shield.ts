@@ -1,4 +1,4 @@
-import { defineConfig } from '@adonisjs/shield'
+import { defineConfig } from "@adonisjs/shield";
 
 const shieldConfig = defineConfig({
   /**
@@ -36,7 +36,7 @@ const shieldConfig = defineConfig({
      * Route patterns to exclude from CSRF checks.
      * Useful for external webhooks or API endpoints.
      */
-    exceptRoutes: ['/game/:id/answer', '/game/:id/leave'],
+    exceptRoutes: ["/game/:id/answer", "/game/:id/leave"],
 
     /**
      * Expose an encrypted XSRF-TOKEN cookie for frontend HTTP clients.
@@ -46,7 +46,7 @@ const shieldConfig = defineConfig({
     /**
      * HTTP methods protected by CSRF validation.
      */
-    methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
+    methods: ["POST", "PUT", "PATCH", "DELETE"],
   },
 
   /**
@@ -62,7 +62,7 @@ const shieldConfig = defineConfig({
     /**
      * Block all framing attempts. Default value is DENY.
      */
-    action: 'DENY',
+    action: "DENY",
   },
 
   /**
@@ -77,7 +77,7 @@ const shieldConfig = defineConfig({
     /**
      * HSTS policy duration remembered by browsers.
      */
-    maxAge: '180 days',
+    maxAge: "180 days",
   },
 
   /**
@@ -90,6 +90,6 @@ const shieldConfig = defineConfig({
      */
     enabled: true,
   },
-})
+});
 
-export default shieldConfig
+export default shieldConfig;

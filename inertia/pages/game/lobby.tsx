@@ -1,96 +1,97 @@
-import { useEffect, useState } from 'react'
-import { Form, Link } from '@adonisjs/inertia/react'
-import { router } from '@inertiajs/react'
-import { Transmit } from '@adonisjs/transmit-client'
-import type { InertiaProps } from '~/types'
-import { createRealtimeUid } from '~/lib/realtime'
+import { useEffect, useState } from "react";
+import { Form, Link } from "@adonisjs/inertia/react";
+import { router } from "@inertiajs/react";
+import { Transmit } from "@adonisjs/transmit-client";
+import type { InertiaProps } from "~/types";
+import { createRealtimeUid } from "~/lib/realtime";
 
 interface Player {
-  id: number
-  userId: number
-  username: string
-  avatarUrl: string | null
-  score: number
-  streak: number
-  isConnected: boolean
+  id: number;
+  userId: number;
+  username: string;
+  avatarUrl: string | null;
+  score: number;
+  streak: number;
+  isConnected: boolean;
 }
 
 interface Game {
-  id: number
-  code: string | null
-  mode: string
-  status: string
-  playlistName: string
-  difficulty: number
-  maxPlayers: number
-  roundCount: number
-  roundDurationMs: number
-  currentRound: number
-  hostId: number | null
-  players: Player[]
+  id: number;
+  code: string | null;
+  mode: string;
+  status: string;
+  playlistName: string;
+  difficulty: number;
+  maxPlayers: number;
+  roundCount: number;
+  roundDurationMs: number;
+  currentRound: number;
+  hostId: number | null;
+  players: Player[];
 }
 
 interface Props extends InertiaProps {
-  game: Game
-  isHost: boolean
+  game: Game;
+  isHost: boolean;
 }
 
-const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='
+const SILENT_WAV =
+  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
 function unlockAudio() {
-  const s = new Audio(SILENT_WAV)
-  s.play().catch(() => {})
+  const s = new Audio(SILENT_WAV);
+  s.play().catch(() => {});
 }
 
 export default function Lobby({ game, isHost, user }: Props) {
-  const [players, setPlayers] = useState<Player[]>(game.players)
+  const [players, setPlayers] = useState<Player[]>(game.players);
 
   // Signaler le départ quand le joueur ferme/quitte la page
   useEffect(() => {
-    const sendLeave = () => navigator.sendBeacon(`/game/${game.id}/leave`, '')
-    window.addEventListener('beforeunload', sendLeave)
-    window.addEventListener('pagehide', sendLeave)
+    const sendLeave = () => navigator.sendBeacon(`/game/${game.id}/leave`, "");
+    window.addEventListener("beforeunload", sendLeave);
+    window.addEventListener("pagehide", sendLeave);
     return () => {
-      window.removeEventListener('beforeunload', sendLeave)
-      window.removeEventListener('pagehide', sendLeave)
-    }
-  }, [game.id])
+      window.removeEventListener("beforeunload", sendLeave);
+      window.removeEventListener("pagehide", sendLeave);
+    };
+  }, [game.id]);
 
   useEffect(() => {
     const transmit = new Transmit({
       baseUrl: window.location.origin,
       uidGenerator: createRealtimeUid,
-    })
-    const subscription = transmit.subscription(`game/${game.id}`)
+    });
+    const subscription = transmit.subscription(`game/${game.id}`);
 
     subscription.create().then(() => {
       subscription.onMessage<{ event: string }>((message) => {
-        if (message.event === 'game_starting') {
-          unlockAudio()
-          router.visit(`/game/${game.id}/play`)
+        if (message.event === "game_starting") {
+          unlockAudio();
+          router.visit(`/game/${game.id}/play`);
         }
-      })
-    })
+      });
+    });
 
     // Fallback polling pour synchroniser la liste des joueurs (nouveaux arrivants)
     const interval = setInterval(() => {
-      router.reload({ only: ['game'] })
-    }, 2000)
+      router.reload({ only: ["game"] });
+    }, 2000);
 
     return () => {
-      subscription.delete()
-      clearInterval(interval)
-    }
-  }, [game.id])
+      subscription.delete();
+      clearInterval(interval);
+    };
+  }, [game.id]);
 
   // Sync players + détecter démarrage si SSE raté
   useEffect(() => {
-    setPlayers(game.players)
-    if (game.status !== 'waiting') {
-      unlockAudio()
-      router.visit(`/game/${game.id}/play`)
+    setPlayers(game.players);
+    if (game.status !== "waiting") {
+      unlockAudio();
+      router.visit(`/game/${game.id}/play`);
     }
-  }, [game.players, game.status])
+  }, [game.players, game.status]);
 
   return (
     <div className="lobby-page">
@@ -117,9 +118,13 @@ export default function Lobby({ game, isHost, user }: Props) {
             Joueurs ({players.length}/{game.maxPlayers})
           </h3>
           {players.map((p) => (
-            <div key={p.id} className={`player-row ${!p.isConnected ? 'disconnected' : ''}`}>
+            <div key={p.id} className={`player-row ${!p.isConnected ? "disconnected" : ""}`}>
               <div className="player-avatar-sm">
-                {p.avatarUrl ? <img src={p.avatarUrl} alt="" /> : <span>{p.username[0].toUpperCase()}</span>}
+                {p.avatarUrl ? (
+                  <img src={p.avatarUrl} alt="" />
+                ) : (
+                  <span>{p.username[0].toUpperCase()}</span>
+                )}
               </div>
               <span className="player-name">{p.username}</span>
               {p.userId === game.hostId && <span className="host-badge">Hôte</span>}
@@ -141,7 +146,7 @@ export default function Lobby({ game, isHost, user }: Props) {
                 <button
                   type="submit"
                   className="btn btn-primary btn-xl"
-                  disabled={game.mode !== 'solo' && players.length < 2}
+                  disabled={game.mode !== "solo" && players.length < 2}
                   onClick={unlockAudio}
                 >
                   Démarrer la partie
@@ -160,5 +165,5 @@ export default function Lobby({ game, isHost, user }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }

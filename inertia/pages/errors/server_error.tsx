@@ -3,5 +3,5 @@ export default function ServerError() {
     <>
       <h1>Something went wrong</h1>
     </>
-  )
+  );
 }

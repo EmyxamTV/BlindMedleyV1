@@ -1,59 +1,59 @@
-import { useState } from 'react'
-import { Form } from '@adonisjs/inertia/react'
-import type { InertiaProps } from '~/types'
+import { useState } from "react";
+import { Form } from "@adonisjs/inertia/react";
+import type { InertiaProps } from "~/types";
 
 interface ProfileData {
-  id: number
-  username: string
-  avatarUrl: string | null
-  level: number
-  xp: number
-  xpToNextLevel: number
-  totalGames: number
-  totalWins: number
-  totalCorrect: number
-  totalAnswers: number
-  avgScore: number
-  bestStreak: number
-  country: string | null
-  bio: string | null
-  favoriteGenres: string[]
+  id: number;
+  username: string;
+  avatarUrl: string | null;
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  totalGames: number;
+  totalWins: number;
+  totalCorrect: number;
+  totalAnswers: number;
+  avgScore: number;
+  bestStreak: number;
+  country: string | null;
+  bio: string | null;
+  favoriteGenres: string[];
 }
 
 interface RecentGame {
-  id: number
-  mode: string
-  status: string
-  playlistName: string
-  score: number
-  rank: number | null
-  correct: number
-  incorrect: number
-  xpEarned: number
-  playedAt: string
+  id: number;
+  mode: string;
+  status: string;
+  playlistName: string;
+  score: number;
+  rank: number | null;
+  correct: number;
+  incorrect: number;
+  xpEarned: number;
+  playedAt: string;
 }
 
 interface Achievement {
-  id: number
-  key: string
-  name: string
-  description: string | null
-  icon: string | null
-  color: string | null
+  id: number;
+  key: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
 }
 
 interface ProfileUser {
-  id: number
-  fullName: string | null
-  initials: string
-  profile: ProfileData | null
-  achievements: Achievement[]
-  isCurrentUser: boolean
+  id: number;
+  fullName: string | null;
+  initials: string;
+  profile: ProfileData | null;
+  achievements: Achievement[];
+  isCurrentUser: boolean;
 }
 
 interface Props extends InertiaProps {
-  profileUser: ProfileUser
-  recentGames: RecentGame[]
+  profileUser: ProfileUser;
+  recentGames: RecentGame[];
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
@@ -62,17 +62,19 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <span className="stat-val">{value}</span>
       <span className="stat-lbl">{label}</span>
     </div>
-  )
+  );
 }
 
 export default function Profile({ profileUser, recentGames }: Props) {
-  const [editOpen, setEditOpen] = useState(false)
-  const profile = profileUser.profile
+  const [editOpen, setEditOpen] = useState(false);
+  const profile = profileUser.profile;
   const accuracy =
     profile && profile.totalAnswers > 0
       ? Math.round((profile.totalCorrect / profile.totalAnswers) * 100)
-      : 0
-  const xpPercent = profile ? Math.min(100, Math.round((profile.xp / profile.xpToNextLevel) * 100)) : 0
+      : 0;
+  const xpPercent = profile
+    ? Math.min(100, Math.round((profile.xp / profile.xpToNextLevel) * 100))
+    : 0;
 
   return (
     <div className="profile-page">
@@ -87,7 +89,7 @@ export default function Profile({ profileUser, recentGames }: Props) {
         </div>
 
         <div className="profile-info">
-          <h1>{profile?.username ?? profileUser.fullName ?? 'Joueur'}</h1>
+          <h1>{profile?.username ?? profileUser.fullName ?? "Joueur"}</h1>
           {profile?.bio && <p className="profile-bio">{profile.bio}</p>}
 
           <div className="profile-tags">
@@ -136,7 +138,7 @@ export default function Profile({ profileUser, recentGames }: Props) {
           <div className="achievements-grid">
             {profileUser.achievements.map((a) => (
               <div key={a.id} className="achievement" title={a.description ?? a.name}>
-                <span className="achievement-icon">{a.icon ?? '🏅'}</span>
+                <span className="achievement-icon">{a.icon ?? "🏅"}</span>
                 <span className="achievement-name">{a.name}</span>
               </div>
             ))}
@@ -175,7 +177,10 @@ export default function Profile({ profileUser, recentGames }: Props) {
 
       {/* Edit modal */}
       {profileUser.isCurrentUser && (
-        <div className={`modal ${editOpen ? 'open' : ''}`} onClick={(e) => e.target === e.currentTarget && setEditOpen(false)}>
+        <div
+          className={`modal ${editOpen ? "open" : ""}`}
+          onClick={(e) => e.target === e.currentTarget && setEditOpen(false)}
+        >
           <div className="modal-box">
             <h2>Modifier le profil</h2>
             <Form route="profile.update" method="post">
@@ -186,21 +191,21 @@ export default function Profile({ profileUser, recentGames }: Props) {
                     <input
                       type="text"
                       name="username"
-                      defaultValue={profile?.username ?? ''}
+                      defaultValue={profile?.username ?? ""}
                       data-invalid={errors.username ? true : undefined}
                     />
                     {errors.username && <div className="field-error">{errors.username}</div>}
                   </div>
                   <div className="form-group">
                     <label>Bio</label>
-                    <textarea name="bio" defaultValue={profile?.bio ?? ''} rows={3} />
+                    <textarea name="bio" defaultValue={profile?.bio ?? ""} rows={3} />
                   </div>
                   <div className="form-group">
                     <label>Pays (code ISO, ex: FR)</label>
                     <input
                       type="text"
                       name="country"
-                      defaultValue={profile?.country ?? ''}
+                      defaultValue={profile?.country ?? ""}
                       maxLength={2}
                       placeholder="FR"
                     />
@@ -209,7 +214,11 @@ export default function Profile({ profileUser, recentGames }: Props) {
                     <button type="submit" className="btn btn-primary">
                       Sauvegarder
                     </button>
-                    <button type="button" className="btn btn-ghost" onClick={() => setEditOpen(false)}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setEditOpen(false)}
+                    >
                       Annuler
                     </button>
                   </div>
@@ -220,5 +229,5 @@ export default function Profile({ profileUser, recentGames }: Props) {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,56 +1,56 @@
-import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
-import User from '#models/user'
-import Game from '#models/game'
-import Answer from '#models/answer'
+import { DateTime } from "luxon";
+import { BaseModel, belongsTo, column, hasMany } from "@adonisjs/lucid/orm";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import User from "#models/user";
+import Game from "#models/game";
+import Answer from "#models/answer";
 
 export default class GamePlayer extends BaseModel {
   @column({ isPrimary: true })
-  declare id: number
+  declare id: number;
 
   @column()
-  declare gameId: number
+  declare gameId: number;
 
   @column()
-  declare userId: number
+  declare userId: number;
 
   @column()
-  declare score: number
+  declare score: number;
 
   @column()
-  declare correct: number
+  declare correct: number;
 
   @column()
-  declare incorrect: number
+  declare incorrect: number;
 
   @column()
-  declare streak: number
+  declare streak: number;
 
   @column()
-  declare bestStreak: number
+  declare bestStreak: number;
 
   @column()
-  declare rank: number | null
+  declare rank: number | null;
 
   @column()
-  declare xpEarned: number
+  declare xpEarned: number;
 
   @column()
-  declare isConnected: boolean
+  declare isConnected: boolean;
 
   @column.dateTime()
-  declare joinedAt: DateTime
+  declare joinedAt: DateTime;
 
   @column.dateTime()
-  declare leftAt: DateTime | null
+  declare leftAt: DateTime | null;
 
   @belongsTo(() => User)
-  declare user: BelongsTo<typeof User>
+  declare user: BelongsTo<typeof User>;
 
   @belongsTo(() => Game)
-  declare game: BelongsTo<typeof Game>
+  declare game: BelongsTo<typeof Game>;
 
   @hasMany(() => Answer)
-  declare answers: HasMany<typeof Answer>
+  declare answers: HasMany<typeof Answer>;
 }

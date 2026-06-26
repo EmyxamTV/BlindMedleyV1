@@ -1,15 +1,28 @@
-import { Form, Link } from '@adonisjs/inertia/react'
+import { Form, Link } from "@adonisjs/inertia/react";
 
 export default function Signup() {
   return (
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <circle cx="12" cy="12" r="10" stroke="url(#auth-grad2)" strokeWidth="2" />
             <path d="M9 8l6 4-6 4V8z" fill="url(#auth-grad2)" />
             <defs>
-              <linearGradient id="auth-grad2" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+              <linearGradient
+                id="auth-grad2"
+                x1="0"
+                y1="0"
+                x2="24"
+                y2="24"
+                gradientUnits="userSpaceOnUse"
+              >
                 <stop stopColor="#a78bfa" />
                 <stop offset="1" stopColor="#f472b6" />
               </linearGradient>
@@ -18,7 +31,9 @@ export default function Signup() {
         </div>
 
         <h1>Créer un compte</h1>
-        <p className="auth-subtitle">Rejoins des milliers de joueurs et grimpe dans le classement.</p>
+        <p className="auth-subtitle">
+          Rejoins des milliers de joueurs et grimpe dans le classement.
+        </p>
 
         <Form route="new_account.store">
           {({ errors }) => (
@@ -77,7 +92,11 @@ export default function Signup() {
                 )}
               </div>
 
-              <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '0.5rem' }}>
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                style={{ marginTop: "0.5rem" }}
+              >
                 Créer mon compte
               </button>
             </>
@@ -85,10 +104,9 @@ export default function Signup() {
         </Form>
 
         <p className="auth-footer">
-          Déjà un compte ?{' '}
-          <Link route="session.create">Se connecter</Link>
+          Déjà un compte ? <Link route="session.create">Se connecter</Link>
         </p>
       </div>
     </div>
-  )
+  );
 }

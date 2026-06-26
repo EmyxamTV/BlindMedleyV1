@@ -1,24 +1,30 @@
-import { BaseSchema } from '@adonisjs/lucid/schema'
+import { BaseSchema } from "@adonisjs/lucid/schema";
 
 export default class extends BaseSchema {
-  protected tableName = 'rounds'
+  protected tableName = "rounds";
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments('id').notNullable()
-      table.integer('game_id').unsigned().notNullable().references('id').inTable('games').onDelete('CASCADE')
-      table.integer('track_id').unsigned().notNullable().references('id').inTable('tracks_cache')
-      table.integer('round_number').notNullable()
-      table.string('round_token', 64).notNullable().unique() // token anti-triche
-      table.text('distractors').notNullable().defaultTo('[]') // JSON: IDs des faux choix
-      table.timestamp('starts_at').nullable()
-      table.timestamp('ends_at').nullable()
-      table.timestamp('revealed_at').nullable()
-      table.unique(['game_id', 'round_number'])
-    })
+      table.increments("id").notNullable();
+      table
+        .integer("game_id")
+        .unsigned()
+        .notNullable()
+        .references("id")
+        .inTable("games")
+        .onDelete("CASCADE");
+      table.integer("track_id").unsigned().notNullable().references("id").inTable("tracks_cache");
+      table.integer("round_number").notNullable();
+      table.string("round_token", 64).notNullable().unique(); // token anti-triche
+      table.text("distractors").notNullable().defaultTo("[]"); // JSON: IDs des faux choix
+      table.timestamp("starts_at").nullable();
+      table.timestamp("ends_at").nullable();
+      table.timestamp("revealed_at").nullable();
+      table.unique(["game_id", "round_number"]);
+    });
   }
 
   async down() {
-    this.schema.dropTable(this.tableName)
+    this.schema.dropTable(this.tableName);
   }
 }

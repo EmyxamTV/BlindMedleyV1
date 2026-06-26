@@ -1,9 +1,9 @@
-import { registry } from '@generated/registry'
-import { createTuyau } from '@tuyau/core/client'
+import { registry } from "@generated/registry";
+import { createTuyau } from "@tuyau/core/client";
 
 export const client = createTuyau({
-  baseUrl: '/',
+  baseUrl: "/",
   registry,
-})
+});
 
-export const urlFor = client.urlFor
+export const urlFor = client.urlFor;

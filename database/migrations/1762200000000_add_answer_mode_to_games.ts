@@ -1,17 +1,17 @@
-import { BaseSchema } from '@adonisjs/lucid/schema'
+import { BaseSchema } from "@adonisjs/lucid/schema";
 
 export default class extends BaseSchema {
-  protected tableName = 'games'
+  protected tableName = "games";
 
   async up() {
     this.schema.alterTable(this.tableName, (table) => {
-      table.string('answer_mode', 20).notNullable().defaultTo('choices')
-    })
+      table.string("answer_mode", 20).notNullable().defaultTo("choices");
+    });
   }
 
   async down() {
     this.schema.alterTable(this.tableName, (table) => {
-      table.dropColumn('answer_mode')
-    })
+      table.dropColumn("answer_mode");
+    });
   }
 }

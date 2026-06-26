@@ -1,15 +1,28 @@
-import { Form, Link } from '@adonisjs/inertia/react'
+import { Form, Link } from "@adonisjs/inertia/react";
 
 export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <circle cx="12" cy="12" r="10" stroke="url(#auth-grad)" strokeWidth="2" />
             <path d="M9 8l6 4-6 4V8z" fill="url(#auth-grad)" />
             <defs>
-              <linearGradient id="auth-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+              <linearGradient
+                id="auth-grad"
+                x1="0"
+                y1="0"
+                x2="24"
+                y2="24"
+                gradientUnits="userSpaceOnUse"
+              >
                 <stop stopColor="#a78bfa" />
                 <stop offset="1" stopColor="#f472b6" />
               </linearGradient>
@@ -49,7 +62,11 @@ export default function Login() {
                 {errors.password && <div className="field-error">{errors.password}</div>}
               </div>
 
-              <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '0.5rem' }}>
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                style={{ marginTop: "0.5rem" }}
+              >
                 Se connecter
               </button>
             </>
@@ -57,10 +74,9 @@ export default function Login() {
         </Form>
 
         <p className="auth-footer">
-          Pas encore de compte ?{' '}
-          <Link route="new_account.create">S'inscrire gratuitement</Link>
+          Pas encore de compte ? <Link route="new_account.create">S'inscrire gratuitement</Link>
         </p>
       </div>
     </div>
-  )
+  );
 }

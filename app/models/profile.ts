@@ -1,80 +1,80 @@
-import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
-import type { BelongsTo } from '@adonisjs/lucid/types/relations'
-import User from '#models/user'
+import { DateTime } from "luxon";
+import { BaseModel, belongsTo, column } from "@adonisjs/lucid/orm";
+import type { BelongsTo } from "@adonisjs/lucid/types/relations";
+import User from "#models/user";
 
 export default class Profile extends BaseModel {
   @column({ isPrimary: true })
-  declare id: number
+  declare id: number;
 
   @column()
-  declare userId: number
+  declare userId: number;
 
   @column()
-  declare username: string
+  declare username: string;
 
   @column()
-  declare avatarUrl: string | null
+  declare avatarUrl: string | null;
 
   @column()
-  declare country: string | null
+  declare country: string | null;
 
   @column()
-  declare bio: string | null
+  declare bio: string | null;
 
   @column()
-  declare level: number
+  declare level: number;
 
   @column()
-  declare xp: number
+  declare xp: number;
 
   @column()
-  declare xpToNextLevel: number
+  declare xpToNextLevel: number;
 
   @column()
-  declare totalGames: number
+  declare totalGames: number;
 
   @column()
-  declare totalWins: number
+  declare totalWins: number;
 
   @column()
-  declare totalCorrect: number
+  declare totalCorrect: number;
 
   @column()
-  declare totalAnswers: number
+  declare totalAnswers: number;
 
   @column()
-  declare avgScore: number
+  declare avgScore: number;
 
   @column()
-  declare avgResponseMs: number
+  declare avgResponseMs: number;
 
   @column()
-  declare bestStreak: number
+  declare bestStreak: number;
 
   @column({
     prepare: (value: string[]) => JSON.stringify(value),
     consume: (value: string) => {
       try {
-        return JSON.parse(value || '[]')
+        return JSON.parse(value || "[]");
       } catch {
-        return []
+        return [];
       }
     },
   })
-  declare favoriteGenres: string[]
+  declare favoriteGenres: string[];
 
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
+  declare createdAt: DateTime;
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
+  declare updatedAt: DateTime | null;
 
   @belongsTo(() => User)
-  declare user: BelongsTo<typeof User>
+  declare user: BelongsTo<typeof User>;
 
   get accuracyRate(): number {
-    if (this.totalAnswers === 0) return 0
-    return Math.round((this.totalCorrect / this.totalAnswers) * 100)
+    if (this.totalAnswers === 0) return 0;
+    return Math.round((this.totalCorrect / this.totalAnswers) * 100);
   }
 }

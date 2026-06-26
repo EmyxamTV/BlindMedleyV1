@@ -1,5 +1,5 @@
-import { Link } from '@adonisjs/inertia/react'
-import type { InertiaProps } from '~/types'
+import { Link } from "@adonisjs/inertia/react";
+import type { InertiaProps } from "~/types";
 
 export default function Home({ user }: InertiaProps) {
   return (
@@ -7,12 +7,11 @@ export default function Home({ user }: InertiaProps) {
       <section className="hero">
         <div className="hero-badge">🎵 Blind Test Musical</div>
         <h1 className="hero-title">
-          Devinez les morceaux,{' '}
-          <span className="hero-accent">dominez le classement</span>
+          Devinez les morceaux, <span className="hero-accent">dominez le classement</span>
         </h1>
         <p className="hero-desc">
-          Jouez en solo ou défiez vos amis en temps réel. Des milliers de titres Spotify,
-          des rounds chronométrés, un seul objectif : être le meilleur.
+          Jouez en solo ou défiez vos amis en temps réel. Des milliers de titres Spotify, des rounds
+          chronométrés, un seul objectif : être le meilleur.
         </p>
         <div className="hero-actions">
           {user ? (
@@ -83,5 +82,5 @@ export default function Home({ user }: InertiaProps) {
         </div>
       </section>
     </div>
-  )
+  );
 }

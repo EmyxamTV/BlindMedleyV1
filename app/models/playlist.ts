@@ -1,65 +1,65 @@
-import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column, manyToMany } from '@adonisjs/lucid/orm'
-import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
-import User from '#models/user'
-import TrackCache from '#models/track_cache'
+import { DateTime } from "luxon";
+import { BaseModel, belongsTo, column, manyToMany } from "@adonisjs/lucid/orm";
+import type { BelongsTo, ManyToMany } from "@adonisjs/lucid/types/relations";
+import User from "#models/user";
+import TrackCache from "#models/track_cache";
 
 export default class Playlist extends BaseModel {
   @column({ isPrimary: true })
-  declare id: number
+  declare id: number;
 
   @column()
-  declare spotifyId: string | null
+  declare spotifyId: string | null;
 
   @column()
-  declare name: string
+  declare name: string;
 
   @column()
-  declare description: string | null
+  declare description: string | null;
 
   @column()
-  declare coverUrl: string | null
+  declare coverUrl: string | null;
 
   @column()
-  declare genre: string | null
+  declare genre: string | null;
 
   @column()
-  declare decade: string | null
+  declare decade: string | null;
 
   @column()
-  declare difficulty: number
+  declare difficulty: number;
 
   @column()
-  declare trackCount: number
+  declare trackCount: number;
 
   @column()
-  declare isActive: boolean
+  declare isActive: boolean;
 
   @column()
-  declare isCurated: boolean
+  declare isCurated: boolean;
 
   @column()
-  declare createdBy: number | null
+  declare createdBy: number | null;
 
   @column.dateTime()
-  declare lastSyncedAt: DateTime | null
+  declare lastSyncedAt: DateTime | null;
 
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
+  declare createdAt: DateTime;
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
+  declare updatedAt: DateTime | null;
 
-  @belongsTo(() => User, { foreignKey: 'createdBy' })
-  declare creator: BelongsTo<typeof User>
+  @belongsTo(() => User, { foreignKey: "createdBy" })
+  declare creator: BelongsTo<typeof User>;
 
   @manyToMany(() => TrackCache, {
-    pivotTable: 'playlist_tracks',
-    localKey: 'id',
-    pivotForeignKey: 'playlist_id',
-    relatedKey: 'id',
-    pivotRelatedForeignKey: 'track_id',
-    pivotColumns: ['position'],
+    pivotTable: "playlist_tracks",
+    localKey: "id",
+    pivotForeignKey: "playlist_id",
+    relatedKey: "id",
+    pivotRelatedForeignKey: "track_id",
+    pivotColumns: ["position"],
   })
-  declare tracks: ManyToMany<typeof TrackCache>
+  declare tracks: ManyToMany<typeof TrackCache>;
 }

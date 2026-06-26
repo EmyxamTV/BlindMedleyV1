@@ -1,40 +1,40 @@
-import { Form, Link } from '@adonisjs/inertia/react'
-import type { InertiaProps } from '~/types'
+import { Form, Link } from "@adonisjs/inertia/react";
+import type { InertiaProps } from "~/types";
 
 interface PlayerResult {
-  rank: number | null
-  username: string
-  avatarUrl: string | null
-  score: number
-  correct: number
-  incorrect: number
-  bestStreak: number
-  xpEarned: number
-  isMe: boolean
+  rank: number | null;
+  username: string;
+  avatarUrl: string | null;
+  score: number;
+  correct: number;
+  incorrect: number;
+  bestStreak: number;
+  xpEarned: number;
+  isMe: boolean;
 }
 
 interface Props extends InertiaProps {
   game: {
-    id: string
-    mode: string
-    playlistName: string
-    roundCount: number
-    finishedAt: string | null
-  }
-  players: PlayerResult[]
-  myXpEarned: number
+    id: string;
+    mode: string;
+    playlistName: string;
+    roundCount: number;
+    finishedAt: string | null;
+  };
+  players: PlayerResult[];
+  myXpEarned: number;
 }
 
 const rankEmoji = (rank: number | null) => {
-  if (rank === 1) return '🥇'
-  if (rank === 2) return '🥈'
-  if (rank === 3) return '🥉'
-  return `#${rank}`
-}
+  if (rank === 1) return "🥇";
+  if (rank === 2) return "🥈";
+  if (rank === 3) return "🥉";
+  return `#${rank}`;
+};
 
 export default function Results({ game, players, myXpEarned }: Props) {
-  const me = players.find((p) => p.isMe)
-  const winner = players.find((p) => p.rank === 1)
+  const me = players.find((p) => p.isMe);
+  const winner = players.find((p) => p.rank === 1);
 
   return (
     <div className="results-page">
@@ -65,9 +65,13 @@ export default function Results({ game, players, myXpEarned }: Props) {
 
       <div className="podium">
         {players.slice(0, Math.min(3, players.length)).map((p) => (
-          <div key={p.username} className={`podium-slot rank-${p.rank} ${p.isMe ? 'is-me' : ''}`}>
+          <div key={p.username} className={`podium-slot rank-${p.rank} ${p.isMe ? "is-me" : ""}`}>
             <div className="podium-avatar">
-              {p.avatarUrl ? <img src={p.avatarUrl} alt="" /> : <span>{p.username[0].toUpperCase()}</span>}
+              {p.avatarUrl ? (
+                <img src={p.avatarUrl} alt="" />
+              ) : (
+                <span>{p.username[0].toUpperCase()}</span>
+              )}
             </div>
             <div className="podium-rank">{rankEmoji(p.rank)}</div>
             <div className="podium-name">{p.username}</div>
@@ -89,20 +93,24 @@ export default function Results({ game, players, myXpEarned }: Props) {
         </thead>
         <tbody>
           {players.map((p) => (
-            <tr key={p.username} className={p.isMe ? 'me-row' : ''}>
+            <tr key={p.username} className={p.isMe ? "me-row" : ""}>
               <td>{rankEmoji(p.rank)}</td>
               <td className="player-cell">
                 {p.avatarUrl && <img src={p.avatarUrl} alt="" className="table-avatar" />}
                 {p.username}
                 {p.isMe && <span className="you-badge">Vous</span>}
               </td>
-              <td><strong>{p.score}</strong></td>
               <td>
-                {p.correct}/{p.correct + p.incorrect}{' '}
+                <strong>{p.score}</strong>
+              </td>
+              <td>
+                {p.correct}/{p.correct + p.incorrect}{" "}
                 <span className="muted">
-                  ({p.correct + p.incorrect > 0
+                  (
+                  {p.correct + p.incorrect > 0
                     ? Math.round((p.correct / (p.correct + p.incorrect)) * 100)
-                    : 0}%)
+                    : 0}
+                  %)
                 </span>
               </td>
               <td>🔥 {p.bestStreak}</td>
@@ -114,7 +122,11 @@ export default function Results({ game, players, myXpEarned }: Props) {
 
       <div className="results-actions">
         <Form route="game.replay" routeParams={{ id: game.id }} method="post">
-          {() => <button type="submit" className="btn btn-primary">Rejouer</button>}
+          {() => (
+            <button type="submit" className="btn btn-primary">
+              Rejouer
+            </button>
+          )}
         </Form>
         <Link route="leaderboard.index" className="btn btn-ghost">
           Classement général
@@ -124,5 +136,5 @@ export default function Results({ game, players, myXpEarned }: Props) {
         </Link>
       </div>
     </div>
-  )
+  );
 }

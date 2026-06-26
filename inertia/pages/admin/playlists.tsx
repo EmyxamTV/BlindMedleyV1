@@ -1,61 +1,88 @@
-import { useState } from 'react'
-import { Link, Form } from '@adonisjs/inertia/react'
-import type { InertiaProps } from '~/types'
+import { useState } from "react";
+import { Link, Form } from "@adonisjs/inertia/react";
+import type { InertiaProps } from "~/types";
 
 interface AdminPlaylist {
-  id: number
-  name: string
-  spotifyId: string | null
-  genre: string | null
-  difficulty: number
-  trackCount: number
-  isActive: boolean
-  lastSyncedAt: string | null
+  id: number;
+  name: string;
+  spotifyId: string | null;
+  genre: string | null;
+  difficulty: number;
+  trackCount: number;
+  isActive: boolean;
+  lastSyncedAt: string | null;
 }
 
 interface Props extends InertiaProps {
-  playlists: AdminPlaylist[]
+  playlists: AdminPlaylist[];
 }
 
 function DiffDots({ level }: { level: number }) {
   return (
     <div className="diff-dots">
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={`diff-dot ${i < level ? 'on' : ''}`} />
+        <span key={i} className={`diff-dot ${i < level ? "on" : ""}`} />
       ))}
     </div>
-  )
+  );
 }
 
 export default function AdminPlaylists({ playlists }: Props) {
-  const [importUrl, setImportUrl] = useState('')
+  const [importUrl, setImportUrl] = useState("");
 
-  const active = playlists.filter((p) => p.isActive).length
+  const active = playlists.filter((p) => p.isActive).length;
 
   return (
     <div className="admin-page">
       <div className="admin-topbar">
         <div>
           <h1>Playlists Spotify</h1>
-          <p className="admin-sub">{active} actives sur {playlists.length}</p>
+          <p className="admin-sub">
+            {active} actives sur {playlists.length}
+          </p>
         </div>
         <nav className="admin-nav">
           <Link route="admin.dashboard" className="admin-nav-link">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
             </svg>
             Dashboard
           </Link>
           <Link route="admin.users" className="admin-nav-link">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
             </svg>
             Utilisateurs
           </Link>
           <Link route="admin.playlists" className="admin-nav-link active">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
             </svg>
             Playlists
           </Link>
@@ -80,9 +107,18 @@ export default function AdminPlaylists({ playlists }: Props) {
                 {errors.spotify_url && <div className="field-error">{errors.spotify_url}</div>}
               </div>
               <button type="submit" className="btn btn-primary" disabled={!importUrl.trim()}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '0.4rem' }}>
-                  <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
-                  <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  style={{ marginRight: "0.4rem" }}
+                >
+                  <polyline points="16 16 12 12 8 16" />
+                  <line x1="12" y1="12" x2="12" y2="21" />
+                  <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
                 </svg>
                 Importer
               </button>
@@ -115,32 +151,43 @@ export default function AdminPlaylists({ playlists }: Props) {
               </thead>
               <tbody>
                 {playlists.map((p) => (
-                  <tr key={p.id} className={!p.isActive ? 'row-inactive' : ''}>
+                  <tr key={p.id} className={!p.isActive ? "row-inactive" : ""}>
                     <td>
                       <span className="pl-table-name">{p.name}</span>
                     </td>
                     <td>
-                      {p.genre
-                        ? <span className="pl-genre">{p.genre}</span>
-                        : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                      {p.genre ? (
+                        <span className="pl-genre">{p.genre}</span>
+                      ) : (
+                        <span style={{ color: "var(--text-3)" }}>—</span>
+                      )}
                     </td>
-                    <td><DiffDots level={p.difficulty} /></td>
+                    <td>
+                      <DiffDots level={p.difficulty} />
+                    </td>
                     <td>{p.trackCount}</td>
                     <td>
-                      <span className={`status-badge ${p.isActive ? 'status-active' : 'status-inactive'}`}>
-                        {p.isActive ? 'Active' : 'Inactive'}
+                      <span
+                        className={`status-badge ${p.isActive ? "status-active" : "status-inactive"}`}
+                      >
+                        {p.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="td-date">
-                      {p.lastSyncedAt
-                        ? new Date(p.lastSyncedAt).toLocaleDateString('fr-FR')
-                        : <span style={{ color: 'var(--text-3)' }}>Jamais</span>}
+                      {p.lastSyncedAt ? (
+                        new Date(p.lastSyncedAt).toLocaleDateString("fr-FR")
+                      ) : (
+                        <span style={{ color: "var(--text-3)" }}>Jamais</span>
+                      )}
                     </td>
                     <td>
                       <Form route="admin.playlists.toggle" routeParams={{ id: p.id }} method="post">
                         {() => (
-                          <button type="submit" className={`btn-sm ${p.isActive ? 'btn-warn' : 'btn-success'}`}>
-                            {p.isActive ? 'Désactiver' : 'Activer'}
+                          <button
+                            type="submit"
+                            className={`btn-sm ${p.isActive ? "btn-warn" : "btn-success"}`}
+                          >
+                            {p.isActive ? "Désactiver" : "Activer"}
                           </button>
                         )}
                       </Form>
@@ -153,5 +200,5 @@ export default function AdminPlaylists({ playlists }: Props) {
         )}
       </section>
     </div>
-  )
+  );
 }

@@ -1,43 +1,48 @@
-import { useState } from 'react'
-import { router } from '@inertiajs/react'
-import { Form } from '@adonisjs/inertia/react'
-import type { InertiaProps } from '~/types'
+import { useState } from "react";
+import { router } from "@inertiajs/react";
+import { Form } from "@adonisjs/inertia/react";
+import type { InertiaProps } from "~/types";
 
 interface Entry {
-  rank: number
-  userId: number
-  username: string
-  avatarUrl: string | null
-  level: number
-  score: number
-  country: string | null
+  rank: number;
+  userId: number;
+  username: string;
+  avatarUrl: string | null;
+  level: number;
+  score: number;
+  country: string | null;
 }
 
 interface Props extends InertiaProps {
-  period: 'global' | 'weekly' | 'monthly'
-  country: string | null
-  entries: Entry[]
-  myRank: number | null
-  friendsLeaderboard: Entry[]
-  search: string
-  searchResults: { userId: number; username: string; avatarUrl: string | null; relationship: { id: number; status: string; incoming: boolean } | null }[]
-  incomingRequests: { id: number; username: string; avatarUrl: string | null }[]
+  period: "global" | "weekly" | "monthly";
+  country: string | null;
+  entries: Entry[];
+  myRank: number | null;
+  friendsLeaderboard: Entry[];
+  search: string;
+  searchResults: {
+    userId: number;
+    username: string;
+    avatarUrl: string | null;
+    relationship: { id: number; status: string; incoming: boolean } | null;
+  }[];
+  incomingRequests: { id: number; username: string; avatarUrl: string | null }[];
 }
 
 const PERIODS = [
-  { key: 'global',  label: 'Global' },
-  { key: 'weekly',  label: 'Cette semaine' },
-  { key: 'monthly', label: 'Ce mois' },
-] as const
+  { key: "global", label: "Global" },
+  { key: "weekly", label: "Cette semaine" },
+  { key: "monthly", label: "Ce mois" },
+] as const;
 
 function EntryRow({ entry, isMe }: { entry: Entry; isMe: boolean }) {
-  const isTop3 = entry.rank <= 3
+  const isTop3 = entry.rank <= 3;
   const rankDisplay =
-    entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `#${entry.rank}`
+    entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : entry.rank === 3 ? "🥉" : `#${entry.rank}`;
 
   return (
-    <div className={`lb-row ${isMe ? 'me' : ''}`}>
-      <span className={`lb-rank ${isTop3 ? 'top' : ''}`}>{rankDisplay}</span>
+    <div className={`lb-row ${isMe ? "me" : ""}`}>
+      <span className={`lb-rank ${isTop3 ? "top" : ""}`}>{rankDisplay}</span>
       <div className="lb-player">
         {entry.avatarUrl ? (
           <img src={entry.avatarUrl} alt="" className="lb-av" />
@@ -52,20 +57,34 @@ function EntryRow({ entry, isMe }: { entry: Entry; isMe: boolean }) {
       <span className="lb-level">Niv. {entry.level}</span>
       <span className="lb-score">{entry.score.toLocaleString()} pts</span>
     </div>
-  )
+  );
 }
 
-export default function Leaderboard({ period, country, entries, myRank, friendsLeaderboard, search, searchResults, incomingRequests, user }: Props) {
-  const [activeTab, setActiveTab] = useState<'global' | 'friends'>('global')
-  const [query, setQuery] = useState(search)
+export default function Leaderboard({
+  period,
+  country,
+  entries,
+  myRank,
+  friendsLeaderboard,
+  search,
+  searchResults,
+  incomingRequests,
+  user,
+}: Props) {
+  const [activeTab, setActiveTab] = useState<"global" | "friends">("global");
+  const [query, setQuery] = useState(search);
 
   function changePeriod(p: string) {
-    router.get('/leaderboard', { period: p, country: country ?? undefined })
+    router.get("/leaderboard", { period: p, country: country ?? undefined });
   }
 
   function searchFriends(event: React.FormEvent) {
-    event.preventDefault()
-    router.get('/leaderboard', { period, country: country ?? undefined, search: query }, { preserveState: true })
+    event.preventDefault();
+    router.get(
+      "/leaderboard",
+      { period, country: country ?? undefined, search: query },
+      { preserveState: true },
+    );
   }
 
   return (
@@ -82,25 +101,25 @@ export default function Leaderboard({ period, country, entries, myRank, friendsL
       <div className="lb-controls">
         <div className="tabs">
           <button
-            className={`tab ${activeTab === 'global' ? 'active' : ''}`}
-            onClick={() => setActiveTab('global')}
+            className={`tab ${activeTab === "global" ? "active" : ""}`}
+            onClick={() => setActiveTab("global")}
           >
             Général
           </button>
           <button
-            className={`tab ${activeTab === 'friends' ? 'active' : ''}`}
-            onClick={() => setActiveTab('friends')}
+            className={`tab ${activeTab === "friends" ? "active" : ""}`}
+            onClick={() => setActiveTab("friends")}
           >
             Amis
           </button>
         </div>
 
-        {activeTab === 'global' && (
+        {activeTab === "global" && (
           <div className="periods">
             {PERIODS.map((p) => (
               <button
                 key={p.key}
-                className={`period-btn ${period === p.key ? 'active' : ''}`}
+                className={`period-btn ${period === p.key ? "active" : ""}`}
                 onClick={() => changePeriod(p.key)}
               >
                 {p.label}
@@ -111,50 +130,88 @@ export default function Leaderboard({ period, country, entries, myRank, friendsL
       </div>
 
       <div className="lb-list">
-        {activeTab === 'global' &&
+        {activeTab === "global" &&
           (entries.length === 0 ? (
             <p className="empty-state">Aucun score enregistré pour cette période.</p>
           ) : (
             entries.map((e) => <EntryRow key={e.userId} entry={e} isMe={e.userId === user?.id} />)
           ))}
 
-        {activeTab === 'friends' &&
+        {activeTab === "friends" && (
           <>
             <section className="friends-panel">
               <h2>Ajouter des amis</h2>
               <form className="friend-search" onSubmit={searchFriends}>
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un pseudo" minLength={2} />
-                <button className="btn btn-primary btn-sm" type="submit">Rechercher</button>
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Rechercher un pseudo"
+                  minLength={2}
+                />
+                <button className="btn btn-primary btn-sm" type="submit">
+                  Rechercher
+                </button>
               </form>
               {searchResults.map((player) => (
                 <div className="friend-result" key={player.userId}>
-                  {player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : <span className="friend-avatar">{player.username[0].toUpperCase()}</span>}
+                  {player.avatarUrl ? (
+                    <img src={player.avatarUrl} alt="" />
+                  ) : (
+                    <span className="friend-avatar">{player.username[0].toUpperCase()}</span>
+                  )}
                   <strong>{player.username}</strong>
-                  {player.relationship?.status === 'accepted' ? <span className="friend-status">Ami</span>
-                    : player.relationship?.incoming ? <Form route="friends.accept" routeParams={{ id: player.relationship.id }}><button className="btn btn-primary btn-sm">Accepter</button></Form>
-                    : player.relationship ? <span className="friend-status">Demande envoyée</span>
-                    : <Form route="friends.request" routeParams={{ userId: player.userId }}><button className="btn btn-ghost btn-sm">Ajouter</button></Form>}
+                  {player.relationship?.status === "accepted" ? (
+                    <span className="friend-status">Ami</span>
+                  ) : player.relationship?.incoming ? (
+                    <Form route="friends.accept" routeParams={{ id: player.relationship.id }}>
+                      <button className="btn btn-primary btn-sm">Accepter</button>
+                    </Form>
+                  ) : player.relationship ? (
+                    <span className="friend-status">Demande envoyée</span>
+                  ) : (
+                    <Form route="friends.request" routeParams={{ userId: player.userId }}>
+                      <button className="btn btn-ghost btn-sm">Ajouter</button>
+                    </Form>
+                  )}
                 </div>
               ))}
-              {search.length >= 2 && searchResults.length === 0 && <p className="empty-state">Aucun joueur trouvé.</p>}
+              {search.length >= 2 && searchResults.length === 0 && (
+                <p className="empty-state">Aucun joueur trouvé.</p>
+              )}
             </section>
 
             {incomingRequests.length > 0 && (
               <section className="friends-panel">
                 <h2>Demandes reçues</h2>
-                {incomingRequests.map((request) => <div className="friend-result" key={request.id}>
-                  {request.avatarUrl ? <img src={request.avatarUrl} alt="" /> : <span className="friend-avatar">{request.username[0].toUpperCase()}</span>}
-                  <strong>{request.username}</strong>
-                  <Form route="friends.accept" routeParams={{ id: request.id }}><button className="btn btn-primary btn-sm">Accepter</button></Form>
-                  <Form route="friends.decline" routeParams={{ id: request.id }}><button className="btn btn-ghost btn-sm">Refuser</button></Form>
-                </div>)}
+                {incomingRequests.map((request) => (
+                  <div className="friend-result" key={request.id}>
+                    {request.avatarUrl ? (
+                      <img src={request.avatarUrl} alt="" />
+                    ) : (
+                      <span className="friend-avatar">{request.username[0].toUpperCase()}</span>
+                    )}
+                    <strong>{request.username}</strong>
+                    <Form route="friends.accept" routeParams={{ id: request.id }}>
+                      <button className="btn btn-primary btn-sm">Accepter</button>
+                    </Form>
+                    <Form route="friends.decline" routeParams={{ id: request.id }}>
+                      <button className="btn btn-ghost btn-sm">Refuser</button>
+                    </Form>
+                  </div>
+                ))}
               </section>
             )}
 
-            {friendsLeaderboard.length === 0 ? <p className="empty-state">Pas encore d'amis classés.</p>
-              : friendsLeaderboard.map((e) => <EntryRow key={e.userId} entry={e} isMe={e.userId === user?.id} />)}
-          </>}
+            {friendsLeaderboard.length === 0 ? (
+              <p className="empty-state">Pas encore d'amis classés.</p>
+            ) : (
+              friendsLeaderboard.map((e) => (
+                <EntryRow key={e.userId} entry={e} isMe={e.userId === user?.id} />
+              ))
+            )}
+          </>
+        )}
       </div>
     </div>
-  )
+  );
 }

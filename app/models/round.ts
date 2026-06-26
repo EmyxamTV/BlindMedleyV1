@@ -1,53 +1,53 @@
-import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
-import Game from '#models/game'
-import TrackCache from '#models/track_cache'
-import Answer from '#models/answer'
+import { DateTime } from "luxon";
+import { BaseModel, belongsTo, column, hasMany } from "@adonisjs/lucid/orm";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import Game from "#models/game";
+import TrackCache from "#models/track_cache";
+import Answer from "#models/answer";
 
 export default class Round extends BaseModel {
   @column({ isPrimary: true })
-  declare id: number
+  declare id: number;
 
   @column()
-  declare gameId: number
+  declare gameId: number;
 
   @column()
-  declare trackId: number
+  declare trackId: number;
 
   @column()
-  declare roundNumber: number
+  declare roundNumber: number;
 
   @column()
-  declare roundToken: string
+  declare roundToken: string;
 
   @column({
     prepare: (value: number[]) => JSON.stringify(value),
     consume: (value: string) => {
       try {
-        return JSON.parse(value || '[]')
+        return JSON.parse(value || "[]");
       } catch {
-        return []
+        return [];
       }
     },
   })
-  declare distractors: number[] // IDs de tracks (faux choix)
+  declare distractors: number[]; // IDs de tracks (faux choix)
 
   @column.dateTime()
-  declare startsAt: DateTime | null
+  declare startsAt: DateTime | null;
 
   @column.dateTime()
-  declare endsAt: DateTime | null
+  declare endsAt: DateTime | null;
 
   @column.dateTime()
-  declare revealedAt: DateTime | null
+  declare revealedAt: DateTime | null;
 
   @belongsTo(() => Game)
-  declare game: BelongsTo<typeof Game>
+  declare game: BelongsTo<typeof Game>;
 
-  @belongsTo(() => TrackCache, { foreignKey: 'trackId' })
-  declare track: BelongsTo<typeof TrackCache>
+  @belongsTo(() => TrackCache, { foreignKey: "trackId" })
+  declare track: BelongsTo<typeof TrackCache>;
 
   @hasMany(() => Answer)
-  declare answers: HasMany<typeof Answer>
+  declare answers: HasMany<typeof Answer>;
 }
