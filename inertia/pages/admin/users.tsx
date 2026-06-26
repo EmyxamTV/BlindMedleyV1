@@ -171,14 +171,14 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
                     <div className="table-actions">
                       {u.status === "active" && (
                         <>
-                          <Form route="admin.suspend" routeParams={{ id: u.id }} method="post">
+                          <Form route="admin.suspend" routeParams={{ id: u.id }}>
                             {() => (
                               <button type="submit" className="btn-sm btn-warn">
                                 Suspendre 24h
                               </button>
                             )}
                           </Form>
-                          <Form route="admin.ban" routeParams={{ id: u.id }} method="post">
+                          <Form route="admin.ban" routeParams={{ id: u.id }}>
                             {() => (
                               <button type="submit" className="btn-sm btn-danger">
                                 Bannir
@@ -188,7 +188,7 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
                         </>
                       )}
                       {u.status !== "active" && (
-                        <Form route="admin.unban" routeParams={{ id: u.id }} method="post">
+                        <Form route="admin.unban" routeParams={{ id: u.id }}>
                           {() => (
                             <button type="submit" className="btn-sm btn-success">
                               Débannir

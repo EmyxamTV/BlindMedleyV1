@@ -183,7 +183,7 @@ export default function Profile({ profileUser, recentGames }: Props) {
         >
           <div className="modal-box">
             <h2>Modifier le profil</h2>
-            <Form route="profile.update" method="post">
+            <Form route="profile.update">
               {({ errors }) => (
                 <>
                   <div className="form-group">

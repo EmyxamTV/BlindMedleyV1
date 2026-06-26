@@ -34,7 +34,6 @@ const rankEmoji = (rank: number | null) => {
 
 export default function Results({ game, players, myXpEarned }: Props) {
   const me = players.find((p) => p.isMe);
-  const winner = players.find((p) => p.rank === 1);
 
   return (
     <div className="results-page">
@@ -121,7 +120,7 @@ export default function Results({ game, players, myXpEarned }: Props) {
       </table>
 
       <div className="results-actions">
-        <Form route="game.replay" routeParams={{ id: game.id }} method="post">
+        <Form route="game.replay" routeParams={{ id: game.id }}>
           {() => (
             <button type="submit" className="btn btn-primary">
               Rejouer

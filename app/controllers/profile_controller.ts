@@ -28,7 +28,7 @@ export default class ProfileController {
         isCurrentUser: auth.user?.id === user.id,
       },
       recentGames: await serialize.withoutWrapping(GamePlayerTransformer.transform(recentGames)),
-    });
+    } as never);
   }
 
   async update({ request, auth, response, session }: HttpContext) {

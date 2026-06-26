@@ -83,6 +83,6 @@ export default class LeaderboardController {
         username: friendship.requester?.username ?? `Joueur ${friendship.requesterId}`,
         avatarUrl: friendship.requester?.avatarUrl ?? null,
       })),
-    });
+    } as never);
   }
 }

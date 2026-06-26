@@ -7,6 +7,14 @@
 import { BaseModel, column } from "@adonisjs/lucid/orm";
 import { DateTime } from "luxon";
 
+const jsonColumn = {
+  prepare: (value: unknown) =>
+    value === null || value === undefined || typeof value === "string"
+      ? value
+      : JSON.stringify(value),
+  consume: (value: unknown) => (typeof value === "string" && value ? JSON.parse(value) : value),
+};
+
 export class AchievementSchema extends BaseModel {
   static $columns = [
     "color",
@@ -21,8 +29,8 @@ export class AchievementSchema extends BaseModel {
   $columns = AchievementSchema.$columns;
   @column()
   declare color: string | null;
-  @column()
-  declare condition: string;
+  @column(jsonColumn)
+  declare condition: Record<string, unknown>;
   @column()
   declare description: string | null;
   @column()
@@ -74,8 +82,8 @@ export class AnswerSchema extends BaseModel {
   declare scoreEarned: number;
   @column.dateTime()
   declare submittedAt: DateTime;
-  @column()
-  declare suspiciousFlags: string | null;
+  @column(jsonColumn)
+  declare suspiciousFlags: string[] | null;
   @column()
   declare titleCorrect: boolean;
   @column()
@@ -403,8 +411,8 @@ export class RoundSchema extends BaseModel {
     "trackId",
   ] as const;
   $columns = RoundSchema.$columns;
-  @column()
-  declare distractors: string;
+  @column(jsonColumn)
+  declare distractors: number[];
   @column.dateTime()
   declare endsAt: DateTime | null;
   @column()
@@ -460,8 +468,8 @@ export class TracksCacheSchema extends BaseModel {
   declare hasPreview: boolean;
   @column({ isPrimary: true })
   declare id: number;
-  @column()
-  declare metadata: string | null;
+  @column(jsonColumn)
+  declare metadata: Record<string, unknown> | null;
   @column()
   declare popularity: number | null;
   @column()

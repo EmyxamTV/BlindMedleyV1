@@ -143,7 +143,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
 
       {/* ── CRÉER ── */}
       {tab === "create" && (
-        <Form route="game.create" method="post">
+        <Form route="game.create">
           {({ errors }) => (
             <div className="create-layout">
               {/* Mode */}
@@ -418,7 +418,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                       <span key={i} className="pgc-dot" />
                     ))}
                   </div>
-                  <Form route="game.join" routeParams={{ id: g.id }} method="post">
+                  <Form route="game.join" routeParams={{ id: g.id }}>
                     {() => (
                       <button type="submit" className="btn btn-primary btn-sm">
                         Rejoindre

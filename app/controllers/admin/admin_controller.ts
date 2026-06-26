@@ -40,7 +40,7 @@ export default class AdminController {
         playlistName: game.playlistName,
         createdAt: game.createdAt ?? "",
       })),
-    });
+    } as never);
   }
 
   async users({ inertia, request, serialize }: HttpContext) {
@@ -66,7 +66,7 @@ export default class AdminController {
       meta: users.getMeta(),
       search: search ?? "",
       statusFilter: status ?? "",
-    });
+    } as never);
   }
 
   async banUser({ params, request, response, session }: HttpContext) {
@@ -112,7 +112,7 @@ export default class AdminController {
     const playlists = await Playlist.query().orderBy("created_at", "desc");
     return inertia.render("admin/playlists", {
       playlists: await serialize.withoutWrapping(PlaylistTransformer.transform(playlists)),
-    });
+    } as never);
   }
 
   async importPlaylist({ request, response, session }: HttpContext) {

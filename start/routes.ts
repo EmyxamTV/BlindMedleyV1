@@ -12,7 +12,10 @@ const FriendshipController = () => import("#controllers/friendship_controller");
 const AdminController = () => import("#controllers/admin/admin_controller");
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
-router.on("/").renderInertia("home", {}).as("home");
+router
+  .on("/")
+  .renderInertia("home", {} as never)
+  .as("home");
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 router

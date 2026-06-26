@@ -428,6 +428,15 @@ export default function Play({
             revealedTrack,
             ...current.filter((track) => track.roundNumber !== revealedTrack.roundNumber),
           ]);
+        } else if (message.event === "answer_progress") {
+          if (message.roundNumber === currentRound?.roundNumber) {
+            const progress = {
+              userId: message.userId as number,
+              titleFound: Boolean(message.titleFound),
+              artistFound: Boolean(message.artistFound),
+            };
+            setAnswerProgress((current) => ({ ...current, [progress.userId]: progress }));
+          }
         } else if (message.event === "scores_updated") {
           const players = message.players as ScoreEntry[];
           setScores(players);
@@ -495,15 +504,6 @@ export default function Play({
           if (game.answerMode === "text" && !data.correct) {
             setAnswered(false);
             window.setTimeout(() => textInputRef.current?.focus({ preventScroll: true }), 50);
-          }
-        } else if (message.event === "answer_progress") {
-          if (message.roundNumber === currentRound?.roundNumber) {
-            const progress = {
-              userId: message.userId as number,
-              titleFound: Boolean(message.titleFound),
-              artistFound: Boolean(message.artistFound),
-            };
-            setAnswerProgress((current) => ({ ...current, [progress.userId]: progress }));
           }
           if (data.correct) {
             setAnswerPings((current) =>

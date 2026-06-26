@@ -141,7 +141,7 @@ export default function Lobby({ game, isHost, user }: Props) {
 
         <div className="lobby-actions">
           {isHost ? (
-            <Form route="game.start" routeParams={{ id: game.id }} method="post">
+            <Form route="game.start" routeParams={{ id: game.id }}>
               {() => (
                 <button
                   type="submit"

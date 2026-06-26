@@ -92,7 +92,7 @@ export default function AdminPlaylists({ playlists }: Props) {
       {/* Import */}
       <section className="admin-section">
         <h2>Importer depuis Spotify</h2>
-        <Form route="admin.playlists.import" method="post">
+        <Form route="admin.playlists.import">
           {({ errors }) => (
             <div className="import-row">
               <div className="form-group" style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
@@ -181,7 +181,7 @@ export default function AdminPlaylists({ playlists }: Props) {
                       )}
                     </td>
                     <td>
-                      <Form route="admin.playlists.toggle" routeParams={{ id: p.id }} method="post">
+                      <Form route="admin.playlists.toggle" routeParams={{ id: p.id }}>
                         {() => (
                           <button
                             type="submit"

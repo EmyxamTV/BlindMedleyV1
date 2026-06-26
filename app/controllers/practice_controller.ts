@@ -7,11 +7,11 @@ import TrackCacheTransformer from "#transformers/track_cache_transformer";
 /** A short, no-lobby training mode inspired by the quick games in Blinest. */
 export default class PracticeController {
   async index({ inertia }: HttpContext) {
-    return inertia.render("practice", {});
+    return inertia.render("practice", {} as never);
   }
 
   async bandle({ inertia }: HttpContext) {
-    return inertia.render("bandle", {});
+    return inertia.render("bandle", {} as never);
   }
 
   async question({ response, serialize }: HttpContext) {

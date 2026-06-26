@@ -52,7 +52,7 @@ export default class GameController {
       playlists: await serialize.withoutWrapping(PlaylistTransformer.transform(playlists)),
       publicGames: await serialize.withoutWrapping(GameTransformer.transform(publicGames)),
       myActiveGameId: myActiveGame?.game?.publicId ?? null,
-    });
+    } as never);
   }
 
   // Créer une partie
@@ -105,13 +105,13 @@ export default class GameController {
 
     const isPlayer = game.players.some((p) => p.userId === auth.user!.id);
     if (!isPlayer && game.mode !== "public") {
-      return inertia.render("errors/not_found", {});
+      return inertia.render("errors/not_found", {} as never);
     }
 
     return inertia.render("game/lobby", {
       game: await serialize.withoutWrapping(GameTransformer.transform(game, auth.user!.id)),
       isHost: game.hostId === auth.user!.id,
-    });
+    } as never);
   }
 
   // Rejoindre une partie publique ou avec un code
@@ -153,7 +153,7 @@ export default class GameController {
 
     const isPlayer = game.players.some((p) => p.userId === auth.user!.id);
     if (!isPlayer) {
-      return inertia.render("errors/not_found", {});
+      return inertia.render("errors/not_found", {} as never);
     }
 
     if (game.status === "finished") {
@@ -186,7 +186,7 @@ export default class GameController {
       round: roundPayload,
       history: await this.getHistory(resolved.id, serialize),
       serverNow: Date.now(),
-    });
+    } as never);
   }
 
   // Soumettre une réponse
@@ -237,7 +237,7 @@ export default class GameController {
         GamePlayerTransformer.transform(game.players, auth.user!.id),
       ),
       myXpEarned: myPlayer?.xpEarned ?? 0,
-    });
+    } as never);
   }
 
   // API: état courant de la partie (polling)
