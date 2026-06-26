@@ -7,6 +7,11 @@ import Answer from "#models/answer";
 import gameService from "#services/game_service";
 import roundService from "#services/round_service";
 import deezerService from "#services/deezer_service";
+import AnswerTransformer from "#transformers/answer_transformer";
+import GamePlayerTransformer from "#transformers/game_player_transformer";
+import GameTransformer from "#transformers/game_transformer";
+import PlaylistTransformer from "#transformers/playlist_transformer";
+import RoundTransformer from "#transformers/round_transformer";
 import { createGameValidator, submitAnswerValidator } from "#validators/game_validators";
 
 export default class GameController {
@@ -16,7 +21,7 @@ export default class GameController {
   }
 
   // Page lobby / création
-  async index({ inertia, auth }: HttpContext) {
+  async index({ inertia, auth, serialize }: HttpContext) {
     let playlists = await Playlist.query().where("is_active", true).orderBy("name");
 
     if (playlists.length === 0) {
@@ -44,24 +49,8 @@ export default class GameController {
       .first();
 
     return inertia.render("game/index", {
-      playlists: playlists.map((p) => ({
-        id: p.id,
-        name: p.name,
-        trackCount: p.trackCount,
-        genre: p.genre,
-        difficulty: p.difficulty,
-      })),
-      publicGames: publicGames.map((g) => ({
-        id: g.publicId ?? g.id,
-        code: g.code,
-        mode: g.mode,
-        playlistName: g.playlist?.name ?? "?",
-        hostUsername: g.host?.profile?.username ?? g.host?.fullName ?? "Hôte",
-        playerCount: g.players.length,
-        maxPlayers: g.maxPlayers,
-        difficulty: g.difficulty,
-        createdAt: g.createdAt,
-      })),
+      playlists: await serialize.withoutWrapping(PlaylistTransformer.transform(playlists)),
+      publicGames: await serialize.withoutWrapping(GameTransformer.transform(publicGames)),
       myActiveGameId: myActiveGame?.game?.publicId ?? null,
     });
   }
@@ -110,7 +99,7 @@ export default class GameController {
   }
 
   // Page lobby d'une partie
-  async lobby({ inertia, params, auth }: HttpContext) {
+  async lobby({ inertia, params, auth, serialize }: HttpContext) {
     const resolved = await this.resolveGame(params.id);
     const { game } = await gameService.getGameState(resolved.id);
 
@@ -120,7 +109,7 @@ export default class GameController {
     }
 
     return inertia.render("game/lobby", {
-      game: this.serializeGame(game),
+      game: await serialize.withoutWrapping(GameTransformer.transform(game, auth.user!.id)),
       isHost: game.hostId === auth.user!.id,
     });
   }
@@ -158,7 +147,7 @@ export default class GameController {
   }
 
   // Page de jeu
-  async play({ inertia, params, auth }: HttpContext) {
+  async play({ inertia, params, auth, serialize }: HttpContext) {
     const resolved = await this.resolveGame(params.id);
     const { game, currentRound } = await gameService.getGameState(resolved.id);
 
@@ -190,17 +179,12 @@ export default class GameController {
     }
 
     return inertia.render("game/play", {
-      game: this.serializeGame(game),
-      myPlayer: {
-        id: myPlayer.id,
-        userId: myPlayer.userId,
-        score: myPlayer.score,
-        streak: myPlayer.streak,
-        correct: myPlayer.correct,
-        incorrect: myPlayer.incorrect,
-      },
+      game: await serialize.withoutWrapping(GameTransformer.transform(game, auth.user!.id)),
+      myPlayer: await serialize.withoutWrapping(
+        GamePlayerTransformer.transform(myPlayer, auth.user!.id),
+      ),
       round: roundPayload,
-      history: await this.getHistory(resolved.id),
+      history: await this.getHistory(resolved.id, serialize),
       serverNow: Date.now(),
     });
   }
@@ -237,7 +221,7 @@ export default class GameController {
   }
 
   // Page résultats
-  async results({ inertia, params, auth }: HttpContext) {
+  async results({ inertia, params, auth, serialize }: HttpContext) {
     const game = await Game.query()
       .where("public_id", params.id)
       .where("status", "finished")
@@ -248,24 +232,10 @@ export default class GameController {
     const myPlayer = game.players.find((p) => p.userId === auth.user!.id);
 
     return inertia.render("game/results", {
-      game: {
-        id: game.publicId,
-        mode: game.mode,
-        playlistName: game.playlist?.name ?? "?",
-        roundCount: game.roundCount,
-        finishedAt: game.finishedAt,
-      },
-      players: game.players.map((p) => ({
-        rank: p.rank,
-        username: p.user?.profile?.username ?? p.user?.fullName ?? `User${p.userId}`,
-        avatarUrl: p.user?.profile?.avatarUrl,
-        score: p.score,
-        correct: p.correct,
-        incorrect: p.incorrect,
-        bestStreak: p.bestStreak,
-        xpEarned: p.xpEarned,
-        isMe: p.userId === auth.user!.id,
-      })),
+      game: await serialize.withoutWrapping(GameTransformer.transform(game, auth.user!.id)),
+      players: await serialize.withoutWrapping(
+        GamePlayerTransformer.transform(game.players, auth.user!.id),
+      ),
       myXpEarned: myPlayer?.xpEarned ?? 0,
     });
   }
@@ -302,7 +272,7 @@ export default class GameController {
     }
   }
 
-  async state({ params, response }: HttpContext) {
+  async state({ params, response, serialize }: HttpContext) {
     const resolved = await this.resolveGame(params.id);
     const { game, currentRound } = await gameService.getGameState(resolved.id);
     const serverNow = Date.now();
@@ -321,13 +291,7 @@ export default class GameController {
           .where("round_id", currentRound.id)
           .where("is_correct", true)
           .select(["user_id", "response_ms", "is_correct"])
-          .then((answers) =>
-            answers.map((answer) => ({
-              userId: answer.userId,
-              responseMs: answer.responseMs,
-              isCorrect: answer.isCorrect,
-            })),
-          )
+          .then((answers) => serialize.withoutWrapping(AnswerTransformer.transform(answers)))
       : [];
 
     const answerProgress =
@@ -335,13 +299,16 @@ export default class GameController {
         ? await Answer.query()
             .where("round_id", currentRound.id)
             .select(["user_id", "title_correct", "artist_correct"])
-            .then((answers) =>
-              answers.map((answer) => ({
+            .then(async (answers) => {
+              const serializedAnswers = await serialize.withoutWrapping(
+                AnswerTransformer.transform(answers),
+              );
+              return serializedAnswers.map((answer) => ({
                 userId: answer.userId,
                 titleFound: Boolean(answer.titleCorrect),
                 artistFound: Boolean(answer.artistCorrect),
-              })),
-            )
+              }));
+            })
         : [];
 
     return response.json({
@@ -349,58 +316,27 @@ export default class GameController {
       currentRound: game.currentRound,
       round: roundPayload,
       serverNow,
-      scores: game.players.map((p) => ({
-        userId: p.userId,
-        username: p.user?.profile?.username ?? `User${p.userId}`,
-        score: p.score,
-        streak: p.streak,
-      })),
+      scores: await serialize.withoutWrapping(GamePlayerTransformer.transform(game.players)),
       answerPings,
       answerProgress,
-      history: await this.getHistory(resolved.id),
+      history: await this.getHistory(resolved.id, serialize),
     });
   }
 
-  private async getHistory(gameId: number) {
+  private async getHistory(gameId: number, serialize: HttpContext["serialize"]) {
     const rounds = await Round.query()
       .where("game_id", gameId)
       .whereNotNull("revealed_at")
       .preload("track")
       .orderBy("round_number", "desc");
 
-    return rounds.map((round) => ({
-      roundNumber: round.roundNumber,
-      title: round.track.title,
-      artist: round.track.artist,
-      coverUrl: round.track.coverUrl,
-    }));
-  }
+    const serializedRounds = await serialize.withoutWrapping(RoundTransformer.transform(rounds));
 
-  private serializeGame(game: Game) {
-    return {
-      id: game.publicId ?? String(game.id),
-      code: game.code,
-      mode: game.mode,
-      answerMode: game.answerMode,
-      answerTarget: game.answerTarget,
-      status: game.status,
-      playlistName: game.playlist?.name ?? "?",
-      difficulty: game.difficulty,
-      maxPlayers: game.maxPlayers,
-      roundCount: game.roundCount,
-      roundDurationMs: game.roundDurationMs,
-      currentRound: game.currentRound,
-      hostId: game.hostId,
-      startedAt: game.startedAt,
-      players: game.players?.map((p) => ({
-        id: p.id,
-        userId: p.userId,
-        username: p.user?.profile?.username ?? p.user?.fullName ?? `User${p.userId}`,
-        avatarUrl: p.user?.profile?.avatarUrl,
-        score: p.score,
-        streak: p.streak,
-        isConnected: p.isConnected,
-      })),
-    };
+    return serializedRounds.map((round) => ({
+      roundNumber: round.roundNumber,
+      title: round.track?.title ?? "",
+      artist: round.track?.artist ?? "",
+      coverUrl: round.track?.coverUrl ?? null,
+    }));
   }
 }

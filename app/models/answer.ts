@@ -1,60 +1,12 @@
-import { DateTime } from "luxon";
-import { BaseModel, belongsTo, column } from "@adonisjs/lucid/orm";
+import { belongsTo } from "@adonisjs/lucid/orm";
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { AnswerSchema } from "#database/schema";
 import Round from "#models/round";
 import GamePlayer from "#models/game_player";
 import User from "#models/user";
 import TrackCache from "#models/track_cache";
 
-export default class Answer extends BaseModel {
-  @column({ isPrimary: true })
-  declare id: number;
-
-  @column()
-  declare roundId: number;
-
-  @column()
-  declare gamePlayerId: number;
-
-  @column()
-  declare userId: number;
-
-  @column()
-  declare answerText: string | null;
-
-  @column()
-  declare answerTrackId: number | null;
-
-  @column()
-  declare isCorrect: boolean;
-
-  @column()
-  declare titleCorrect: boolean;
-
-  @column()
-  declare artistCorrect: boolean;
-
-  @column()
-  declare scoreEarned: number;
-
-  @column()
-  declare responseMs: number;
-
-  @column({
-    prepare: (value: string[]) => JSON.stringify(value),
-    consume: (value: string) => {
-      try {
-        return JSON.parse(value || "[]");
-      } catch {
-        return [];
-      }
-    },
-  })
-  declare suspiciousFlags: string[];
-
-  @column.dateTime()
-  declare submittedAt: DateTime;
-
+export default class Answer extends AnswerSchema {
   @belongsTo(() => Round)
   declare round: BelongsTo<typeof Round>;
 

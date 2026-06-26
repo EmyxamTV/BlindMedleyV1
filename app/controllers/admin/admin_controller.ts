@@ -4,10 +4,13 @@ import Game from "#models/game";
 import Playlist from "#models/playlist";
 import spotifyService from "#services/spotify_service";
 import deezerService from "#services/deezer_service";
+import GameTransformer from "#transformers/game_transformer";
+import PlaylistTransformer from "#transformers/playlist_transformer";
+import UserTransformer from "#transformers/user_transformer";
 import { DateTime } from "luxon";
 
 export default class AdminController {
-  async dashboard({ inertia }: HttpContext) {
+  async dashboard({ inertia, serialize }: HttpContext) {
     const [totalUsers, totalGames, activePlaylists] = await Promise.all([
       User.query().count("* as total"),
       Game.query().count("* as total"),
@@ -20,23 +23,27 @@ export default class AdminController {
       .preload("playlist")
       .limit(5);
 
+    const serializedRecentGames = await serialize.withoutWrapping(
+      GameTransformer.transform(recentGames),
+    );
+
     return inertia.render("admin/dashboard", {
       stats: {
         totalUsers: Number(totalUsers[0].$extras.total),
         totalGames: Number(totalGames[0].$extras.total),
         activePlaylists: Number(activePlaylists[0].$extras.total),
       },
-      recentGames: recentGames.map((g) => ({
-        id: g.id,
-        mode: g.mode,
-        status: g.status,
-        playlistName: g.playlist?.name ?? "?",
-        createdAt: g.createdAt,
+      recentGames: serializedRecentGames.map((game) => ({
+        id: game.numericId,
+        mode: game.mode,
+        status: game.status,
+        playlistName: game.playlistName,
+        createdAt: game.createdAt ?? "",
       })),
     });
   }
 
-  async users({ inertia, request }: HttpContext) {
+  async users({ inertia, request, serialize }: HttpContext) {
     const page = Number(request.qs().page ?? 1);
     const search = request.qs().search as string | undefined;
     const status = request.qs().status as string | undefined;
@@ -55,15 +62,7 @@ export default class AdminController {
     const users = await query.paginate(page, 20);
 
     return inertia.render("admin/users", {
-      users: users.all().map((u) => ({
-        id: u.id,
-        email: u.email,
-        fullName: u.fullName,
-        username: u.profile?.username,
-        role: u.role,
-        status: u.status,
-        createdAt: u.createdAt,
-      })),
+      users: await serialize.withoutWrapping(UserTransformer.transform(users.all())),
       meta: users.getMeta(),
       search: search ?? "",
       statusFilter: status ?? "",
@@ -79,7 +78,7 @@ export default class AdminController {
       .merge({
         status: "banned",
         banReason: reason,
-        banExpires_at: duration ? DateTime.now().plus({ hours: Number(duration) }) : null,
+        banExpiresAt: duration ? DateTime.now().plus({ hours: Number(duration) }) : null,
       })
       .save();
 
@@ -94,7 +93,7 @@ export default class AdminController {
     await user
       .merge({
         status: "suspended",
-        banExpires_at: DateTime.now().plus({ hours }),
+        banExpiresAt: DateTime.now().plus({ hours }),
       })
       .save();
 
@@ -104,24 +103,15 @@ export default class AdminController {
 
   async unbanUser({ params, response, session }: HttpContext) {
     const user = await User.findOrFail(params.id);
-    await user.merge({ status: "active", banReason: null, banExpires_at: null }).save();
+    await user.merge({ status: "active", banReason: null, banExpiresAt: null }).save();
     session.flash("success", `${user.email} débanni`);
     return response.redirect().back();
   }
 
-  async playlists({ inertia }: HttpContext) {
+  async playlists({ inertia, serialize }: HttpContext) {
     const playlists = await Playlist.query().orderBy("created_at", "desc");
     return inertia.render("admin/playlists", {
-      playlists: playlists.map((p) => ({
-        id: p.id,
-        name: p.name,
-        spotifyId: p.spotifyId,
-        genre: p.genre,
-        difficulty: p.difficulty,
-        trackCount: p.trackCount,
-        isActive: p.isActive,
-        lastSyncedAt: p.lastSyncedAt,
-      })),
+      playlists: await serialize.withoutWrapping(PlaylistTransformer.transform(playlists)),
     });
   }
 

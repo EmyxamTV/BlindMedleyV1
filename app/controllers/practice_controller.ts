@@ -2,6 +2,7 @@ import type { HttpContext } from "@adonisjs/core/http";
 import TrackCache from "#models/track_cache";
 import { Readable } from "node:stream";
 import deezerService from "#services/deezer_service";
+import TrackCacheTransformer from "#transformers/track_cache_transformer";
 
 /** A short, no-lobby training mode inspired by the quick games in Blinest. */
 export default class PracticeController {
@@ -13,7 +14,7 @@ export default class PracticeController {
     return inertia.render("bandle", {});
   }
 
-  async question({ response }: HttpContext) {
+  async question({ response, serialize }: HttpContext) {
     const tracks = await TrackCache.query()
       .where("has_preview", true)
       .whereNotNull("preview_url")
@@ -27,7 +28,10 @@ export default class PracticeController {
     }
 
     const correct = tracks[Math.floor(Math.random() * tracks.length)];
-    const choices = tracks
+    const serializedTracks = await serialize.withoutWrapping(
+      TrackCacheTransformer.transform(tracks),
+    );
+    const choices = serializedTracks
       .map((track) => ({ id: track.id, title: track.title, artist: track.artist }))
       .sort(() => Math.random() - 0.5);
 

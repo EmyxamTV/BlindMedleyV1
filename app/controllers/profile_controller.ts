@@ -2,10 +2,12 @@ import type { HttpContext } from "@adonisjs/core/http";
 import Profile from "#models/profile";
 import User from "#models/user";
 import GamePlayer from "#models/game_player";
+import GamePlayerTransformer from "#transformers/game_player_transformer";
+import UserTransformer from "#transformers/user_transformer";
 import { updateProfileValidator } from "#validators/profile_validators";
 
 export default class ProfileController {
-  async show({ inertia, params, auth }: HttpContext) {
+  async show({ inertia, params, auth, serialize }: HttpContext) {
     const user = await User.query()
       .where("id", params.id ?? auth.user!.id)
       .preload("profile")
@@ -18,27 +20,14 @@ export default class ProfileController {
       .orderBy("joined_at", "desc")
       .limit(10);
 
+    const profileUser = await serialize.withoutWrapping(UserTransformer.transform(user));
+
     return inertia.render("profile", {
       profileUser: {
-        id: user.id,
-        fullName: user.fullName,
-        initials: user.initials,
-        profile: user.profile,
-        achievements: user.achievements,
+        ...profileUser,
         isCurrentUser: auth.user?.id === user.id,
       },
-      recentGames: recentGames.map((gp) => ({
-        id: gp.game.id,
-        mode: gp.game.mode,
-        status: gp.game.status,
-        playlistName: gp.game.playlist?.name ?? "Playlist inconnue",
-        score: gp.score,
-        rank: gp.rank,
-        correct: gp.correct,
-        incorrect: gp.incorrect,
-        xpEarned: gp.xpEarned,
-        playedAt: gp.joinedAt,
-      })),
+      recentGames: await serialize.withoutWrapping(GamePlayerTransformer.transform(recentGames)),
     });
   }
 

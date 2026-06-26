@@ -2,9 +2,11 @@ import type { HttpContext } from "@adonisjs/core/http";
 import leaderboardService from "#services/leaderboard_service";
 import Friendship from "#models/friendship";
 import Profile from "#models/profile";
+import FriendshipTransformer from "#transformers/friendship_transformer";
+import ProfileTransformer from "#transformers/profile_transformer";
 
 export default class LeaderboardController {
-  async index({ inertia, request, auth }: HttpContext) {
+  async index({ inertia, request, auth, serialize }: HttpContext) {
     const period = (request.qs().period as "global" | "weekly" | "monthly") ?? "global";
     const country = request.qs().country as string | undefined;
 
@@ -56,6 +58,12 @@ export default class LeaderboardController {
       .where("addressee_id", auth.user!.id)
       .where("status", "pending")
       .preload("requester", (query) => query.preload("profile"));
+    const serializedSearchResults = await serialize.withoutWrapping(
+      ProfileTransformer.transform(searchResults),
+    );
+    const serializedIncomingRequests = await serialize.withoutWrapping(
+      FriendshipTransformer.transform(incomingRequests),
+    );
 
     return inertia.render("leaderboard", {
       period,
@@ -64,16 +72,16 @@ export default class LeaderboardController {
       myRank,
       friendsLeaderboard,
       search,
-      searchResults: searchResults.map((profile) => ({
+      searchResults: serializedSearchResults.map((profile) => ({
         userId: profile.userId,
         username: profile.username,
         avatarUrl: profile.avatarUrl,
         relationship: relationshipByUserId.get(profile.userId) ?? null,
       })),
-      incomingRequests: incomingRequests.map((friendship) => ({
+      incomingRequests: serializedIncomingRequests.map((friendship) => ({
         id: friendship.id,
-        username: friendship.requester.profile?.username ?? `Joueur ${friendship.requesterId}`,
-        avatarUrl: friendship.requester.profile?.avatarUrl ?? null,
+        username: friendship.requester?.username ?? `Joueur ${friendship.requesterId}`,
+        avatarUrl: friendship.requester?.avatarUrl ?? null,
       })),
     });
   }
