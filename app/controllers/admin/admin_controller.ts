@@ -147,7 +147,7 @@ export default class AdminController {
 
       session.flash('error', 'URL invalide — colle une URL Spotify ou Deezer')
     } catch (err) {
-      session.flash('error', `Erreur lors de l'import : ${err.message}`)
+      session.flash('error', `Erreur lors de l'import : ${err instanceof Error ? err.message : String(err)}`)
     }
 
     return response.redirect().back()

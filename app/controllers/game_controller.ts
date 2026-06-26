@@ -137,7 +137,7 @@ export default class GameController {
       await gameService.startGame(game.id, auth.user!.id)
       return response.redirect().toRoute('game.play', { id: params.id })
     } catch (err) {
-      session.flash('error', err.message)
+      session.flash('error', err instanceof Error ? err.message : String(err))
       return response.redirect().back()
     }
   }
