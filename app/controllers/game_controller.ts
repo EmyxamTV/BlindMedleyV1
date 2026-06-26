@@ -167,7 +167,7 @@ export default class GameController {
         .where('id', myPlayer.id)
         .whereHas('answers', (q) => q.where('round_id', currentRound.id).where('is_correct', true))
         .first()
-      ;(roundPayload as Record<string, unknown>).alreadyAnswered = Boolean(answered)
+        ; (roundPayload as Record<string, unknown>).alreadyAnswered = Boolean(answered)
     }
 
     return inertia.render('game/play', {
@@ -294,25 +294,25 @@ export default class GameController {
 
     const answerPings = currentRound
       ? await Answer.query()
-          .where('round_id', currentRound.id)
-          .where('is_correct', true)
-          .select(['user_id', 'response_ms', 'is_correct'])
-          .then((answers) => answers.map((answer) => ({
-            userId: answer.userId,
-            responseMs: answer.responseMs,
-            isCorrect: answer.isCorrect,
-          })))
+        .where('round_id', currentRound.id)
+        .where('is_correct', true)
+        .select(['user_id', 'response_ms', 'is_correct'])
+        .then((answers) => answers.map((answer) => ({
+          userId: answer.userId,
+          responseMs: answer.responseMs,
+          isCorrect: answer.isCorrect,
+        })))
       : []
 
     const answerProgress = currentRound && game.answerTarget === 'separate'
       ? await Answer.query()
-          .where('round_id', currentRound.id)
-          .select(['user_id', 'title_correct', 'artist_correct'])
-          .then((answers) => answers.map((answer) => ({
-            userId: answer.userId,
-            titleFound: Boolean(answer.titleCorrect),
-            artistFound: Boolean(answer.artistCorrect),
-          })))
+        .where('round_id', currentRound.id)
+        .select(['user_id', 'title_correct', 'artist_correct'])
+        .then((answers) => answers.map((answer) => ({
+          userId: answer.userId,
+          titleFound: Boolean(answer.titleCorrect),
+          artistFound: Boolean(answer.artistCorrect),
+        })))
       : []
 
     return response.json({
