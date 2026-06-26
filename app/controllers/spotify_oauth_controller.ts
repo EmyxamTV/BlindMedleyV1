@@ -4,6 +4,7 @@ import User from "#models/user";
 import Profile from "#models/profile";
 import { DateTime } from "luxon";
 import env from "#start/env";
+import { spotifyCallbackValidator } from "#validators/spotify_validators";
 
 export default class SpotifyOAuthController {
   async redirect({ response }: HttpContext) {
@@ -13,8 +14,9 @@ export default class SpotifyOAuthController {
   }
 
   async callback({ request, auth, response, session }: HttpContext) {
-    const code = request.qs().code as string;
-    const error = request.qs().error as string | undefined;
+    const { code, error } = await request.validateUsing(spotifyCallbackValidator, {
+      data: request.qs(),
+    });
 
     if (error || !code) {
       session.flash("error", "Connexion Spotify annulée");

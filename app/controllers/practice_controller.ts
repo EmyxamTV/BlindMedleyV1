@@ -3,6 +3,7 @@ import TrackCache from "#models/track_cache";
 import { Readable } from "node:stream";
 import deezerService from "#services/deezer_service";
 import TrackCacheTransformer from "#transformers/track_cache_transformer";
+import { previewQueryValidator } from "#validators/practice_validators";
 
 /** A short, no-lobby training mode inspired by the quick games in Blinest. */
 export default class PracticeController {
@@ -43,17 +44,12 @@ export default class PracticeController {
   }
 
   async preview({ request, response }: HttpContext) {
-    const trackId = Number(request.input("trackId"));
-    const track = Number.isInteger(trackId) ? await TrackCache.find(trackId) : null;
+    const { trackId } = await request.validateUsing(previewQueryValidator, { data: request.qs() });
+    const track = await TrackCache.find(trackId);
     if (!track?.previewUrl) return response.notFound("Preview not found");
 
     let rawUrl = track.previewUrl;
-    let url: URL;
-    try {
-      url = new URL(rawUrl);
-    } catch {
-      return response.badRequest("Invalid preview URL");
-    }
+    let url = new URL(rawUrl);
 
     const allowed = ["dzcdn.net", "scdn.co", "spotifycdn.com"];
     if (url.protocol !== "https:" || !allowed.some((domain) => url.hostname.endsWith(domain))) {

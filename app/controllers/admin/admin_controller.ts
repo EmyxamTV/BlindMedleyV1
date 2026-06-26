@@ -8,6 +8,12 @@ import GameTransformer from "#transformers/game_transformer";
 import PlaylistTransformer from "#transformers/playlist_transformer";
 import UserTransformer from "#transformers/user_transformer";
 import { DateTime } from "luxon";
+import {
+  adminUsersQueryValidator,
+  banUserValidator,
+  importPlaylistValidator,
+  suspendUserValidator,
+} from "#validators/admin_validators";
 
 export default class AdminController {
   async dashboard({ inertia, serialize }: HttpContext) {
@@ -44,9 +50,13 @@ export default class AdminController {
   }
 
   async users({ inertia, request, serialize }: HttpContext) {
-    const page = Number(request.qs().page ?? 1);
-    const search = request.qs().search as string | undefined;
-    const status = request.qs().status as string | undefined;
+    const {
+      page = 1,
+      search,
+      status,
+    } = await request.validateUsing(adminUsersQueryValidator, {
+      data: request.qs(),
+    });
 
     const query = User.query().preload("profile").orderBy("created_at", "desc");
 
@@ -71,14 +81,14 @@ export default class AdminController {
 
   async banUser({ params, request, response, session }: HttpContext) {
     const user = await User.findOrFail(params.id);
-    const reason = request.input("reason", "Violation des règles");
-    const duration = request.input("duration"); // en heures, null = permanent
+    const { reason = "Violation des règles", duration } =
+      await request.validateUsing(banUserValidator);
 
     await user
       .merge({
         status: "banned",
         banReason: reason,
-        banExpiresAt: duration ? DateTime.now().plus({ hours: Number(duration) }) : null,
+        banExpiresAt: duration ? DateTime.now().plus({ hours: duration }) : null,
       })
       .save();
 
@@ -88,7 +98,7 @@ export default class AdminController {
 
   async suspendUser({ params, request, response, session }: HttpContext) {
     const user = await User.findOrFail(params.id);
-    const hours = Number(request.input("hours", 24));
+    const { hours = 24 } = await request.validateUsing(suspendUserValidator);
 
     await user
       .merge({
@@ -116,33 +126,25 @@ export default class AdminController {
   }
 
   async importPlaylist({ request, response, session }: HttpContext) {
-    const url = (request.input("spotify_url") as string).trim();
+    const { spotify_url: url } = await request.validateUsing(importPlaylistValidator);
 
-    try {
-      // Deezer : https://www.deezer.com/fr/playlist/1234567890
-      const deezerMatch = url.match(/deezer\.com\/(?:[a-z]+\/)?playlist\/(\d+)/);
-      if (deezerMatch) {
-        await deezerService.importPlaylist(deezerMatch[1]);
-        session.flash("success", "Playlist Deezer importée avec succès");
-        return response.redirect().back();
-      }
-
-      // Spotify : https://open.spotify.com/playlist/xxxxx
-      const spotifyMatch = url.match(/playlist\/([a-zA-Z0-9]+)/);
-      if (spotifyMatch) {
-        await spotifyService.importPlaylist(spotifyMatch[1]);
-        session.flash("success", "Playlist Spotify importée avec succès (previews Deezer)");
-        return response.redirect().back();
-      }
-
-      session.flash("error", "URL invalide — colle une URL Spotify ou Deezer");
-    } catch (err) {
-      session.flash(
-        "error",
-        `Erreur lors de l'import : ${err instanceof Error ? err.message : String(err)}`,
-      );
+    // Deezer : https://www.deezer.com/fr/playlist/1234567890
+    const deezerMatch = url.match(/deezer\.com\/(?:[a-z]+\/)?playlist\/(\d+)/);
+    if (deezerMatch) {
+      await deezerService.importPlaylist(deezerMatch[1]);
+      session.flash("success", "Playlist Deezer importée avec succès");
+      return response.redirect().back();
     }
 
+    // Spotify : https://open.spotify.com/playlist/xxxxx
+    const spotifyMatch = url.match(/playlist\/([a-zA-Z0-9]+)/);
+    if (spotifyMatch) {
+      await spotifyService.importPlaylist(spotifyMatch[1]);
+      session.flash("success", "Playlist Spotify importée avec succès (previews Deezer)");
+      return response.redirect().back();
+    }
+
+    session.flash("error", "URL invalide — colle une URL Spotify ou Deezer");
     return response.redirect().back();
   }
 

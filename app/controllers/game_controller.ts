@@ -12,7 +12,11 @@ import GamePlayerTransformer from "#transformers/game_player_transformer";
 import GameTransformer from "#transformers/game_transformer";
 import PlaylistTransformer from "#transformers/playlist_transformer";
 import RoundTransformer from "#transformers/round_transformer";
-import { createGameValidator, submitAnswerValidator } from "#validators/game_validators";
+import {
+  createGameValidator,
+  joinGameValidator,
+  submitAnswerValidator,
+} from "#validators/game_validators";
 
 export default class GameController {
   // ── Résoudre un publicId → Game (lève 404 si introuvable) ─────────────
@@ -25,12 +29,8 @@ export default class GameController {
     let playlists = await Playlist.query().where("is_active", true).orderBy("name");
 
     if (playlists.length === 0) {
-      try {
-        await deezerService.importStarterPlaylist();
-        playlists = await Playlist.query().where("is_active", true).orderBy("name");
-      } catch {
-        // Deezer unavailable: the client keeps the manual fallback action.
-      }
+      await deezerService.importStarterPlaylist();
+      playlists = await Playlist.query().where("is_active", true).orderBy("name");
     }
 
     const publicGames = await Game.query()
@@ -56,44 +56,26 @@ export default class GameController {
   }
 
   // Créer une partie
-  async create({ request, auth, response, session }: HttpContext) {
+  async create({ request, auth, response }: HttpContext) {
     const payload = await request.validateUsing(createGameValidator);
 
-    try {
-      const game = await gameService.createGame({
-        mode: payload.mode as "solo" | "public" | "private",
-        answerMode: payload.answerMode as "choices" | "text" | undefined,
-        answerTarget: payload.answerTarget as "title" | "artist" | "both" | "separate" | undefined,
-        playlistId: payload.playlistId,
-        difficulty: payload.difficulty,
-        maxPlayers: payload.maxPlayers,
-        roundCount: payload.roundCount,
-        hostId: auth.user!.id,
-      });
+    const game = await gameService.createGame({
+      mode: payload.mode,
+      answerMode: payload.answerMode,
+      answerTarget: payload.answerTarget,
+      playlistId: payload.playlistId,
+      difficulty: payload.difficulty,
+      maxPlayers: payload.maxPlayers,
+      roundCount: payload.roundCount,
+      hostId: auth.user!.id,
+    });
 
-      return response.redirect().toRoute("game.lobby", { id: game.publicId! });
-    } catch (error) {
-      session.flash(
-        "error",
-        error instanceof Error ? error.message : "Impossible de creer la partie.",
-      );
-      return response.redirect().back();
-    }
+    return response.redirect().toRoute("game.lobby", { id: game.publicId! });
   }
 
   async createStarterPlaylist({ response, session }: HttpContext) {
-    try {
-      await deezerService.importStarterPlaylist();
-      session.flash(
-        "success",
-        "Playlist de demarrage prete. Tu peux maintenant lancer une partie.",
-      );
-    } catch (error) {
-      session.flash(
-        "error",
-        error instanceof Error ? error.message : "Impossible de charger la playlist de demarrage.",
-      );
-    }
+    await deezerService.importStarterPlaylist();
+    session.flash("success", "Playlist de demarrage prete. Tu peux maintenant lancer une partie.");
 
     return response.redirect().toRoute("game.index");
   }
@@ -116,7 +98,7 @@ export default class GameController {
 
   // Rejoindre une partie publique ou avec un code
   async join({ request, params, auth, response, session }: HttpContext) {
-    const code = request.input("code") as string | undefined;
+    const { code } = await request.validateUsing(joinGameValidator);
     let game: Game;
 
     if (code) {
@@ -135,15 +117,10 @@ export default class GameController {
   }
 
   // Démarrer la partie (hôte seulement)
-  async start({ params, auth, response, session }: HttpContext) {
-    try {
-      const game = await this.resolveGame(params.id);
-      await gameService.startGame(game.id, auth.user!.id);
-      return response.redirect().toRoute("game.play", { id: params.id });
-    } catch (err) {
-      session.flash("error", err instanceof Error ? err.message : String(err));
-      return response.redirect().back();
-    }
+  async start({ params, auth, response }: HttpContext) {
+    const game = await this.resolveGame(params.id);
+    await gameService.startGame(game.id, auth.user!.id);
+    return response.redirect().toRoute("game.play", { id: params.id });
   }
 
   // Page de jeu
@@ -211,12 +188,8 @@ export default class GameController {
 
   // Quitter une partie
   async leave({ params, auth, response }: HttpContext) {
-    try {
-      const resolved = await this.resolveGame(params.id);
-      await gameService.leaveGame(resolved.id, auth.user!.id);
-    } catch {
-      // Ignorer — le joueur quitte, pas besoin de bloquer
-    }
+    const resolved = await this.resolveGame(params.id);
+    await gameService.leaveGame(resolved.id, auth.user!.id);
     return response.json({ ok: true });
   }
 
@@ -241,35 +214,28 @@ export default class GameController {
   }
 
   // API: état courant de la partie (polling)
-  async replay({ params, auth, response, session }: HttpContext) {
-    try {
-      const previousGame = await Game.query()
-        .where("public_id", params.id)
-        .where("status", "finished")
-        .firstOrFail();
+  async replay({ params, auth, response }: HttpContext) {
+    const previousGame = await Game.query()
+      .where("public_id", params.id)
+      .where("status", "finished")
+      .firstOrFail();
 
-      if (!previousGame.playlistId) throw new Error("PLAYLIST_NOT_FOUND");
+    if (previousGame.mode === "matchmaking") throw new Error("UNSUPPORTED_GAME_MODE");
+    if (!previousGame.playlistId) throw new Error("PLAYLIST_NOT_FOUND");
 
-      const game = await gameService.createGame({
-        mode: previousGame.mode as "solo" | "public" | "private",
-        answerMode: previousGame.answerMode,
-        answerTarget: previousGame.answerTarget,
-        playlistId: previousGame.playlistId,
-        difficulty: previousGame.difficulty,
-        maxPlayers: previousGame.maxPlayers,
-        roundCount: previousGame.roundCount,
-        roundDurationMs: previousGame.roundDurationMs,
-        hostId: auth.user!.id,
-      });
+    const game = await gameService.createGame({
+      mode: previousGame.mode,
+      answerMode: previousGame.answerMode,
+      answerTarget: previousGame.answerTarget,
+      playlistId: previousGame.playlistId,
+      difficulty: previousGame.difficulty,
+      maxPlayers: previousGame.maxPlayers,
+      roundCount: previousGame.roundCount,
+      roundDurationMs: previousGame.roundDurationMs,
+      hostId: auth.user!.id,
+    });
 
-      return response.redirect().toRoute("game.lobby", { id: game.publicId! });
-    } catch (error) {
-      session.flash(
-        "error",
-        error instanceof Error ? error.message : "Impossible de relancer cette partie.",
-      );
-      return response.redirect().back();
-    }
+    return response.redirect().toRoute("game.lobby", { id: game.publicId! });
   }
 
   async state({ params, response, serialize }: HttpContext) {

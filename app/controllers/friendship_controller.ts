@@ -1,11 +1,15 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import Friendship from "#models/friendship";
 import User from "#models/user";
+import {
+  friendRequestParamsValidator,
+  friendshipParamsValidator,
+} from "#validators/friendship_validators";
 
 export default class FriendshipController {
-  async request({ params, auth, response, session }: HttpContext) {
-    const userId = Number(params.userId);
-    if (!Number.isInteger(userId) || userId === auth.user!.id) {
+  async request({ params, auth, response, session, request }: HttpContext) {
+    const { userId } = await request.validateUsing(friendRequestParamsValidator, { data: params });
+    if (userId === auth.user!.id) {
       session.flash("error", "Cette demande d ami est invalide.");
       return response.redirect().back();
     }
@@ -35,9 +39,10 @@ export default class FriendshipController {
     return response.redirect().back();
   }
 
-  async accept({ params, auth, response, session }: HttpContext) {
+  async accept({ params, auth, response, session, request }: HttpContext) {
+    const { id } = await request.validateUsing(friendshipParamsValidator, { data: params });
     const friendship = await Friendship.query()
-      .where("id", params.id)
+      .where("id", id)
       .where("addressee_id", auth.user!.id)
       .where("status", "pending")
       .firstOrFail();
@@ -46,9 +51,10 @@ export default class FriendshipController {
     return response.redirect().back();
   }
 
-  async decline({ params, auth, response, session }: HttpContext) {
+  async decline({ params, auth, response, session, request }: HttpContext) {
+    const { id } = await request.validateUsing(friendshipParamsValidator, { data: params });
     const friendship = await Friendship.query()
-      .where("id", params.id)
+      .where("id", id)
       .where("addressee_id", auth.user!.id)
       .where("status", "pending")
       .firstOrFail();

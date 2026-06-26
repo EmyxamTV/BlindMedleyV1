@@ -4,11 +4,15 @@ import Friendship from "#models/friendship";
 import Profile from "#models/profile";
 import FriendshipTransformer from "#transformers/friendship_transformer";
 import ProfileTransformer from "#transformers/profile_transformer";
+import { leaderboardQueryValidator } from "#validators/leaderboard_validators";
 
 export default class LeaderboardController {
   async index({ inertia, request, auth, serialize }: HttpContext) {
-    const period = (request.qs().period as "global" | "weekly" | "monthly") ?? "global";
-    const country = request.qs().country as string | undefined;
+    const {
+      period = "global",
+      country,
+      search = "",
+    } = await request.validateUsing(leaderboardQueryValidator, { data: request.qs() });
 
     const [top, myRank] = await Promise.all([
       leaderboardService.getLeaderboard(period, { country, limit: 100 }),
@@ -30,7 +34,6 @@ export default class LeaderboardController {
       auth.user!.id,
       friendIds,
     );
-    const search = String(request.qs().search ?? "").trim();
     const searchResults =
       search.length >= 2
         ? await Profile.query()
