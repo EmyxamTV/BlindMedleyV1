@@ -1,37 +1,19 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { Form } from "@adonisjs/inertia/react";
-import type { InertiaProps } from "~/types";
-import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
-
-interface Entry extends Record<string, JSONDataTypes> {
-  rank: number;
-  userId: number;
-  username: string;
-  avatarUrl: string | null;
-  level: number;
-  score: number;
-  country: string | null;
-}
+import type { FriendshipData, InertiaProps, ProfileData } from "~/types";
+import type { LeaderboardEntry } from "#types/leaderboard";
 
 interface Props extends InertiaProps {
   period: "global" | "weekly" | "monthly";
   country: string | null;
-  entries: Entry[];
+  entries: LeaderboardEntry[];
   myRank: number | null;
-  friendsLeaderboard: Entry[];
+  friendsLeaderboard: LeaderboardEntry[];
   search: string;
-  searchResults: {
-    userId: number;
-    username: string;
-    avatarUrl: string | null;
-  }[];
+  searchResults: ProfileData[];
   relationshipByUserId: Record<string, { id: number; status: string; incoming: boolean }>;
-  incomingRequests: {
-    id: number;
-    requesterId: number;
-    requester?: { username: string; avatarUrl: string | null };
-  }[];
+  incomingRequests: FriendshipData[];
 }
 
 const PERIODS = [
@@ -40,7 +22,7 @@ const PERIODS = [
   { key: "monthly", label: "Ce mois" },
 ] as const;
 
-function EntryRow({ entry, isMe }: { entry: Entry; isMe: boolean }) {
+function EntryRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
   const isTop3 = entry.rank <= 3;
   const rankDisplay =
     entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : entry.rank === 3 ? "🥉" : `#${entry.rank}`;

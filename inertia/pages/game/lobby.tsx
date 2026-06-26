@@ -2,37 +2,13 @@ import { useEffect, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
-import type { InertiaProps } from "~/types";
+import { useLeaveBeacon } from "~/hooks/use_leave_beacon";
+import { routeUrl } from "~/lib/routes";
+import type { GamePlayerData, GameWithPlayers, InertiaProps } from "~/types";
 import { createRealtimeUid } from "~/lib/realtime";
-import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
-
-interface Player extends Record<string, JSONDataTypes> {
-  id: number;
-  userId: number;
-  username: string;
-  avatarUrl: string | null;
-  score: number;
-  streak: number;
-  isConnected: boolean;
-}
-
-interface Game extends Record<string, JSONDataTypes> {
-  id: number;
-  code: string | null;
-  mode: string;
-  status: string;
-  playlistName: string;
-  difficulty: number;
-  maxPlayers: number;
-  roundCount: number;
-  roundDurationMs: number;
-  currentRound: number;
-  hostId: number | null;
-  players: Player[];
-}
 
 interface Props extends InertiaProps {
-  game: Game;
+  game: GameWithPlayers;
   isHost: boolean;
 }
 
@@ -45,18 +21,10 @@ function unlockAudio() {
 }
 
 export default function Lobby({ game, isHost, user }: Props) {
-  const [players, setPlayers] = useState<Player[]>(game.players);
+  const [players, setPlayers] = useState<GamePlayerData[]>(game.players);
 
   // Signaler le départ quand le joueur ferme/quitte la page
-  useEffect(() => {
-    const sendLeave = () => navigator.sendBeacon(`/game/${game.id}/leave`, "");
-    window.addEventListener("beforeunload", sendLeave);
-    window.addEventListener("pagehide", sendLeave);
-    return () => {
-      window.removeEventListener("beforeunload", sendLeave);
-      window.removeEventListener("pagehide", sendLeave);
-    };
-  }, [game.id]);
+  useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
 
   useEffect(() => {
     const transmit = new Transmit({
@@ -69,7 +37,7 @@ export default function Lobby({ game, isHost, user }: Props) {
       subscription.onMessage<{ event: string }>((message) => {
         if (message.event === "game_starting") {
           unlockAudio();
-          router.visit(`/game/${game.id}/play`);
+          router.visit(routeUrl("game.play", { params: { id: game.id } }));
         }
       });
     });
@@ -90,9 +58,9 @@ export default function Lobby({ game, isHost, user }: Props) {
     setPlayers(game.players);
     if (game.status !== "waiting") {
       unlockAudio();
-      router.visit(`/game/${game.id}/play`);
+      router.visit(routeUrl("game.play", { params: { id: game.id } }));
     }
-  }, [game.players, game.status]);
+  }, [game.id, game.players, game.status]);
 
   return (
     <div className="lobby-page">

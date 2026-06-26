@@ -1,28 +1,9 @@
 import { Form, Link } from "@adonisjs/inertia/react";
-import type { InertiaProps } from "~/types";
-import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
-
-interface PlayerResult extends Record<string, JSONDataTypes> {
-  rank: number | null;
-  username: string;
-  avatarUrl: string | null;
-  score: number;
-  correct: number;
-  incorrect: number;
-  bestStreak: number;
-  xpEarned: number;
-  isMe: boolean;
-}
+import type { GameData, GamePlayerData, InertiaProps } from "~/types";
 
 interface Props extends InertiaProps {
-  game: {
-    id: string;
-    mode: string;
-    playlistName: string;
-    roundCount: number;
-    finishedAt: string | null;
-  };
-  players: PlayerResult[];
+  game: GameData & { id: string };
+  players: GamePlayerData[];
   myXpEarned: number;
 }
 

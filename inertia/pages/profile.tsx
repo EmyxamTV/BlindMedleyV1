@@ -1,60 +1,11 @@
 import { useState } from "react";
 import { Form } from "@adonisjs/inertia/react";
-import type { InertiaProps } from "~/types";
-import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
-
-interface ProfileData extends Record<string, JSONDataTypes> {
-  id: number;
-  username: string;
-  avatarUrl: string | null;
-  level: number;
-  xp: number;
-  xpToNextLevel: number;
-  totalGames: number;
-  totalWins: number;
-  totalCorrect: number;
-  totalAnswers: number;
-  avgScore: number;
-  bestStreak: number;
-  country: string | null;
-  bio: string | null;
-  favoriteGenres: string[];
-}
-
-interface RecentGame extends Record<string, JSONDataTypes> {
-  id: number;
-  mode: string;
-  status: string;
-  playlistName: string;
-  score: number;
-  rank: number | null;
-  correct: number;
-  incorrect: number;
-  xpEarned: number;
-  playedAt: string;
-}
-
-interface Achievement extends Record<string, JSONDataTypes> {
-  id: number;
-  key: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  color: string | null;
-}
-
-interface ProfileUser extends Record<string, JSONDataTypes> {
-  id: number;
-  fullName: string | null;
-  initials: string;
-  profile: ProfileData | null;
-  achievements: Achievement[];
-}
+import type { GamePlayerData, InertiaProps, UserData } from "~/types";
 
 interface Props extends InertiaProps {
-  profileUser: ProfileUser;
+  profileUser: UserData;
   isCurrentUser: boolean;
-  recentGames: RecentGame[];
+  recentGames: GamePlayerData[];
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
@@ -131,13 +82,13 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
       )}
 
       {/* Achievements */}
-      {profileUser.achievements.length > 0 && (
+      {(profileUser.achievements ?? []).length > 0 && (
         <div className="profile-section">
           <div className="section-header">
             <h2>Badges obtenus</h2>
           </div>
           <div className="achievements-grid">
-            {profileUser.achievements.map((a) => (
+            {(profileUser.achievements ?? []).map((a) => (
               <div key={a.id} className="achievement" title={a.description ?? a.name}>
                 <span className="achievement-icon">{a.icon ?? "🏅"}</span>
                 <span className="achievement-name">{a.name}</span>

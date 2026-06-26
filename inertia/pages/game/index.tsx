@@ -1,32 +1,12 @@
 import { useEffect, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
-import type { InertiaProps } from "~/types";
-import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
-
-interface Playlist extends Record<string, JSONDataTypes> {
-  id: number;
-  name: string;
-  trackCount: number;
-  genre: string | null;
-  difficulty: number;
-}
-
-interface PublicGame extends Record<string, JSONDataTypes> {
-  id: string;
-  code: string | null;
-  mode: string;
-  playlistName: string;
-  hostUsername: string;
-  playerCount: number;
-  maxPlayers: number;
-  difficulty: number;
-  createdAt: string;
-}
+import { DifficultyDots } from "~/components/difficulty_dots";
+import type { GameData, InertiaProps, PlaylistData } from "~/types";
 
 interface Props extends InertiaProps {
-  playlists: Playlist[];
-  publicGames: PublicGame[];
+  playlists: PlaylistData[];
+  publicGames: GameData[];
   myActiveGameId: string | null;
 }
 
@@ -66,16 +46,6 @@ function genreEmoji(genre: string | null): string {
   if (g.includes("indie")) return "🌿";
   if (g.includes("latin")) return "💃";
   return "🎵";
-}
-
-function DifficultyDots({ level }: { level: number }) {
-  return (
-    <div className="diff-dots">
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={`diff-dot ${i < level ? "on" : ""}`} />
-      ))}
-    </div>
-  );
 }
 
 const MODE_CONFIG = {
