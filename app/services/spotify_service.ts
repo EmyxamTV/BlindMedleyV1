@@ -2,29 +2,11 @@ import env from "#start/env";
 import TrackCache from "#models/track_cache";
 import Playlist from "#models/playlist";
 import { DateTime } from "luxon";
-
-interface SpotifyTokenResponse {
-  access_token: string;
-  expires_in: number;
-}
-
-interface SpotifyTrackObject {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string }[]; release_date: string };
-  preview_url: string | null;
-  duration_ms: number;
-  popularity: number;
-}
-
-interface SpotifyPlaylistObject {
-  id: string;
-  name: string;
-  description: string;
-  images: { url: string }[];
-  tracks: { total: number };
-}
+import type {
+  SpotifyPlaylistObject,
+  SpotifyTokenResponse,
+  SpotifyTrackObject,
+} from "#types/spotify";
 
 // Simple in-memory token cache (remplacé par Redis en prod)
 let cachedToken: { value: string; expiresAt: number } | null = null;

@@ -8,17 +8,7 @@ import { DateTime } from "luxon";
 import crypto from "node:crypto";
 import transmit from "@adonisjs/transmit/services/main";
 import { inject } from "@adonisjs/core";
-import type { CreateGamePayload, SubmitAnswerPayload } from "#validators/game_validators";
-
-type CreateGameOptions = CreateGamePayload & {
-  hostId: number;
-  roundDurationMs?: number;
-};
-
-type SubmitAnswerParams = SubmitAnswerPayload & {
-  gameId: number;
-  userId: number;
-};
+import type { CreateGameOptions, SubmitAnswerParams } from "#types/game";
 
 @inject()
 export class GameService {

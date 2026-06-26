@@ -1,24 +1,7 @@
 import TrackCache from "#models/track_cache";
 import Playlist from "#models/playlist";
 import { DateTime } from "luxon";
-
-interface DeezerTrack {
-  id: number;
-  title: string;
-  duration: number;
-  preview: string; // URL MP3 30s — toujours disponible sur Deezer
-  artist: { id: number; name: string };
-  album: { id: number; title: string; cover_medium: string; release_date: string };
-}
-
-interface DeezerPlaylist {
-  id: number;
-  title: string;
-  description: string;
-  picture_medium: string;
-  nb_tracks: number;
-  tracks: { data: DeezerTrack[] };
-}
+import type { DeezerPlaylist, DeezerTrack } from "#types/deezer";
 
 export class DeezerService {
   private readonly BASE = "https://api.deezer.com";
@@ -195,3 +178,4 @@ export class DeezerService {
     }
   }
 }
+

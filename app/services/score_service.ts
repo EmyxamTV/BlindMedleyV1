@@ -3,32 +3,18 @@ import GamePlayer from "#models/game_player";
 import Answer from "#models/answer";
 import { DateTime } from "luxon";
 import type { AnswerTarget } from "#models/game";
+import type {
+  AnswerResult,
+  ProcessAnswerParams,
+  ProcessSeparateAnswerParams,
+} from "#types/score";
 
 const MAX_SCORE_PER_ROUND = 1000;
 const SPEED_BONUS_MAX = 500;
 const COMBO_MULTIPLIERS = [1, 1, 1.2, 1.5, 2, 2.5]; // index = streak
 
-export interface AnswerResult {
-  correct: boolean;
-  partial?: boolean;
-  partialFound?: "title" | "artist" | null;
-  titleFound?: boolean;
-  artistFound?: boolean;
-  scoreEarned: number;
-  responseMs: number;
-  flags: string[];
-}
-
 export class ScoreService {
-  async processAnswer(params: {
-    round: Round;
-    gamePlayer: GamePlayer;
-    answerTrackId: number | null;
-    answerText: string | null;
-    serverReceivedAt: number;
-    allowRetry?: boolean;
-    answerTarget?: AnswerTarget;
-  }): Promise<AnswerResult> {
+  async processAnswer(params: ProcessAnswerParams): Promise<AnswerResult> {
     const { round, gamePlayer, serverReceivedAt } = params;
 
     // Vérifier que le round est actif (horloge serveur fait autorité)
@@ -127,13 +113,7 @@ export class ScoreService {
     return { correct: isCorrect, scoreEarned, responseMs, flags };
   }
 
-  private async processSeparateAnswer(params: {
-    round: Round;
-    gamePlayer: GamePlayer;
-    existing: Answer | null;
-    answerText: string;
-    responseMs: number;
-  }): Promise<AnswerResult> {
+  private async processSeparateAnswer(params: ProcessSeparateAnswerParams): Promise<AnswerResult> {
     const { round, gamePlayer, existing, answerText, responseMs } = params;
     const matches = await this.getTextMatches(round, answerText);
     const titleNew = matches.title && !existing?.titleCorrect;

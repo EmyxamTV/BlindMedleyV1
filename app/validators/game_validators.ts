@@ -19,6 +19,3 @@ export const submitAnswerValidator = vine.create({
 export const joinGameValidator = vine.create({
   code: vine.string().maxLength(8).optional(),
 });
-
-export type CreateGamePayload = Awaited<ReturnType<typeof createGameValidator.validate>>;
-export type SubmitAnswerPayload = Awaited<ReturnType<typeof submitAnswerValidator.validate>>;

@@ -1,16 +1,6 @@
 import LeaderboardSnapshot from "#models/leaderboard_snapshot";
 import { DateTime } from "luxon";
-import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
-
-export interface LeaderboardEntry extends Record<string, JSONDataTypes> {
-  rank: number;
-  userId: number;
-  username: string;
-  avatarUrl: string | null;
-  level: number;
-  score: number;
-  country: string | null;
-}
+import type { LeaderboardEntry } from "#types/leaderboard";
 
 export class LeaderboardService {
   async addScore(userId: number, score: number, country?: string | null): Promise<void> {
