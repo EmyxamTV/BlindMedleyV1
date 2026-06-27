@@ -7,7 +7,7 @@ export interface SpotifyTrackObject {
   id: string;
   name: string;
   artists: { name: string }[];
-  album: { name: string; images: { url: string }[]; release_date: string };
+  album: { name: string; images: { url: string }[]; release_date: string | null };
   preview_url: string | null;
   duration_ms: number;
   popularity: number;

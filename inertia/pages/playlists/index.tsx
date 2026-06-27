@@ -16,7 +16,6 @@ interface PlaylistRow extends Record<string, JSONDataTypes> {
   coverUrl: string | null;
   genre: string | null;
   decade: string | null;
-  difficulty: number;
   trackCount: number;
   visibility: "public" | "private";
   canEdit: boolean;
@@ -161,7 +160,6 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
                     {playlist.description && <p>{playlist.description}</p>}
                     <div className="playlist-card-meta">
                       <span>{playlist.trackCount} titres</span>
-                      <span>Difficulté {playlist.difficulty}/5</span>
                       {playlist.genre && <span>{playlist.genre}</span>}
                     </div>
                   </div>

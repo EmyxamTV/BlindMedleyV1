@@ -44,6 +44,12 @@ export interface ApiDefinition {
     play: typeof routes['playlists.play']
     edit: typeof routes['playlists.edit']
     update: typeof routes['playlists.update']
+    destroy: typeof routes['playlists.destroy']
+    tracks: {
+      search: typeof routes['playlists.tracks.search']
+      add: typeof routes['playlists.tracks.add']
+      remove: typeof routes['playlists.tracks.remove']
+    }
     share: typeof routes['playlists.share']
     unshare: typeof routes['playlists.unshare']
   }

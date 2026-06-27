@@ -156,6 +156,30 @@ const routes = {
     tokens: [{"old":"/playlists/:id","type":0,"val":"playlists","end":""},{"old":"/playlists/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['playlists.update']['types'],
   },
+  'playlists.destroy': {
+    methods: ["POST"],
+    pattern: '/playlists/:id/delete',
+    tokens: [{"old":"/playlists/:id/delete","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/delete","type":1,"val":"id","end":""},{"old":"/playlists/:id/delete","type":0,"val":"delete","end":""}],
+    types: placeholder as Registry['playlists.destroy']['types'],
+  },
+  'playlists.tracks.search': {
+    methods: ["GET","HEAD"],
+    pattern: '/playlists/:id/tracks/search',
+    tokens: [{"old":"/playlists/:id/tracks/search","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/tracks/search","type":1,"val":"id","end":""},{"old":"/playlists/:id/tracks/search","type":0,"val":"tracks","end":""},{"old":"/playlists/:id/tracks/search","type":0,"val":"search","end":""}],
+    types: placeholder as Registry['playlists.tracks.search']['types'],
+  },
+  'playlists.tracks.add': {
+    methods: ["POST"],
+    pattern: '/playlists/:id/tracks',
+    tokens: [{"old":"/playlists/:id/tracks","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/tracks","type":1,"val":"id","end":""},{"old":"/playlists/:id/tracks","type":0,"val":"tracks","end":""}],
+    types: placeholder as Registry['playlists.tracks.add']['types'],
+  },
+  'playlists.tracks.remove': {
+    methods: ["POST"],
+    pattern: '/playlists/:id/tracks/delete',
+    tokens: [{"old":"/playlists/:id/tracks/delete","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/tracks/delete","type":1,"val":"id","end":""},{"old":"/playlists/:id/tracks/delete","type":0,"val":"tracks","end":""},{"old":"/playlists/:id/tracks/delete","type":0,"val":"delete","end":""}],
+    types: placeholder as Registry['playlists.tracks.remove']['types'],
+  },
   'playlists.share': {
     methods: ["POST"],
     pattern: '/playlists/:id/share',

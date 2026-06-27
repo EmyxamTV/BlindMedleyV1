@@ -12,7 +12,6 @@ export default class PlaylistTransformer extends BaseTransformer<Playlist> {
         "coverUrl",
         "genre",
         "decade",
-        "difficulty",
         "trackCount",
         "isActive",
         "isCurated",

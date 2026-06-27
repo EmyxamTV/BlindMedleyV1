@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
-import { DifficultyDots } from "~/components/difficulty_dots";
 import { buttonClassName } from "~/components/ui/button";
 import type { GameData, InertiaProps, PlaylistData } from "~/types";
 
@@ -266,7 +265,6 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                             {p.genre && <span className="pl-genre">{p.genre}</span>}
                             <span className="pl-tracks">{p.trackCount} titres</span>
                           </div>
-                          <DifficultyDots level={p.difficulty} />
                         </div>
                       </label>
                     ))}

@@ -1,6 +1,5 @@
 import { Form, Link } from "@adonisjs/inertia/react";
 import { useState } from "react";
-import { DifficultyDots } from "~/components/difficulty_dots";
 import { WizardOptionGroup, type WizardOption } from "~/components/game/wizard_option_group";
 import { Button, buttonClassName } from "~/components/ui/button";
 import type { InertiaProps, PlaylistData } from "~/types";
@@ -66,7 +65,7 @@ export default function GameWizard({ playlist }: Props) {
   const [mode, setMode] = useState<Mode>("solo");
   const [answerMode, setAnswerMode] = useState<AnswerMode>("choices");
   const [answerTarget, setAnswerTarget] = useState<AnswerTarget>("both");
-  const [difficulty, setDifficulty] = useState(String(playlist.difficulty || 2));
+  const [difficulty, setDifficulty] = useState("2");
   const [roundCount, setRoundCount] = useState("10");
   const [maxPlayers, setMaxPlayers] = useState("8");
 
@@ -95,9 +94,8 @@ export default function GameWizard({ playlist }: Props) {
         <div>
           <h1 className="gi-title">Configurer la partie</h1>
           <p className="gi-sub">
-            {playlist.name} · {playlist.trackCount} titres · difficulté {playlist.difficulty}/5
+            {playlist.name} · {playlist.trackCount} titres
           </p>
-          <DifficultyDots level={playlist.difficulty} />
         </div>
         <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
           Retour aux playlists

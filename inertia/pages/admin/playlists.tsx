@@ -11,7 +11,6 @@ interface AdminPlaylist extends Record<string, JSONDataTypes> {
   name: string;
   spotifyId: string | null;
   genre: string | null;
-  difficulty: number;
   trackCount: number;
   isActive: boolean;
   lastSyncedAt: string | null;
@@ -19,16 +18,6 @@ interface AdminPlaylist extends Record<string, JSONDataTypes> {
 
 interface Props extends InertiaProps {
   playlists: AdminPlaylist[];
-}
-
-function DiffDots({ level }: { level: number }) {
-  return (
-    <div className="diff-dots">
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={`diff-dot ${i < level ? "on" : ""}`} />
-      ))}
-    </div>
-  );
 }
 
 export default function AdminPlaylists({ playlists }: Props) {
@@ -146,7 +135,6 @@ export default function AdminPlaylists({ playlists }: Props) {
                 <tr>
                   <th>Playlist</th>
                   <th>Genre</th>
-                  <th>Difficulté</th>
                   <th>Titres</th>
                   <th>Statut</th>
                   <th>Sync</th>
@@ -165,9 +153,6 @@ export default function AdminPlaylists({ playlists }: Props) {
                       ) : (
                         <span style={{ color: "var(--text-3)" }}>—</span>
                       )}
-                    </td>
-                    <td>
-                      <DiffDots level={p.difficulty} />
                     </td>
                     <td>{p.trackCount}</td>
                     <td>

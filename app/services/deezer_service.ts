@@ -172,6 +172,12 @@ export class DeezerService {
     }
   }
 
+  async searchTracks(query: string, limit = 10): Promise<DeezerTrack[]> {
+    const q = encodeURIComponent(query);
+    const data = await this.fetch<{ data?: DeezerTrack[] }>(`/search?q=${q}&limit=${limit}`);
+    return data.data?.filter((track) => Boolean(track.id)) ?? [];
+  }
+
   private async getAllTracks(playlistId: string, total: number): Promise<DeezerTrack[]> {
     const tracks: DeezerTrack[] = [];
     let index = 0;

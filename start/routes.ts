@@ -78,6 +78,16 @@ router
     router.get("/playlists/:id/play", [PlaylistController, "play"]).as("playlists.play");
     router.get("/playlists/:id/edit", [PlaylistController, "edit"]).as("playlists.edit");
     router.post("/playlists/:id", [PlaylistController, "update"]).as("playlists.update");
+    router.post("/playlists/:id/delete", [PlaylistController, "destroy"]).as("playlists.destroy");
+    router
+      .get("/playlists/:id/tracks/search", [PlaylistController, "searchTracks"])
+      .as("playlists.tracks.search");
+    router
+      .post("/playlists/:id/tracks", [PlaylistController, "addTrack"])
+      .as("playlists.tracks.add");
+    router
+      .post("/playlists/:id/tracks/delete", [PlaylistController, "removeTracks"])
+      .as("playlists.tracks.remove");
     router.post("/playlists/:id/share", [PlaylistController, "share"]).as("playlists.share");
     router
       .post("/playlists/:id/share/:shareId/delete", [PlaylistController, "unshare"])

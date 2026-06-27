@@ -29,6 +29,10 @@ export type ScannedRoutes = {
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.add': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.remove': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.share': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.unshare': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'shareId': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
@@ -69,6 +73,7 @@ export type ScannedRoutes = {
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -95,6 +100,7 @@ export type ScannedRoutes = {
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -114,6 +120,9 @@ export type ScannedRoutes = {
     'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.store': { paramsTuple?: []; params?: {} }
     'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.add': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.tracks.remove': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.share': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.unshare': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'shareId': ParamValue} }
     'game.starter_playlist': { paramsTuple?: []; params?: {} }

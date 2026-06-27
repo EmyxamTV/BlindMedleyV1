@@ -307,6 +307,54 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'playlists.destroy': {
+    methods: ["POST"]
+    pattern: '/playlists/:id/delete'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['destroy']>>>
+    }
+  }
+  'playlists.tracks.search': {
+    methods: ["GET","HEAD"]
+    pattern: '/playlists/:id/tracks/search'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/playlist_validators').trackSearchValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['searchTracks']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['searchTracks']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.tracks.add': {
+    methods: ["POST"]
+    pattern: '/playlists/:id/tracks'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/playlist_validators').addPlaylistTrackValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/playlist_validators').addPlaylistTrackValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['addTrack']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['addTrack']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.tracks.remove': {
+    methods: ["POST"]
+    pattern: '/playlists/:id/tracks/delete'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/playlist_validators').removePlaylistTracksValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/playlist_validators').removePlaylistTracksValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['removeTracks']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['removeTracks']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'playlists.share': {
     methods: ["POST"]
     pattern: '/playlists/:id/share'

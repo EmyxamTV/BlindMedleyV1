@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
+import { router } from "@inertiajs/react";
+import { AlertDialog } from "radix-ui";
 import { Button, buttonClassName } from "~/components/ui/button";
 import { Field, FieldError, Label } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
 import type { InertiaProps } from "~/types";
@@ -23,8 +24,9 @@ interface EditablePlaylist extends Record<string, JSONDataTypes> {
   description: string | null;
   genre: string | null;
   decade: string | null;
-  difficulty: number;
+  trackCount: number;
   visibility: "public" | "private";
+  isOwner: boolean;
 }
 
 interface TrackRow extends Record<string, JSONDataTypes> {
@@ -32,6 +34,19 @@ interface TrackRow extends Record<string, JSONDataTypes> {
   title: string;
   artist: string;
   album: string | null;
+}
+
+interface TrackSearchResult extends Record<string, JSONDataTypes> {
+  source: "deezer" | "spotify";
+  sourceId: string;
+  title: string;
+  artist: string;
+  album: string | null;
+  coverUrl: string | null;
+  previewUrl: string | null;
+  durationMs: number | null;
+  releaseYear: number | null;
+  alreadyAdded: boolean;
 }
 
 interface PlaylistImportFlash extends Record<string, JSONDataTypes> {
@@ -52,26 +67,207 @@ interface Props extends InertiaProps {
   shares: ShareRow[];
 }
 
-export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, flash }: Props) {
+type ConfirmState = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+} | null;
+
+export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, flash, user }: Props) {
   const [shareUser, setShareUser] = useState("");
   const [canEdit, setCanEdit] = useState(false);
+  const [removingShareId, setRemovingShareId] = useState<string | null>(null);
+  const [trackQuery, setTrackQuery] = useState("");
+  const [trackResults, setTrackResults] = useState<TrackSearchResult[]>([]);
+  const [trackSearchStatus, setTrackSearchStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [addingTrackId, setAddingTrackId] = useState<string | null>(null);
+  const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const lastAddAt = useRef(0);
   const importFlash = flash?.playlistImport as PlaylistImportFlash | undefined;
+  const canDeletePlaylist =
+    playlist.isOwner || (user as { role?: string } | undefined)?.role === "admin";
   const trackPageHref = (trackPage: number) =>
     `/playlists/${playlist.id}/edit?trackPage=${trackPage}`;
+  const csrfHeaders = () => {
+    const xsrf = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("XSRF-TOKEN="))
+      ?.split("=")[1];
+    return {
+      "X-CSRF-TOKEN":
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "",
+      "X-XSRF-TOKEN": xsrf ? decodeURIComponent(xsrf) : "",
+    };
+  };
+
+  useEffect(() => {
+    const query = trackQuery.trim();
+    if (query.length < 2) {
+      setTrackResults([]);
+      setTrackSearchStatus("idle");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setTrackSearchStatus("loading");
+      try {
+        const response = await fetch(
+          `/playlists/${playlist.id}/tracks/search?query=${encodeURIComponent(query)}`,
+          { headers: { Accept: "application/json" }, signal: controller.signal },
+        );
+        if (!response.ok) throw new Error("SEARCH_FAILED");
+        const data = (await response.json()) as { results: TrackSearchResult[] };
+        setTrackResults(data.results);
+        setTrackSearchStatus("idle");
+      } catch {
+        if (!controller.signal.aborted) setTrackSearchStatus("error");
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [playlist.id, trackQuery]);
+
+  async function addTrack(track: TrackSearchResult) {
+    const now = Date.now();
+    if (track.alreadyAdded || !track.previewUrl || now - lastAddAt.current < 700) return;
+    lastAddAt.current = now;
+    setAddingTrackId(`${track.source}:${track.sourceId}`);
+    try {
+      const response = await fetch(`/playlists/${playlist.id}/tracks`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...csrfHeaders(),
+        },
+        body: JSON.stringify(track),
+      });
+      if (!response.ok) throw new Error("ADD_FAILED");
+      setTrackResults((current) =>
+        current.map((item) =>
+          item.source === track.source && item.sourceId === track.sourceId
+            ? { ...item, alreadyAdded: true }
+            : item,
+        ),
+      );
+      router.reload({ only: ["tracks", "tracksMeta"] });
+    } finally {
+      setAddingTrackId(null);
+    }
+  }
+
+  function removeSelectedTracks() {
+    if (selectedTrackIds.length === 0) return;
+    setConfirm({
+      title: "Supprimer la sélection ?",
+      description: `${selectedTrackIds.length} titre(s) seront retirés de cette playlist.`,
+      confirmLabel: "Supprimer",
+      onConfirm: () => {
+        router.post(
+          `/playlists/${playlist.id}/tracks/delete`,
+          { trackIds: selectedTrackIds },
+          {
+            onSuccess: () => {
+              setSelectedTrackIds([]);
+              setTrackQuery("");
+            },
+          },
+        );
+      },
+    });
+  }
+
+  function deletePlaylist() {
+    setConfirm({
+      title: "Supprimer la playlist ?",
+      description: `La playlist "${playlist.name}" sera définitivement supprimée.`,
+      confirmLabel: "Supprimer",
+      onConfirm: () => {
+        router.post(`/playlists/${playlist.id}/delete`);
+      },
+    });
+  }
+
+  const confirmDialog = (
+    <AlertDialog.Root open={Boolean(confirm)} onOpenChange={(open) => !open && setConfirm(null)}>
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            background: "rgba(0, 0, 0, 0.68)",
+          }}
+        />
+        <AlertDialog.Content
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            zIndex: 51,
+            width: "min(420px, calc(100vw - 2rem))",
+            transform: "translate(-50%, -50%)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            background: "var(--surface)",
+            padding: "1.25rem",
+            boxShadow: "0 24px 80px rgba(0, 0, 0, 0.45)",
+          }}
+        >
+          <AlertDialog.Title style={{ margin: 0, fontSize: "1.05rem" }}>
+            {confirm?.title}
+          </AlertDialog.Title>
+          <AlertDialog.Description className="admin-sub" style={{ marginTop: "0.5rem" }}>
+            {confirm?.description}
+          </AlertDialog.Description>
+          <div className="table-actions" style={{ justifyContent: "flex-end", marginTop: "1rem" }}>
+            <AlertDialog.Cancel className={buttonClassName({ variant: "ghost" })}>
+              Annuler
+            </AlertDialog.Cancel>
+            <AlertDialog.Action
+              className={buttonClassName({ variant: "danger" })}
+              onClick={() => {
+                confirm?.onConfirm();
+                setConfirm(null);
+              }}
+            >
+              {confirm?.confirmLabel}
+            </AlertDialog.Action>
+          </div>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
+  );
+  function toggleTrack(trackId: string) {
+    setSelectedTrackIds((current) =>
+      current.includes(trackId) ? current.filter((id) => id !== trackId) : [...current, trackId],
+    );
+  }
   const shareSection =
     playlist.visibility === "private" ? (
       <section className="admin-section">
         <h2>Partage</h2>
-        <Form route="playlists.share" routeParams={{ id: playlist.id }}>
+        <Form
+          route="playlists.share"
+          routeParams={{ id: playlist.id }}
+          onSuccess={() => setShareUser("")}
+        >
           {({ errors }) => (
             <div className="import-row">
               <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
-                <Label htmlFor="playlist-share-user">Email ou pseudo</Label>
+                <Label htmlFor="playlist-share-user">Emails ou pseudos</Label>
                 <Input
                   id="playlist-share-user"
                   name="user"
                   value={shareUser}
                   onChange={(e) => setShareUser(e.target.value)}
+                  placeholder="alice, bob@example.com, charlie"
                 />
                 {errors.user && <FieldError>{errors.user}</FieldError>}
               </Field>
@@ -112,19 +308,22 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                     </td>
                     <td>{share.canEdit ? "Édition" : "Lecture"}</td>
                     <td>
-                      <Form
-                        route="playlists.unshare"
-                        routeParams={{ id: playlist.id, shareId: share.id }}
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        disabled={removingShareId === share.id}
+                        onClick={() => {
+                          setRemovingShareId(share.id);
+                          router.post(
+                            `/playlists/${playlist.id}/share/${share.id}/delete`,
+                            {},
+                            { onFinish: () => setRemovingShareId(null) },
+                          );
+                        }}
                       >
-                        {() => (
-                          <button
-                            type="submit"
-                            className={buttonClassName({ variant: "warn", size: "sm" })}
-                          >
-                            Retirer
-                          </button>
-                        )}
-                      </Form>
+                        {removingShareId === share.id ? "Retrait..." : "Retirer"}
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -137,16 +336,25 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
 
   return (
     <div className="admin-page">
+      {confirmDialog}
       <div className="admin-topbar">
         <div>
           <h1>{playlist.name}</h1>
           <p className="admin-sub">
-            {playlist.visibility === "public" ? "Playlist publique" : "Playlist privée"}
+            {playlist.visibility === "public" ? "Playlist publique" : "Playlist privée"} ·{" "}
+            {playlist.trackCount} titres
           </p>
         </div>
-        <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
-          Retour
-        </Link>
+        <div className="table-actions">
+          {canDeletePlaylist && (
+            <Button type="button" variant="danger" onClick={deletePlaylist}>
+              Supprimer
+            </Button>
+          )}
+          <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
+            Retour
+          </Link>
+        </div>
       </div>
 
       {shareSection}
@@ -175,20 +383,6 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                     placeholder="1980s"
                   />
                 </Field>
-                <Field>
-                  <Label htmlFor="playlist-difficulty">Difficulté</Label>
-                  <Select
-                    id="playlist-difficulty"
-                    name="difficulty"
-                    defaultValue={String(playlist.difficulty)}
-                  >
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <option key={level} value={level}>
-                        {level}/5
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
               </div>
               <Field>
                 <Label htmlFor="playlist-description">Description</Label>
@@ -198,16 +392,118 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                   defaultValue={playlist.description ?? ""}
                 />
               </Field>
-              <Button type="submit">
-                Enregistrer
-              </Button>
+              <Button type="submit">Enregistrer</Button>
             </>
           )}
         </Form>
       </section>
 
       <section className="admin-section">
-        <h2>Musiques</h2>
+        <h2>Musiques ({tracksMeta.total})</h2>
+        <div className="import-row" style={{ alignItems: "stretch", flexDirection: "column" }}>
+          <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+            <Label htmlFor="track-search">Ajouter une musique</Label>
+            <Input
+              id="track-search"
+              type="search"
+              value={trackQuery}
+              onChange={(event) => setTrackQuery(event.target.value)}
+              placeholder="Artiste ou titre"
+            />
+          </Field>
+          {trackQuery.trim().length >= 2 && (
+            <div
+              className="table-wrap"
+              style={{ maxHeight: 360, overflowY: "auto", marginBottom: 0 }}
+            >
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Pochette</th>
+                    <th>Titre</th>
+                    <th>Artiste</th>
+                    <th>Album</th>
+                    <th>Source</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trackResults.map((track) => {
+                    const rowId = `${track.source}:${track.sourceId}`;
+                    const canAdd = !track.alreadyAdded && Boolean(track.previewUrl);
+                    const addFromRow = () => {
+                      if (canAdd && addingTrackId !== rowId) addTrack(track);
+                    };
+                    return (
+                      <tr
+                        key={rowId}
+                        role={canAdd ? "button" : undefined}
+                        tabIndex={canAdd ? 0 : undefined}
+                        onClick={addFromRow}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            addFromRow();
+                          }
+                        }}
+                        style={{ cursor: canAdd ? "pointer" : undefined }}
+                      >
+                        <td>
+                          {track.coverUrl ? (
+                            <img
+                              src={track.coverUrl}
+                              alt=""
+                              style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }}
+                            />
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td>
+                          <span className="pl-table-name">{track.title}</span>
+                        </td>
+                        <td>{track.artist}</td>
+                        <td>{track.album ?? "-"}</td>
+                        <td>{track.source === "deezer" ? "Deezer" : "Spotify"}</td>
+                        <td>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={track.alreadyAdded ? "success" : "secondary"}
+                            disabled={!canAdd || addingTrackId === rowId}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              addTrack(track);
+                            }}
+                          >
+                            {track.alreadyAdded
+                              ? "Ajouté"
+                              : !track.previewUrl
+                                ? "Sans extrait"
+                                : addingTrackId === rowId
+                                  ? "Ajout..."
+                                  : "Ajouter"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {trackResults.length === 0 && (
+                    <tr>
+                      <td colSpan={6}>
+                        {trackSearchStatus === "loading"
+                          ? "Recherche..."
+                          : trackSearchStatus === "error"
+                            ? "Recherche indisponible."
+                            : "Aucun résultat."}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
         {importFlash && (
           <p className="admin-sub" style={{ marginBottom: "1rem" }}>
             {importFlash.importedCount} titres ajoutés, {importFlash.skippedCount} non ajoutés.
@@ -215,9 +511,36 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
         )}
         {tracks.length > 0 ? (
           <div className="table-wrap">
+            <div className="table-actions" style={{ padding: "0.75rem 1rem" }}>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={selectedTrackIds.length === 0}
+                onClick={removeSelectedTracks}
+              >
+                <svg
+                  aria-hidden="true"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4h8v2" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v5" />
+                  <path d="M14 11v5" />
+                </svg>
+                Supprimer la sélection
+              </Button>
+            </div>
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>Sélection</th>
                   <th>Titre</th>
                   <th>Artiste</th>
                   <th>Album</th>
@@ -226,6 +549,14 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
               <tbody>
                 {tracks.map((track) => (
                   <tr key={track.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        aria-label={`Sélectionner ${track.title}`}
+                        checked={selectedTrackIds.includes(track.id)}
+                        onChange={() => toggleTrack(track.id)}
+                      />
+                    </td>
                     <td>
                       <span className="pl-table-name">{track.title}</span>
                     </td>
@@ -262,9 +593,7 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                     Suivant
                   </Link>
                 ) : (
-                  <span className={buttonClassName({ variant: "ghost", size: "sm" })}>
-                    Suivant
-                  </span>
+                  <span className={buttonClassName({ variant: "ghost", size: "sm" })}>Suivant</span>
                 )}
               </div>
             )}
@@ -273,7 +602,6 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
           <p className="admin-sub">Aucune musique dans cette playlist.</p>
         )}
       </section>
-
     </div>
   );
 }
