@@ -1,5 +1,6 @@
 import { Link } from "@adonisjs/inertia/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { buttonClassName } from "~/components/ui/button";
 import type { InertiaProps } from "~/types";
 
 type Choice = { id: string; title: string; artist: string };
@@ -95,7 +96,7 @@ export default function Practice(_: InertiaProps) {
           <h1>Échauffement musical</h1>
           <p>Un extrait, quatre réponses. Enchaîne les titres à ton rythme.</p>
         </div>
-        <Link route="playlists.index" className="btn btn-ghost">
+        <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
           Parties multijoueur
         </Link>
       </header>
@@ -116,7 +117,7 @@ export default function Practice(_: InertiaProps) {
           {error ? (
             <div className="practice-empty">
               <p>{error}</p>
-              <button className="btn btn-primary" onClick={() => void loadQuestion()}>
+              <button className={buttonClassName()} onClick={() => void loadQuestion()}>
                 Réessayer
               </button>
             </div>
@@ -192,7 +193,7 @@ export default function Practice(_: InertiaProps) {
               )}
               {answered !== null && (
                 <button
-                  className="btn btn-primary practice-next"
+                  className={buttonClassName({ className: "practice-next" })}
                   onClick={() => void loadQuestion()}
                 >
                   Titre suivant →

@@ -3,6 +3,7 @@ import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
 import { useLeaveBeacon } from "~/hooks/use_leave_beacon";
+import { buttonClassName } from "~/components/ui/button";
 import { routeUrl } from "~/lib/routes";
 import type { GamePlayerData, GameWithPlayers, InertiaProps } from "~/types";
 import { createRealtimeUid } from "~/lib/realtime";
@@ -114,7 +115,7 @@ export default function Lobby({ game, isHost, user }: Props) {
               {() => (
                 <button
                   type="submit"
-                  className="btn btn-primary btn-xl"
+                  className={buttonClassName({ size: "xl" })}
                   disabled={game.mode !== "solo" && players.length < 2}
                   onClick={unlockAudio}
                 >
@@ -128,7 +129,7 @@ export default function Lobby({ game, isHost, user }: Props) {
               <p>En attente que l'hôte démarre...</p>
             </div>
           )}
-          <Link route="playlists.index" className="btn btn-ghost">
+          <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
             Quitter
           </Link>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { Form } from "@adonisjs/inertia/react";
+import { buttonClassName } from "~/components/ui/button";
 import type { FriendshipData, InertiaProps, ProfileData } from "~/types";
 import type { LeaderboardEntry } from "#types/leaderboard";
 
@@ -138,7 +139,7 @@ export default function Leaderboard({
                   placeholder="Rechercher un pseudo"
                   minLength={2}
                 />
-                <button className="btn btn-primary btn-sm" type="submit">
+                <button className={buttonClassName({ size: "sm" })} type="submit">
                   Rechercher
                 </button>
               </form>
@@ -157,13 +158,13 @@ export default function Leaderboard({
                       route="friends.accept"
                       routeParams={{ id: relationshipFor(player.userId)!.id }}
                     >
-                      <button className="btn btn-primary btn-sm">Accepter</button>
+                      <button className={buttonClassName({ size: "sm" })}>Accepter</button>
                     </Form>
                   ) : relationshipFor(player.userId) ? (
                     <span className="friend-status">Demande envoyée</span>
                   ) : (
                     <Form route="friends.request" routeParams={{ userId: player.userId }}>
-                      <button className="btn btn-ghost btn-sm">Ajouter</button>
+                      <button className={buttonClassName({ variant: "ghost", size: "sm" })}>Ajouter</button>
                     </Form>
                   )}
                 </div>
@@ -190,10 +191,10 @@ export default function Leaderboard({
                       {request.requester?.username ?? `Joueur ${request.requesterId}`}
                     </strong>
                     <Form route="friends.accept" routeParams={{ id: request.id }}>
-                      <button className="btn btn-primary btn-sm">Accepter</button>
+                      <button className={buttonClassName({ size: "sm" })}>Accepter</button>
                     </Form>
                     <Form route="friends.decline" routeParams={{ id: request.id }}>
-                      <button className="btn btn-ghost btn-sm">Refuser</button>
+                      <button className={buttonClassName({ variant: "ghost", size: "sm" })}>Refuser</button>
                     </Form>
                   </div>
                 ))}

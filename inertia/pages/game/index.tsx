@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { DifficultyDots } from "~/components/difficulty_dots";
+import { buttonClassName } from "~/components/ui/button";
 import type { GameData, InertiaProps, PlaylistData } from "~/types";
 
 interface Props extends InertiaProps {
@@ -86,7 +87,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
           <p className="gi-sub">Crée ou rejoins une partie et teste tes connaissances musicales.</p>
         </div>
         {myActiveGameId && (
-          <Link route="game.play" routeParams={{ id: myActiveGameId }} className="btn btn-primary">
+          <Link route="game.play" routeParams={{ id: myActiveGameId }} className={buttonClassName()}>
             Reprendre ma partie →
           </Link>
         )}
@@ -232,7 +233,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                     <p>Aucune playlist n’est encore disponible.</p>
                     <Form route="game.starter_playlist">
                       {() => (
-                        <button type="submit" className="btn btn-primary">
+                        <button type="submit" className={buttonClassName()}>
                           Charger les hits de démarrage
                         </button>
                       )}
@@ -318,7 +319,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
 
               <button
                 type="submit"
-                className="btn btn-primary btn-lg"
+                className={buttonClassName({ size: "lg" })}
                 disabled={playlists.length === 0 || selectedPlaylist === null}
               >
                 Lancer la partie
@@ -347,7 +348,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
               />
               <button
                 type="submit"
-                className="btn btn-primary btn-lg btn-full"
+                className={buttonClassName({ size: "lg", full: true })}
                 disabled={!joinCode.trim()}
               >
                 Rejoindre
@@ -364,7 +365,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
             <div className="empty-card">
               <span className="empty-icon">🎮</span>
               <p>Aucune partie publique en attente.</p>
-              <button className="btn btn-ghost btn-sm" onClick={() => setTab("create")}>
+              <button className={buttonClassName({ variant: "ghost", size: "sm" })} onClick={() => setTab("create")}>
                 Créer une partie →
               </button>
             </div>
@@ -391,7 +392,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                   </div>
                   <Form route="game.join" routeParams={{ id: g.id }}>
                     {() => (
-                      <button type="submit" className="btn btn-primary btn-sm">
+                      <button type="submit" className={buttonClassName({ size: "sm" })}>
                         Rejoindre
                       </button>
                     )}

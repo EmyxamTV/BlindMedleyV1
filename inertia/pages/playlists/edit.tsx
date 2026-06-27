@@ -154,7 +154,10 @@ export default function PlaylistEdit({ playlist, shares }: Props) {
                           routeParams={{ id: playlist.id, shareId: share.id }}
                         >
                           {() => (
-                            <button type="submit" className="btn-sm btn-warn">
+                            <button
+                              type="submit"
+                              className={buttonClassName({ variant: "warn", size: "sm" })}
+                            >
                               Retirer
                             </button>
                           )}

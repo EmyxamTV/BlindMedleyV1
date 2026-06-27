@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Form } from "@adonisjs/inertia/react";
+import { buttonClassName } from "~/components/ui/button";
 import type { GamePlayerData, InertiaProps, UserData } from "~/types";
 
 interface Props extends InertiaProps {
@@ -63,7 +64,7 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
 
         {isCurrentUser && (
           <div className="profile-edit-btn">
-            <button className="btn btn-ghost btn-sm" onClick={() => setEditOpen(true)}>
+            <button className={buttonClassName({ variant: "ghost", size: "sm" })} onClick={() => setEditOpen(true)}>
               Modifier
             </button>
           </div>
@@ -163,12 +164,12 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
                     />
                   </div>
                   <div className="modal-actions">
-                    <button type="submit" className="btn btn-primary">
+                    <button type="submit" className={buttonClassName()}>
                       Sauvegarder
                     </button>
                     <button
                       type="button"
-                      className="btn btn-ghost"
+                      className={buttonClassName({ variant: "ghost" })}
                       onClick={() => setEditOpen(false)}
                     >
                       Annuler

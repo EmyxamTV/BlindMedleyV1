@@ -1,5 +1,6 @@
 import { Link } from "@adonisjs/inertia/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { buttonClassName } from "~/components/ui/button";
 import type { InertiaProps } from "~/types";
 
 type Choice = { id: string; title: string; artist: string };
@@ -76,7 +77,7 @@ export default function Bandle(_: InertiaProps) {
           <p>Chaque erreur révèle une seconde supplémentaire.</p>
         </div>
         <b>{score.toLocaleString("fr-FR")} pts</b>
-        <Link route="practice.index" className="btn btn-ghost">
+        <Link route="practice.index" className={buttonClassName({ variant: "ghost" })}>
           Entraînement
         </Link>
       </header>
@@ -84,7 +85,7 @@ export default function Bandle(_: InertiaProps) {
         {error ? (
           <div className="practice-empty">
             <p>{error}</p>
-            <button className="btn btn-primary" onClick={() => void load()}>
+            <button className={buttonClassName()} onClick={() => void load()}>
               Réessayer
             </button>
           </div>
@@ -112,7 +113,7 @@ export default function Bandle(_: InertiaProps) {
               </div>
             </div>
             <button
-              className="btn btn-primary bandle-listen"
+              className={buttonClassName({ className: "bandle-listen" })}
               disabled={Boolean(result)}
               onClick={listen}
             >
@@ -142,7 +143,7 @@ export default function Bandle(_: InertiaProps) {
                 <span>
                   {solution?.title} · {solution?.artist}
                 </span>
-                <button className="btn btn-primary" onClick={() => void load()}>
+                <button className={buttonClassName()} onClick={() => void load()}>
                   Morceau suivant →
                 </button>
               </div>

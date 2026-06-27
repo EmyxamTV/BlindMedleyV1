@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Form } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
-import { Button } from "~/components/ui/button";
+import { Button, buttonClassName } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
@@ -176,14 +176,14 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
                         <>
                           <Form route="admin.suspend" routeParams={{ id: u.id }}>
                             {() => (
-                              <button type="submit" className="btn-sm btn-warn">
+                              <button type="submit" className={buttonClassName({ variant: "warn", size: "sm" })}>
                                 Suspendre 24h
                               </button>
                             )}
                           </Form>
                           <Form route="admin.ban" routeParams={{ id: u.id }}>
                             {() => (
-                              <button type="submit" className="btn-sm btn-danger">
+                              <button type="submit" className={buttonClassName({ variant: "danger", size: "sm" })}>
                                 Bannir
                               </button>
                             )}
@@ -193,7 +193,7 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
                       {u.status !== "active" && (
                         <Form route="admin.unban" routeParams={{ id: u.id }}>
                           {() => (
-                            <button type="submit" className="btn-sm btn-success">
+                            <button type="submit" className={buttonClassName({ variant: "success", size: "sm" })}>
                               Débannir
                             </button>
                           )}
@@ -211,7 +211,7 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
       <div className="pager">
         {meta.currentPage > 1 && (
           <button
-            className="btn btn-ghost"
+            className={buttonClassName({ variant: "ghost" })}
             onClick={() =>
               router.get("/admin/users", {
                 search,
@@ -228,7 +228,7 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
         </span>
         {meta.currentPage < meta.lastPage && (
           <button
-            className="btn btn-ghost"
+            className={buttonClassName({ variant: "ghost" })}
             onClick={() =>
               router.get("/admin/users", {
                 search,

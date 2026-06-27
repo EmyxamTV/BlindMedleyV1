@@ -1,4 +1,5 @@
 import { Form, Link } from "@adonisjs/inertia/react";
+import { buttonClassName } from "~/components/ui/button";
 import type { GameData, GamePlayerData, InertiaProps } from "~/types";
 
 interface Props extends InertiaProps {
@@ -104,15 +105,15 @@ export default function Results({ game, players, myXpEarned }: Props) {
       <div className="results-actions">
         <Form route="game.replay" routeParams={{ id: game.id }}>
           {() => (
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className={buttonClassName()}>
               Rejouer
             </button>
           )}
         </Form>
-        <Link route="leaderboard.index" className="btn btn-ghost">
+        <Link route="leaderboard.index" className={buttonClassName({ variant: "ghost" })}>
           Classement général
         </Link>
-        <Link route="profile.show" className="btn btn-ghost">
+        <Link route="profile.show" className={buttonClassName({ variant: "ghost" })}>
           Mon profil
         </Link>
       </div>

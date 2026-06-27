@@ -1,4 +1,5 @@
 import { Link } from "@adonisjs/inertia/react";
+import { buttonClassName } from "~/components/ui/button";
 import type { InertiaProps } from "~/types";
 
 export default function Home({ user }: InertiaProps) {
@@ -15,15 +16,15 @@ export default function Home({ user }: InertiaProps) {
         </p>
         <div className="hero-actions">
           {user ? (
-            <Link route="playlists.index" className="btn btn-primary btn-lg">
+            <Link route="playlists.index" className={buttonClassName({ size: "lg" })}>
               Jouer maintenant
             </Link>
           ) : (
             <>
-              <Link route="new_account.create" className="btn btn-primary btn-lg">
+              <Link route="new_account.create" className={buttonClassName({ size: "lg" })}>
                 Commencer gratuitement
               </Link>
-              <Link route="session.create" className="btn btn-ghost btn-lg">
+              <Link route="session.create" className={buttonClassName({ variant: "ghost", size: "lg" })}>
                 Se connecter
               </Link>
             </>

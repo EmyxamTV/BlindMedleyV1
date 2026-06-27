@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Form } from "@adonisjs/inertia/react";
-import { Button } from "~/components/ui/button";
+import { Button, buttonClassName } from "~/components/ui/button";
 import { Field, FieldError, Label } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
@@ -189,7 +189,10 @@ export default function AdminPlaylists({ playlists }: Props) {
                         {() => (
                           <button
                             type="submit"
-                            className={`btn-sm ${p.isActive ? "btn-warn" : "btn-success"}`}
+                            className={buttonClassName({
+                              variant: p.isActive ? "warn" : "success",
+                              size: "sm",
+                            })}
                           >
                             {p.isActive ? "Désactiver" : "Activer"}
                           </button>
