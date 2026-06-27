@@ -4134,3 +4134,39 @@ textarea {
     padding: 2rem 1rem;
   }
 }
+
+/* ── Page typography ────────────────────────────────────────── */
+.admin-page h1,
+.gi-title,
+.practice-header h1,
+.profile-info h1,
+.leaderboard-page .lb-topbar h1,
+.results-page h1,
+.lobby-header h1,
+.bandle-head h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+}
+
+.admin-sub,
+.gi-sub,
+.practice-header p,
+.lobby-sub,
+.bandle-head p {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.admin-section h2,
+.gi-section-title,
+.section-header h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+}
