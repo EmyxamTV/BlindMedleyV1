@@ -128,7 +128,7 @@ export default function Lobby({ game, isHost, user }: Props) {
               <p>En attente que l'hôte démarre...</p>
             </div>
           )}
-          <Link route="game.index" className="btn btn-ghost">
+          <Link route="playlists.index" className="btn btn-ghost">
             Quitter
           </Link>
         </div>

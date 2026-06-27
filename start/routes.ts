@@ -75,6 +75,7 @@ router
     router.get("/playlists", [PlaylistController, "index"]).as("playlists.index");
     router.get("/playlists/create", [PlaylistController, "create"]).as("playlists.create");
     router.post("/playlists", [PlaylistController, "store"]).as("playlists.store");
+    router.get("/playlists/:id/play", [PlaylistController, "play"]).as("playlists.play");
     router.get("/playlists/:id/edit", [PlaylistController, "edit"]).as("playlists.edit");
     router.post("/playlists/:id", [PlaylistController, "update"]).as("playlists.update");
     router.post("/playlists/:id/share", [PlaylistController, "share"]).as("playlists.share");

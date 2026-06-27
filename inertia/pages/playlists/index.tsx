@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { buttonClassName } from "~/components/ui/button";
+import { Button, buttonClassName } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
 import { Field, Label } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
@@ -12,6 +13,7 @@ interface PlaylistRow extends Record<string, JSONDataTypes> {
   id: number;
   name: string;
   description: string | null;
+  coverUrl: string | null;
   genre: string | null;
   decade: string | null;
   difficulty: number;
@@ -41,6 +43,7 @@ const FILTERS = [
 
 export default function PlaylistIndex({ playlists, meta, search, filter }: Props) {
   const [q, setQ] = useState(search);
+  const [joinCode, setJoinCode] = useState("");
   const searchPlaylists = useDebouncedCallback(
     (next: string) =>
       router.get(
@@ -55,6 +58,12 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
     router.get("/playlists", { search: q, filter: next });
   }
 
+  function joinPrivateGame(e: FormEvent) {
+    e.preventDefault();
+    if (!joinCode.trim()) return;
+    router.post("/game/0/join", { code: joinCode.toUpperCase() });
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-topbar">
@@ -66,6 +75,25 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
           Créer
         </Link>
       </div>
+
+      <section className="admin-section join-private-section">
+        <form onSubmit={joinPrivateGame} className="join-private-form">
+          <Field style={{ flex: 1, minWidth: 180, marginBottom: 0 }}>
+            <Label htmlFor="join-code">Rejoindre une partie privée</Label>
+            <Input
+              id="join-code"
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="Code"
+              maxLength={8}
+            />
+          </Field>
+          <Button type="submit" disabled={!joinCode.trim()}>
+            Rejoindre
+          </Button>
+        </form>
+      </section>
 
       <section className="admin-section">
         <div className="import-row">
@@ -86,14 +114,16 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
         </div>
         <div className="tabs" style={{ marginTop: "1rem" }}>
           {FILTERS.map(([value, label]) => (
-            <button
+            <Button
               key={value}
               type="button"
+              variant="ghost"
+              size="sm"
               className={`tab ${filter === value ? "active" : ""}`}
               onClick={() => setFilter(value)}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
       </section>
@@ -105,52 +135,50 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
             <p>Aucune playlist accessible.</p>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Playlist</th>
-                  <th>Type</th>
-                  <th>Genre</th>
-                  <th>Titres</th>
-                  <th>Difficulté</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {playlists.map((playlist) => (
-                  <tr key={playlist.id}>
-                    <td>
-                      <span className="pl-table-name">{playlist.name}</span>
-                      {playlist.description && (
-                        <div className="td-date">{playlist.description.slice(0, 90)}</div>
-                      )}
-                    </td>
-                    <td>
+          <div className="playlist-card-grid">
+            {playlists.map((playlist) => (
+              <Card key={playlist.id} className="playlist-card">
+                <Link
+                  route="playlists.play"
+                  routeParams={{ id: playlist.id }}
+                  className="playlist-card-play"
+                >
+                  <div className="playlist-card-cover">
+                    {playlist.coverUrl ? (
+                      <img src={playlist.coverUrl} alt="" />
+                    ) : (
+                      <span className="playlist-card-note">♪</span>
+                    )}
+                    <span className="playlist-card-cta">Jouer</span>
+                  </div>
+                  <div className="playlist-card-body">
+                    <div className="playlist-card-title-row">
+                      <h2>{playlist.name}</h2>
                       <span className={`status-badge status-${playlist.visibility}`}>
                         {playlist.visibility === "public" ? "Publique" : "Privée"}
                       </span>
-                    </td>
-                    <td>{playlist.genre ?? "-"}</td>
-                    <td>{playlist.trackCount}</td>
-                    <td>{playlist.difficulty}/5</td>
-                    <td>
-                      {playlist.canEdit ? (
-                        <Link
-                          route="playlists.edit"
-                          routeParams={{ id: playlist.id }}
-                          className="btn-sm btn-success"
-                        >
-                          Éditer
-                        </Link>
-                      ) : (
-                        <span className="td-date">Lecture</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    {playlist.description && <p>{playlist.description}</p>}
+                    <div className="playlist-card-meta">
+                      <span>{playlist.trackCount} titres</span>
+                      <span>Difficulté {playlist.difficulty}/5</span>
+                      {playlist.genre && <span>{playlist.genre}</span>}
+                    </div>
+                  </div>
+                </Link>
+                {playlist.canEdit && (
+                  <div className="playlist-card-actions">
+                    <Link
+                      route="playlists.edit"
+                      routeParams={{ id: playlist.id }}
+                      className={buttonClassName({ variant: "secondary", size: "sm" })}
+                    >
+                      Éditer
+                    </Link>
+                  </div>
+                )}
+              </Card>
+            ))}
           </div>
         )}
       </section>

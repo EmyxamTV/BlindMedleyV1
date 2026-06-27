@@ -11,9 +11,9 @@ export const controllers = {
   Game: () => import('#controllers/game_controller'),
   Leaderboard: () => import('#controllers/leaderboard_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
+  Playlist: () => import('#controllers/playlist_controller'),
   Practice: () => import('#controllers/practice_controller'),
   Profile: () => import('#controllers/profile_controller'),
   Session: () => import('#controllers/session_controller'),
   SpotifyOauth: () => import('#controllers/spotify_oauth_controller'),
-  Playlist: () => import('#controllers/playlist_controller'),
 }

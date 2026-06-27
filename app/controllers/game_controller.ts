@@ -1,7 +1,6 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import Game from "#models/game";
 import GamePlayer from "#models/game_player";
-import Playlist from "#models/playlist";
 import Round from "#models/round";
 import Answer from "#models/answer";
 import { GameService } from "#services/game_service";
@@ -11,7 +10,6 @@ import { PlaylistAccessService } from "#services/playlist_access_service";
 import AnswerTransformer from "#transformers/answer_transformer";
 import GamePlayerTransformer from "#transformers/game_player_transformer";
 import GameTransformer from "#transformers/game_transformer";
-import PlaylistTransformer from "#transformers/playlist_transformer";
 import {
   createGameValidator,
   joinGameValidator,
@@ -34,40 +32,8 @@ export default class GameController {
   }
 
   // Page lobby / création
-  async index({ inertia, auth }: HttpContext) {
-    let playlists = await this.playlistAccess
-      .forUser(Playlist.query(), auth.user!)
-      .where("is_active", true)
-      .orderBy("name");
-
-    if (playlists.length === 0) {
-      await this.deezerService.importStarterPlaylist();
-      playlists = await this.playlistAccess
-        .forUser(Playlist.query(), auth.user!)
-        .where("is_active", true)
-        .orderBy("name");
-    }
-
-    const publicGames = await Game.query()
-      .where("status", "waiting")
-      .where("mode", "public")
-      .preload("host", (q) => q.preload("profile"))
-      .preload("players")
-      .preload("playlist")
-      .orderBy("created_at", "desc")
-      .limit(10);
-
-    const myActiveGame = await GamePlayer.query()
-      .where("user_id", auth.user!.id)
-      .whereHas("game", (q) => q.whereIn("status", ["waiting", "starting", "active"]))
-      .preload("game")
-      .first();
-
-    return inertia.render("game/index", {
-      playlists: PlaylistTransformer.transform(playlists),
-      publicGames: GameTransformer.transform(publicGames),
-      myActiveGameId: myActiveGame?.game?.publicId ?? null,
-    });
+  async index({ response }: HttpContext) {
+    return response.redirect().toRoute("playlists.index");
   }
 
   // Créer une partie
@@ -84,9 +50,9 @@ export default class GameController {
 
   async createStarterPlaylist({ response, session }: HttpContext) {
     await this.deezerService.importStarterPlaylist();
-    session.flash("success", "Playlist de demarrage prete. Tu peux maintenant lancer une partie.");
+    session.flash("success", "Playlist de démarrage prête. Tu peux maintenant lancer une partie.");
 
-    return response.redirect().toRoute("game.index");
+    return response.redirect().toRoute("playlists.index");
   }
 
   // Page lobby d'une partie

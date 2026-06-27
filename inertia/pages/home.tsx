@@ -15,7 +15,7 @@ export default function Home({ user }: InertiaProps) {
         </p>
         <div className="hero-actions">
           {user ? (
-            <Link route="game.index" className="btn btn-primary btn-lg">
+            <Link route="playlists.index" className="btn btn-primary btn-lg">
               Jouer maintenant
             </Link>
           ) : (

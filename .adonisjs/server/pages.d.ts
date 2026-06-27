@@ -24,12 +24,13 @@ declare module '@adonisjs/inertia/types' {
     'game/lobby': ExtractProps<(typeof import('../../inertia/pages/game/lobby.tsx'))['default']>
     'game/play': ExtractProps<(typeof import('../../inertia/pages/game/play.tsx'))['default']>
     'game/results': ExtractProps<(typeof import('../../inertia/pages/game/results.tsx'))['default']>
+    'game/wizard': ExtractProps<(typeof import('../../inertia/pages/game/wizard.tsx'))['default']>
     'home': ExtractProps<(typeof import('../../inertia/pages/home.tsx'))['default']>
     'leaderboard': ExtractProps<(typeof import('../../inertia/pages/leaderboard.tsx'))['default']>
-    'practice': ExtractProps<(typeof import('../../inertia/pages/practice.tsx'))['default']>
-    'profile': ExtractProps<(typeof import('../../inertia/pages/profile.tsx'))['default']>
     'playlists/create': ExtractProps<(typeof import('../../inertia/pages/playlists/create.tsx'))['default']>
     'playlists/edit': ExtractProps<(typeof import('../../inertia/pages/playlists/edit.tsx'))['default']>
     'playlists/index': ExtractProps<(typeof import('../../inertia/pages/playlists/index.tsx'))['default']>
+    'practice': ExtractProps<(typeof import('../../inertia/pages/practice.tsx'))['default']>
+    'profile': ExtractProps<(typeof import('../../inertia/pages/profile.tsx'))['default']>
   }
 }

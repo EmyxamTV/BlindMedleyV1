@@ -1224,6 +1224,97 @@ textarea {
   min-width: 130px;
 }
 
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.wizard-stepper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.wizard-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 48px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.wizard-step:hover {
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
+.wizard-step span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+  font-size: 0.75rem;
+  font-weight: 900;
+  flex: 0 0 auto;
+}
+
+.wizard-step strong {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.wizard-step.active {
+  border-color: rgba(167, 139, 250, 0.6);
+  background: var(--purple-soft);
+  color: var(--text);
+}
+
+.wizard-step.active span,
+.wizard-step.done span {
+  background: var(--purple);
+  color: white;
+}
+
+.wizard-step.done {
+  color: var(--text-2);
+}
+
+.wizard-card {
+  margin: 0 auto;
+}
+
+.wizard-steps .tab {
+  border: 0;
+}
+
+.wizard-option-group {
+  margin-bottom: 1.25rem;
+}
+
+.wizard-option-group > span {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 /* Tab badge */
 .tab-badge {
   display: inline-flex;
@@ -1476,6 +1567,163 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
+}
+
+.join-private-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.join-private-form .btn {
+  min-height: 42px;
+}
+
+.playlist-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.playlist-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.playlist-card {
+  overflow: hidden;
+  padding: 0;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.playlist-card:hover {
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.32);
+  transform: translateY(-4px);
+}
+
+.playlist-card-play {
+  display: block;
+  color: inherit;
+}
+
+.playlist-card-cover {
+  position: relative;
+  height: 150px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(236, 72, 153, 0.32), transparent 34%),
+    linear-gradient(135deg, rgba(124, 58, 237, 0.82), rgba(6, 182, 212, 0.68));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.playlist-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.22s ease;
+}
+
+.playlist-card:hover .playlist-card-cover img {
+  transform: scale(1.06);
+}
+
+.playlist-card-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.18s ease;
+}
+
+.playlist-card:hover .playlist-card-cover::after {
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.playlist-card-note {
+  font-size: 3rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.playlist-card-cta {
+  position: absolute;
+  z-index: 1;
+  inset: auto 1rem 1rem 1rem;
+  display: flex;
+  justify-content: center;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius);
+  background: white;
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 800;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.playlist-card:hover .playlist-card-cta {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.playlist-card-body {
+  padding: 1rem;
+}
+
+.playlist-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.playlist-card-title-row h2 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.playlist-card-body p {
+  color: var(--text-3);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin-bottom: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.playlist-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.playlist-card-meta span {
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.playlist-card-actions {
+  padding: 0 1rem 1rem;
 }
 
 /* Public game cards */

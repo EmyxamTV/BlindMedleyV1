@@ -41,6 +41,7 @@ export interface ApiDefinition {
     index: typeof routes['playlists.index']
     create: typeof routes['playlists.create']
     store: typeof routes['playlists.store']
+    play: typeof routes['playlists.play']
     edit: typeof routes['playlists.edit']
     update: typeof routes['playlists.update']
     share: typeof routes['playlists.share']

@@ -271,6 +271,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'playlists.play': {
+    methods: ["GET","HEAD"]
+    pattern: '/playlists/:id/play'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['play']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['play']>>>
+    }
+  }
   'playlists.edit': {
     methods: ["GET","HEAD"]
     pattern: '/playlists/:id/edit'

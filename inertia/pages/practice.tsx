@@ -95,7 +95,7 @@ export default function Practice(_: InertiaProps) {
           <h1>Échauffement musical</h1>
           <p>Un extrait, quatre réponses. Enchaîne les titres à ton rythme.</p>
         </div>
-        <Link route="game.index" className="btn btn-ghost">
+        <Link route="playlists.index" className="btn btn-ghost">
           Parties multijoueur
         </Link>
       </header>

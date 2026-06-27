@@ -138,6 +138,12 @@ const routes = {
     tokens: [{"old":"/playlists","type":0,"val":"playlists","end":""}],
     types: placeholder as Registry['playlists.store']['types'],
   },
+  'playlists.play': {
+    methods: ["GET","HEAD"],
+    pattern: '/playlists/:id/play',
+    tokens: [{"old":"/playlists/:id/play","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/play","type":1,"val":"id","end":""},{"old":"/playlists/:id/play","type":0,"val":"play","end":""}],
+    types: placeholder as Registry['playlists.play']['types'],
+  },
   'playlists.edit': {
     methods: ["GET","HEAD"],
     pattern: '/playlists/:id/edit',

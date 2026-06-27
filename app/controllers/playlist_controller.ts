@@ -59,6 +59,19 @@ export default class PlaylistController {
     return inertia.render("playlists/create", {});
   }
 
+  async play({ inertia, params, auth }: HttpContext) {
+    const user = auth.user!;
+    const playlist = await this.access
+      .forUser(Playlist.query().where("id", params.id).where("is_active", true), user)
+      .firstOrFail();
+
+    this.withFlags(playlist, user);
+
+    return inertia.render("game/wizard", {
+      playlist: PlaylistTransformer.transform(playlist),
+    });
+  }
+
   async store({ request, auth, response, session }: HttpContext) {
     const { url } = await request.validateUsing(createPlaylistValidator);
     const user = auth.user!;

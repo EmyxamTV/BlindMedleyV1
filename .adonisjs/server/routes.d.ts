@@ -26,6 +26,7 @@ export type ScannedRoutes = {
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.store': { paramsTuple?: []; params?: {} }
+    'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.share': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -66,6 +67,7 @@ export type ScannedRoutes = {
     'practice.preview': { paramsTuple?: []; params?: {} }
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
+    'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -91,6 +93,7 @@ export type ScannedRoutes = {
     'practice.preview': { paramsTuple?: []; params?: {} }
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
+    'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

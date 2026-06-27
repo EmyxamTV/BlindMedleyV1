@@ -34,8 +34,8 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
           {user && (
             <nav className="navbar-nav">
               <Link
-                route="game.index"
-                className={cn("nav-link", isActivePath("/game") && "active")}
+                route="playlists.index"
+                className={cn("nav-link", isActivePath("/playlists") && "active")}
               >
                 Jouer
               </Link>
@@ -56,12 +56,6 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
                 className={cn("nav-link", isActivePath("/leaderboard") && "active")}
               >
                 Classement
-              </Link>
-              <Link
-                route="playlists.index"
-                className={cn("nav-link", isActivePath("/playlists") && "active")}
-              >
-                Playlists
               </Link>
               <Link
                 route="profile.show"
@@ -130,8 +124,8 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
       {user && (
         <nav className="mobile-nav">
           <Link
-            route="game.index"
-            className={cn("mobile-nav-link", isActivePath("/game") && "active")}
+            route="playlists.index"
+            className={cn("mobile-nav-link", isActivePath("/playlists") && "active")}
           >
             <svg
               width="20"
