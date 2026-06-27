@@ -1,5 +1,6 @@
 import TrackCache from "#models/track_cache";
 import Playlist from "#models/playlist";
+import { sanitizeTrackText } from "#services/track_sanitizer";
 import { DateTime } from "luxon";
 import type { DeezerPlaylist, DeezerTrack } from "#types/deezer";
 
@@ -56,9 +57,9 @@ export class DeezerService {
           TrackCache.updateOrCreate(
             { spotifyId: `deezer:${t.id}` },
             {
-              title: t.title,
-              artist: t.artist.name,
-              album: t.album.title,
+              title: sanitizeTrackText(t.title),
+              artist: sanitizeTrackText(t.artist.name),
+              album: sanitizeTrackText(t.album.title),
               previewUrl: t.preview || null,
               coverUrl: t.album.cover_medium || null,
               durationMs: t.duration * 1000,
@@ -127,9 +128,9 @@ export class DeezerService {
           TrackCache.updateOrCreate(
             { spotifyId: `deezer:${track.id}` },
             {
-              title: track.title,
-              artist: track.artist.name,
-              album: track.album.title,
+              title: sanitizeTrackText(track.title),
+              artist: sanitizeTrackText(track.artist.name),
+              album: sanitizeTrackText(track.album.title),
               previewUrl: track.preview,
               coverUrl: track.album.cover_medium ?? null,
               durationMs: track.duration * 1000,

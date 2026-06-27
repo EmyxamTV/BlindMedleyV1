@@ -1,6 +1,7 @@
 import env from "#start/env";
 import TrackCache from "#models/track_cache";
 import Playlist from "#models/playlist";
+import { sanitizeTrackText } from "#services/track_sanitizer";
 import { DateTime } from "luxon";
 import type {
   SpotifyPlaylistObject,
@@ -141,9 +142,9 @@ export class SpotifyService {
           return TrackCache.updateOrCreate(
             { spotifyId: t.id },
             {
-              title: t.name,
-              artist,
-              album: t.album?.name ?? null,
+              title: sanitizeTrackText(t.name),
+              artist: sanitizeTrackText(artist),
+              album: sanitizeTrackText(t.album?.name ?? null),
               previewUrl,
               coverUrl: t.album?.images?.[0]?.url ?? null,
               durationMs: t.duration_ms,
