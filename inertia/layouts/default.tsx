@@ -3,6 +3,8 @@ import { toast, Toaster } from "sonner";
 import { usePage } from "@inertiajs/react";
 import { ReactElement, useEffect } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
+import { buttonClassName } from "~/components/ui/button";
+import { cn } from "~/lib/cn";
 
 export default function Layout({ children }: { children: ReactElement<Data.SharedProps> }) {
   const { url } = usePage();
@@ -18,6 +20,8 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
   const user = props.user;
   const isAdmin = user?.role === "admin" || user?.role === "moderator";
   const displayName = (user as any)?.fullName?.split(" ")[0] || user?.initials || "??";
+  const currentPath = url.split("?")[0];
+  const isActivePath = (path: string) => currentPath === path || currentPath.startsWith(`${path}/`);
 
   return (
     <>
@@ -29,22 +33,40 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
 
           {user && (
             <nav className="navbar-nav">
-              <Link route="game.index" className="nav-link">
+              <Link
+                route="game.index"
+                className={cn("nav-link", isActivePath("/game") && "active")}
+              >
                 Jouer
               </Link>
-              <Link route="practice.index" className="nav-link">
+              <Link
+                route="practice.index"
+                className={cn("nav-link", isActivePath("/practice") && "active")}
+              >
                 Entraînement
               </Link>
-              <Link route="bandle.index" className="nav-link">
+              <Link
+                route="bandle.index"
+                className={cn("nav-link", isActivePath("/bandle") && "active")}
+              >
                 Progressif
               </Link>
-              <Link route="leaderboard.index" className="nav-link">
+              <Link
+                route="leaderboard.index"
+                className={cn("nav-link", isActivePath("/leaderboard") && "active")}
+              >
                 Classement
               </Link>
-              <Link route="playlists.index" className="nav-link">
+              <Link
+                route="playlists.index"
+                className={cn("nav-link", isActivePath("/playlists") && "active")}
+              >
                 Playlists
               </Link>
-              <Link route="profile.show" className="nav-link">
+              <Link
+                route="profile.show"
+                className={cn("nav-link", isActivePath("/profile") && "active")}
+              >
                 Profil
               </Link>
             </nav>
@@ -93,7 +115,7 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
                 <Link route="session.create" className="nav-link">
                   Connexion
                 </Link>
-                <Link route="new_account.create" className="btn-signup">
+                <Link route="new_account.create" className={buttonClassName()}>
                   S'inscrire
                 </Link>
               </div>
@@ -107,7 +129,10 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
       {/* Navigation mobile */}
       {user && (
         <nav className="mobile-nav">
-          <Link route="game.index" className="mobile-nav-link">
+          <Link
+            route="game.index"
+            className={cn("mobile-nav-link", isActivePath("/game") && "active")}
+          >
             <svg
               width="20"
               height="20"
@@ -120,7 +145,10 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
             </svg>
             Jouer
           </Link>
-          <Link route="practice.index" className="mobile-nav-link">
+          <Link
+            route="practice.index"
+            className={cn("mobile-nav-link", isActivePath("/practice") && "active")}
+          >
             <svg
               width="20"
               height="20"
@@ -133,7 +161,10 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
             </svg>
             Solo
           </Link>
-          <Link route="leaderboard.index" className="mobile-nav-link">
+          <Link
+            route="leaderboard.index"
+            className={cn("mobile-nav-link", isActivePath("/leaderboard") && "active")}
+          >
             <svg
               width="20"
               height="20"
@@ -147,7 +178,10 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
             </svg>
             Classement
           </Link>
-          <Link route="profile.show" className="mobile-nav-link">
+          <Link
+            route="profile.show"
+            className={cn("mobile-nav-link", isActivePath("/profile") && "active")}
+          >
             <svg
               width="20"
               height="20"

@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Link, Form } from "@adonisjs/inertia/react";
+import { Button } from "~/components/ui/button";
+import { Field, FieldError, Label } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
@@ -96,18 +99,18 @@ export default function AdminPlaylists({ playlists }: Props) {
         <Form route="admin.playlists.import">
           {({ errors }) => (
             <div className="import-row">
-              <div className="form-group" style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
-                <label>URL de la playlist Spotify</label>
-                <input
+              <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+                <Label>URL de la playlist Spotify</Label>
+                <Input
                   type="text"
                   name="spotify_url"
                   value={importUrl}
                   onChange={(e) => setImportUrl(e.target.value)}
                   placeholder="https://open.spotify.com/playlist/..."
                 />
-                {errors.spotify_url && <div className="field-error">{errors.spotify_url}</div>}
-              </div>
-              <button type="submit" className="btn btn-primary" disabled={!importUrl.trim()}>
+                {errors.spotify_url && <FieldError>{errors.spotify_url}</FieldError>}
+              </Field>
+              <Button type="submit" disabled={!importUrl.trim()}>
                 <svg
                   width="15"
                   height="15"
@@ -122,7 +125,7 @@ export default function AdminPlaylists({ playlists }: Props) {
                   <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
                 </svg>
                 Importer
-              </button>
+              </Button>
             </div>
           )}
         </Form>

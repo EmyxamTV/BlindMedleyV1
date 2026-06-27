@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, Form } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
@@ -103,15 +105,15 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
       </div>
 
       <form className="search-row" onSubmit={handleSearch}>
-        <input
+        <Input
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Rechercher par email ou pseudo..."
         />
-        <button type="submit" className="btn btn-primary">
+        <Button type="submit">
           Rechercher
-        </button>
+        </Button>
       </form>
 
       <div className="filter-row">

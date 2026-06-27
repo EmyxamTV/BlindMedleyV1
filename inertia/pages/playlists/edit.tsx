@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
+import { Button, buttonClassName } from "~/components/ui/button";
+import { Field, FieldError, Label } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
+import { Textarea } from "~/components/ui/textarea";
 import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
@@ -38,7 +43,7 @@ export default function PlaylistEdit({ playlist, shares }: Props) {
             {playlist.visibility === "public" ? "Playlist publique" : "Playlist privée"}
           </p>
         </div>
-        <Link route="playlists.index" className="btn btn-ghost">
+        <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
           Retour
         </Link>
       </div>
@@ -49,27 +54,27 @@ export default function PlaylistEdit({ playlist, shares }: Props) {
           {({ errors }) => (
             <>
               <div className="options-row">
-                <div className="form-group">
-                  <label htmlFor="playlist-name">Nom</label>
-                  <input id="playlist-name" name="name" defaultValue={playlist.name} />
-                  {errors.name && <div className="field-error">{errors.name}</div>}
-                </div>
-                <div className="form-group">
-                  <label htmlFor="playlist-genre">Genre</label>
-                  <input id="playlist-genre" name="genre" defaultValue={playlist.genre ?? ""} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="playlist-decade">Décennie</label>
-                  <input
+                <Field>
+                  <Label htmlFor="playlist-name">Nom</Label>
+                  <Input id="playlist-name" name="name" defaultValue={playlist.name} />
+                  {errors.name && <FieldError>{errors.name}</FieldError>}
+                </Field>
+                <Field>
+                  <Label htmlFor="playlist-genre">Genre</Label>
+                  <Input id="playlist-genre" name="genre" defaultValue={playlist.genre ?? ""} />
+                </Field>
+                <Field>
+                  <Label htmlFor="playlist-decade">Décennie</Label>
+                  <Input
                     id="playlist-decade"
                     name="decade"
                     defaultValue={playlist.decade ?? ""}
                     placeholder="1980s"
                   />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="playlist-difficulty">Difficulté</label>
-                  <select
+                </Field>
+                <Field>
+                  <Label htmlFor="playlist-difficulty">Difficulté</Label>
+                  <Select
                     id="playlist-difficulty"
                     name="difficulty"
                     defaultValue={String(playlist.difficulty)}
@@ -79,20 +84,20 @@ export default function PlaylistEdit({ playlist, shares }: Props) {
                         {level}/5
                       </option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </Field>
               </div>
-              <div className="form-group">
-                <label htmlFor="playlist-description">Description</label>
-                <textarea
+              <Field>
+                <Label htmlFor="playlist-description">Description</Label>
+                <Textarea
                   id="playlist-description"
                   name="description"
                   defaultValue={playlist.description ?? ""}
                 />
-              </div>
-              <button type="submit" className="btn btn-primary">
+              </Field>
+              <Button type="submit">
                 Enregistrer
-              </button>
+              </Button>
             </>
           )}
         </Form>
@@ -104,23 +109,23 @@ export default function PlaylistEdit({ playlist, shares }: Props) {
           <Form route="playlists.share" routeParams={{ id: playlist.id }}>
             {({ errors }) => (
               <div className="import-row">
-                <div className="form-group" style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
-                  <label htmlFor="playlist-share-user">Email ou pseudo</label>
-                  <input
+                <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+                  <Label htmlFor="playlist-share-user">Email ou pseudo</Label>
+                  <Input
                     id="playlist-share-user"
                     name="user"
                     value={shareUser}
                     onChange={(e) => setShareUser(e.target.value)}
                   />
-                  {errors.user && <div className="field-error">{errors.user}</div>}
-                </div>
+                  {errors.user && <FieldError>{errors.user}</FieldError>}
+                </Field>
                 <label className="form-group" style={{ marginBottom: 0 }}>
                   <span>Peut éditer</span>
                   <input type="checkbox" name="canEdit" value="true" aria-label="Peut éditer" />
                 </label>
-                <button type="submit" className="btn btn-primary" disabled={!shareUser.trim()}>
+                <Button type="submit" disabled={!shareUser.trim()}>
                   Partager
-                </button>
+                </Button>
               </div>
             )}
           </Form>

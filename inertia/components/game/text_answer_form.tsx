@@ -1,4 +1,6 @@
 import type { FormEvent, RefObject } from "react";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
 
 export function TextAnswerForm({
   value,
@@ -30,7 +32,7 @@ export function TextAnswerForm({
         <label htmlFor="text-answer">Titre ou artiste ?</label>
       )}
       <div>
-        <input
+        <Input
           ref={inputRef}
           id="text-answer"
           value={value}
@@ -40,9 +42,9 @@ export function TextAnswerForm({
           autoComplete="off"
           autoFocus
         />
-        <button className="btn btn-primary" disabled={disabled || !value.trim()}>
+        <Button disabled={disabled || !value.trim()}>
           {compact ? "Envoyer" : "Valider"}
-        </button>
+        </Button>
       </div>
     </form>
   );

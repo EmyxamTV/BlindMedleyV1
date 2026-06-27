@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { buttonClassName } from "~/components/ui/button";
+import { Field, Label } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
@@ -37,11 +41,15 @@ const FILTERS = [
 
 export default function PlaylistIndex({ playlists, meta, search, filter }: Props) {
   const [q, setQ] = useState(search);
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    router.get("/playlists", { search: q, filter });
-  }
+  const searchPlaylists = useDebouncedCallback(
+    (next: string) =>
+      router.get(
+        "/playlists",
+        { search: next, filter },
+        { replace: true, preserveState: true, preserveScroll: true },
+      ),
+    { wait: 300 },
+  );
 
   function setFilter(next: Props["filter"]) {
     router.get("/playlists", { search: q, filter: next });
@@ -54,27 +62,28 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
           <h1>Playlists</h1>
           <p className="admin-sub">{meta.total} playlists accessibles</p>
         </div>
-        <Link route="playlists.create" className="btn btn-primary">
+        <Link route="playlists.create" className={buttonClassName()}>
           Créer
         </Link>
       </div>
 
       <section className="admin-section">
-        <form onSubmit={submit} className="import-row">
-          <div className="form-group" style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
-            <label htmlFor="playlist-search">Recherche</label>
-            <input
+        <div className="import-row">
+          <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+            <Label htmlFor="playlist-search">Recherche</Label>
+            <Input
               id="playlist-search"
               type="search"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setQ(next);
+                searchPlaylists(next);
+              }}
               placeholder="Nom, description..."
             />
-          </div>
-          <button type="submit" className="btn btn-primary">
-            Rechercher
-          </button>
-        </form>
+          </Field>
+        </div>
         <div className="tabs" style={{ marginTop: "1rem" }}>
           {FILTERS.map(([value, label]) => (
             <button

@@ -1,4 +1,7 @@
 import { Form, Link } from "@adonisjs/inertia/react";
+import { Button } from "~/components/ui/button";
+import { Field, FieldError, Label } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 
 export default function Signup() {
   return (
@@ -38,9 +41,9 @@ export default function Signup() {
         <Form route="new_account.store">
           {({ errors }) => (
             <>
-              <div className="form-group">
-                <label htmlFor="fullName">Nom complet</label>
-                <input
+              <Field>
+                <Label htmlFor="fullName">Nom complet</Label>
+                <Input
                   type="text"
                   name="fullName"
                   id="fullName"
@@ -48,12 +51,12 @@ export default function Signup() {
                   placeholder="Jean Dupont"
                   data-invalid={errors.fullName ? true : undefined}
                 />
-                {errors.fullName && <div className="field-error">{errors.fullName}</div>}
-              </div>
+                {errors.fullName && <FieldError>{errors.fullName}</FieldError>}
+              </Field>
 
-              <div className="form-group">
-                <label htmlFor="email">Adresse email</label>
-                <input
+              <Field>
+                <Label htmlFor="email">Adresse email</Label>
+                <Input
                   type="email"
                   name="email"
                   id="email"
@@ -61,12 +64,12 @@ export default function Signup() {
                   placeholder="toi@exemple.com"
                   data-invalid={errors.email ? true : undefined}
                 />
-                {errors.email && <div className="field-error">{errors.email}</div>}
-              </div>
+                {errors.email && <FieldError>{errors.email}</FieldError>}
+              </Field>
 
-              <div className="form-group">
-                <label htmlFor="password">Mot de passe</label>
-                <input
+              <Field>
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input
                   type="password"
                   name="password"
                   id="password"
@@ -74,12 +77,12 @@ export default function Signup() {
                   placeholder="8 caractères minimum"
                   data-invalid={errors.password ? true : undefined}
                 />
-                {errors.password && <div className="field-error">{errors.password}</div>}
-              </div>
+                {errors.password && <FieldError>{errors.password}</FieldError>}
+              </Field>
 
-              <div className="form-group">
-                <label htmlFor="passwordConfirmation">Confirmer le mot de passe</label>
-                <input
+              <Field>
+                <Label htmlFor="passwordConfirmation">Confirmer le mot de passe</Label>
+                <Input
                   type="password"
                   name="passwordConfirmation"
                   id="passwordConfirmation"
@@ -88,17 +91,13 @@ export default function Signup() {
                   data-invalid={errors.passwordConfirmation ? true : undefined}
                 />
                 {errors.passwordConfirmation && (
-                  <div className="field-error">{errors.passwordConfirmation}</div>
+                  <FieldError>{errors.passwordConfirmation}</FieldError>
                 )}
-              </div>
+              </Field>
 
-              <button
-                type="submit"
-                className="btn btn-primary btn-full"
-                style={{ marginTop: "0.5rem" }}
-              >
+              <Button type="submit" full style={{ marginTop: "0.5rem" }}>
                 Créer mon compte
-              </button>
+              </Button>
             </>
           )}
         </Form>

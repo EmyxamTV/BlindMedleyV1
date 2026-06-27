@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
+import { Button, buttonClassName } from "~/components/ui/button";
+import { Field, FieldError, Label } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 import type { InertiaProps } from "~/types";
 
 export default function PlaylistCreate(_props: InertiaProps) {
@@ -12,7 +15,7 @@ export default function PlaylistCreate(_props: InertiaProps) {
           <h1>Créer une playlist</h1>
           <p className="admin-sub">Import Deezer ou Spotify</p>
         </div>
-        <Link route="playlists.index" className="btn btn-ghost">
+        <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
           Retour
         </Link>
       </div>
@@ -21,9 +24,9 @@ export default function PlaylistCreate(_props: InertiaProps) {
         <Form route="playlists.store">
           {({ errors }) => (
             <div className="import-row">
-              <div className="form-group" style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
-                <label htmlFor="playlist-url">URL de playlist</label>
-                <input
+              <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+                <Label htmlFor="playlist-url">URL de playlist</Label>
+                <Input
                   id="playlist-url"
                   type="text"
                   name="url"
@@ -31,11 +34,11 @@ export default function PlaylistCreate(_props: InertiaProps) {
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://open.spotify.com/playlist/..."
                 />
-                {errors.url && <div className="field-error">{errors.url}</div>}
-              </div>
-              <button type="submit" className="btn btn-primary" disabled={!url.trim()}>
+                {errors.url && <FieldError>{errors.url}</FieldError>}
+              </Field>
+              <Button type="submit" disabled={!url.trim()}>
                 Importer
-              </button>
+              </Button>
             </div>
           )}
         </Form>

@@ -1,4 +1,7 @@
 import { Form, Link } from "@adonisjs/inertia/react";
+import { Button } from "~/components/ui/button";
+import { Field, FieldError, Label } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 
 export default function Login() {
   return (
@@ -36,9 +39,9 @@ export default function Login() {
         <Form route="session.store">
           {({ errors }) => (
             <>
-              <div className="form-group">
-                <label htmlFor="email">Adresse email</label>
-                <input
+              <Field>
+                <Label htmlFor="email">Adresse email</Label>
+                <Input
                   type="email"
                   name="email"
                   id="email"
@@ -46,12 +49,12 @@ export default function Login() {
                   placeholder="toi@exemple.com"
                   data-invalid={errors.email ? true : undefined}
                 />
-                {errors.email && <div className="field-error">{errors.email}</div>}
-              </div>
+                {errors.email && <FieldError>{errors.email}</FieldError>}
+              </Field>
 
-              <div className="form-group">
-                <label htmlFor="password">Mot de passe</label>
-                <input
+              <Field>
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input
                   type="password"
                   name="password"
                   id="password"
@@ -59,16 +62,12 @@ export default function Login() {
                   placeholder="••••••••"
                   data-invalid={errors.password ? true : undefined}
                 />
-                {errors.password && <div className="field-error">{errors.password}</div>}
-              </div>
+                {errors.password && <FieldError>{errors.password}</FieldError>}
+              </Field>
 
-              <button
-                type="submit"
-                className="btn btn-primary btn-full"
-                style={{ marginTop: "0.5rem" }}
-              >
+              <Button type="submit" full style={{ marginTop: "0.5rem" }}>
                 Se connecter
-              </button>
+              </Button>
             </>
           )}
         </Form>

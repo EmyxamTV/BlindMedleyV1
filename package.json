@@ -48,6 +48,7 @@
     "@adonisjs/transmit-client": "^1.1.0",
     "@adonisjs/vite": "^5.1.1",
     "@inertiajs/react": "^2.3.27",
+    "@tanstack/react-pacer": "^0.22.1",
     "@tuyau/core": "^1.2.2",
     "@vinejs/vine": "^4.4.0",
     "edge.js": "^6.5.1",
