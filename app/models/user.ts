@@ -7,9 +7,13 @@ import type { HasOne, HasMany, ManyToMany } from "@adonisjs/lucid/types/relation
 import { UserSchema } from "#database/schema";
 import Profile from "#models/profile";
 import GamePlayer from "#models/game_player";
+import Game from "#models/game";
 import Achievement from "#models/achievement";
 import Friendship from "#models/friendship";
 import PlaylistShare from "#models/playlist_share";
+import Playlist from "#models/playlist";
+import Answer from "#models/answer";
+import LeaderboardSnapshot from "#models/leaderboard_snapshot";
 
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   declare role: "player" | "moderator" | "admin";
@@ -21,6 +25,21 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
 
   @hasMany(() => GamePlayer)
   declare gamePlayers: HasMany<typeof GamePlayer>;
+
+  @hasMany(() => Game, { foreignKey: "hostId" })
+  declare hostedGames: HasMany<typeof Game>;
+
+  @hasMany(() => Game, { foreignKey: "winnerId" })
+  declare wonGames: HasMany<typeof Game>;
+
+  @hasMany(() => Playlist, { foreignKey: "createdBy" })
+  declare playlists: HasMany<typeof Playlist>;
+
+  @hasMany(() => Answer)
+  declare answers: HasMany<typeof Answer>;
+
+  @hasMany(() => LeaderboardSnapshot)
+  declare leaderboardSnapshots: HasMany<typeof LeaderboardSnapshot>;
 
   @manyToMany(() => Achievement, {
     pivotTable: "user_achievements",

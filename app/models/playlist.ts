@@ -16,9 +16,7 @@ export default class Playlist extends PlaylistSchema {
 
   @manyToMany(() => TrackCache, {
     pivotTable: "playlist_tracks",
-    localKey: "id",
     pivotForeignKey: "playlist_id",
-    relatedKey: "id",
     pivotRelatedForeignKey: "track_id",
     pivotColumns: ["position"],
   })
