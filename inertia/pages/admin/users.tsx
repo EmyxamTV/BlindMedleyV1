@@ -7,7 +7,7 @@ import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
 interface AdminUser extends Record<string, JSONDataTypes> {
-  id: number;
+  id: string;
   email: string;
   fullName: string | null;
   username: string | undefined;

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { GamePlayerData } from "~/types";
 
 export type AnswerPing = {
-  userId: number;
+  userId: string;
   responseMs: number;
   isCorrect?: boolean;
 };

@@ -17,7 +17,7 @@ export interface AnswerResult {
 export type ProcessAnswerParams = {
   round: Round;
   gamePlayer: GamePlayer;
-  answerTrackId: number | null;
+  answerTrackId: string | null;
   answerText: string | null;
   serverReceivedAt: number;
   allowRetry?: boolean;

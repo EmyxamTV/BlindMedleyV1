@@ -2,8 +2,8 @@ import { Link } from "@adonisjs/inertia/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InertiaProps } from "~/types";
 
-type Choice = { id: number; title: string; artist: string };
-type Question = { correctTrackId: number; previewUrl: string; choices: Choice[] };
+type Choice = { id: string; title: string; artist: string };
+type Question = { correctTrackId: string; previewUrl: string; choices: Choice[] };
 const MAX_ATTEMPTS = 5;
 
 export default function Bandle(_: InertiaProps) {

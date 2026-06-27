@@ -5,14 +5,14 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments("id").notNullable();
-      table.integer("reporter_id").unsigned().notNullable().references("id").inTable("users");
-      table.integer("reported_id").unsigned().notNullable().references("id").inTable("users");
-      table.integer("game_id").unsigned().nullable().references("id").inTable("games");
+      table.uuid("id").primary().defaultTo(this.raw("uuidv7()"));
+      table.uuid("reporter_id").notNullable().references("id").inTable("users");
+      table.uuid("reported_id").notNullable().references("id").inTable("users");
+      table.uuid("game_id").nullable().references("id").inTable("games");
       table.string("reason", 100).notNullable();
       table.text("details").nullable();
       table.string("status", 20).notNullable().defaultTo("open"); // open | reviewed | dismissed
-      table.integer("reviewed_by").unsigned().nullable().references("id").inTable("users");
+      table.uuid("reviewed_by").nullable().references("id").inTable("users");
       table.timestamp("created_at").notNullable();
     });
   }

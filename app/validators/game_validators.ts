@@ -4,7 +4,7 @@ export const createGameValidator = vine.create({
   mode: vine.enum(["solo", "public", "private"]),
   answerMode: vine.enum(["choices", "text"]).optional(),
   answerTarget: vine.enum(["title", "artist", "both", "separate"]).optional(),
-  playlistId: vine.number().positive(),
+  playlistId: vine.string().uuid(),
   difficulty: vine.number().min(1).max(5).optional(),
   maxPlayers: vine.number().min(2).max(10).optional(),
   roundCount: vine.number().min(5).max(30).optional(),
@@ -12,7 +12,7 @@ export const createGameValidator = vine.create({
 
 export const submitAnswerValidator = vine.create({
   roundNumber: vine.number().positive(),
-  answerTrackId: vine.number().positive().optional(),
+  answerTrackId: vine.string().uuid().optional(),
   answerText: vine.string().maxLength(500).optional(),
 });
 

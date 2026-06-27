@@ -5,15 +5,14 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments("id").notNullable();
+      table.uuid("id").primary().defaultTo(this.raw("uuidv7()"));
       table
-        .integer("game_id")
-        .unsigned()
+        .uuid("game_id")
         .notNullable()
         .references("id")
         .inTable("games")
         .onDelete("CASCADE");
-      table.integer("track_id").unsigned().notNullable().references("id").inTable("tracks_cache");
+      table.uuid("track_id").notNullable().references("id").inTable("tracks_cache");
       table.integer("round_number").notNullable();
       table.string("round_token", 64).notNullable().unique(); // token anti-triche
       table.text("distractors").notNullable().defaultTo("[]"); // JSON: IDs des faux choix

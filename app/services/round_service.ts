@@ -4,7 +4,7 @@ import { DateTime } from "luxon";
 import crypto from "node:crypto";
 
 export class RoundService {
-  async pregenerateRounds(gameId: number, playlistId: number, count: number): Promise<Round[]> {
+  async pregenerateRounds(gameId: string, playlistId: string, count: number): Promise<Round[]> {
     // D'abord essayer avec preview, sinon prendre tous les tracks disponibles
     let tracks = await TrackCache.query()
       .whereHas("playlists", (q) => q.where("playlists.id", playlistId))
@@ -47,7 +47,7 @@ export class RoundService {
         trackId: track.id,
         roundNumber: i + 1,
         roundToken: crypto.randomBytes(32).toString("hex"),
-        distractors,
+        distractors: JSON.stringify(distractors),
       });
 
       rounds.push(round);
@@ -79,7 +79,7 @@ export class RoundService {
     if (!round.track) await round.load("track");
 
     // Charger les distractors (sans révéler le bon)
-    const allIds = [...round.distractors, round.trackId];
+    const allIds = [...(JSON.parse(round.distractors) as string[]), round.trackId];
     const shuffled = this.shuffle(allIds);
 
     const tracks = await TrackCache.query().whereIn("id", allIds);
@@ -122,10 +122,10 @@ export class RoundService {
   }
 
   private async generateDistractors(
-    correctTrackId: number,
-    playlistId: number,
-    usedIds: number[],
-  ): Promise<number[]> {
+    correctTrackId: string,
+    playlistId: string,
+    usedIds: string[],
+  ): Promise<string[]> {
     const distractors = await TrackCache.query()
       .whereHas("playlists", (q) => q.where("playlists.id", playlistId))
       .whereNotIn("id", usedIds)

@@ -261,7 +261,7 @@ export default class GameController {
     });
   }
 
-  private async getHistory(gameId: number) {
+  private async getHistory(gameId: string) {
     const rounds = await Round.query()
       .where("game_id", gameId)
       .whereNotNull("revealed_at")

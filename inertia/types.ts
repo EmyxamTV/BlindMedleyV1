@@ -30,7 +30,7 @@ export type TrackHistory = {
 
 export type RoundChoice = {
   choiceToken: string;
-  trackId: number;
+  trackId: string;
   title: string;
   artist: string;
 };

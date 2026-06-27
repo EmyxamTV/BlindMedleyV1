@@ -33,7 +33,7 @@ export class XpService {
     return xp;
   }
 
-  async awardXp(userId: number, amount: number, player: GamePlayer): Promise<void> {
+  async awardXp(userId: string, amount: number, player: GamePlayer): Promise<void> {
     let profile = await Profile.query().where("user_id", userId).first();
     if (!profile) {
       // Filet de sécurité : créer le profil s'il n'existe pas encore
@@ -81,7 +81,7 @@ export class XpService {
   }
 
   private async checkAchievements(
-    userId: number,
+    userId: string,
     profile: Profile,
     player: GamePlayer,
   ): Promise<void> {
@@ -95,7 +95,7 @@ export class XpService {
     for (const achievement of achievements) {
       if (unlockedIds.has(achievement.id)) continue;
 
-      if (this.meetsCondition(achievement.condition, profile, player)) {
+      if (this.meetsCondition(JSON.parse(achievement.condition), profile, player)) {
         await achievement.related("users").attach({
           [userId]: { unlocked_at: DateTime.now().toSQL() },
         });

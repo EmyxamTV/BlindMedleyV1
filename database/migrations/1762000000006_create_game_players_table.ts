@@ -5,15 +5,14 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments("id").notNullable();
+      table.uuid("id").primary().defaultTo(this.raw("uuidv7()"));
       table
-        .integer("game_id")
-        .unsigned()
+        .uuid("game_id")
         .notNullable()
         .references("id")
         .inTable("games")
         .onDelete("CASCADE");
-      table.integer("user_id").unsigned().notNullable().references("id").inTable("users");
+      table.uuid("user_id").notNullable().references("id").inTable("users");
       table.integer("score").notNullable().defaultTo(0);
       table.integer("correct").notNullable().defaultTo(0);
       table.integer("incorrect").notNullable().defaultTo(0);

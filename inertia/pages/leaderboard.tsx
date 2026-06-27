@@ -12,7 +12,7 @@ interface Props extends InertiaProps {
   friendsLeaderboard: LeaderboardEntry[];
   search: string;
   searchResults: ProfileData[];
-  relationshipByUserId: Record<string, { id: number; status: string; incoming: boolean }>;
+  relationshipByUserId: Record<string, { id: string; status: string; incoming: boolean }>;
   incomingRequests: FriendshipData[];
 }
 
@@ -75,7 +75,7 @@ export default function Leaderboard({
     );
   }
 
-  const relationshipFor = (userId: number) => relationshipByUserId[String(userId)] ?? null;
+  const relationshipFor = (userId: string) => relationshipByUserId[String(userId)] ?? null;
 
   return (
     <div className="leaderboard-page">

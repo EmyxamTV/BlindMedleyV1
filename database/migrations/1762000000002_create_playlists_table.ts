@@ -5,7 +5,7 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments("id").notNullable();
+      table.uuid("id").primary().defaultTo(this.raw("uuidv7()"));
       table.string("spotify_id", 100).nullable().unique();
       table.string("name", 255).notNullable();
       table.text("description").nullable();
@@ -16,7 +16,7 @@ export default class extends BaseSchema {
       table.integer("track_count").notNullable().defaultTo(0);
       table.boolean("is_active").notNullable().defaultTo(true);
       table.boolean("is_curated").notNullable().defaultTo(false);
-      table.integer("created_by").unsigned().nullable().references("id").inTable("users");
+      table.uuid("created_by").nullable().references("id").inTable("users");
       table.timestamp("last_synced_at").nullable();
       table.timestamp("created_at").notNullable();
       table.timestamp("updated_at").nullable();

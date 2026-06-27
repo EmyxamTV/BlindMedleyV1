@@ -46,10 +46,7 @@ export default class LeaderboardController {
             .limit(8)
         : [];
 
-    const relationshipByUserId = new Map<
-      number,
-      { id: number; status: string; incoming: boolean }
-    >();
+    const relationshipByUserId = new Map<string, { id: string; status: string; incoming: boolean }>();
     for (const friendship of allFriendships) {
       relationshipByUserId.set(
         friendship.requesterId === auth.user!.id ? friendship.addresseeId : friendship.requesterId,

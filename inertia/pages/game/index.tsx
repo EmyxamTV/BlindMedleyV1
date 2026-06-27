@@ -56,7 +56,7 @@ const MODE_CONFIG = {
 
 export default function GameIndex({ playlists, publicGames, myActiveGameId }: Props) {
   const [tab, setTab] = useState<"create" | "join" | "public">("create");
-  const [selectedPlaylist, setSelectedPlaylist] = useState<number | null>(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"solo" | "public" | "private">("solo");
   const [answerMode, setAnswerMode] = useState<"choices" | "text">("choices");

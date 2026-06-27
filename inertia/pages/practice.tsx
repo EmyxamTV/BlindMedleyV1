@@ -2,14 +2,14 @@ import { Link } from "@adonisjs/inertia/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InertiaProps } from "~/types";
 
-type Choice = { id: number; title: string; artist: string };
-type Question = { correctTrackId: number; previewUrl: string; choices: Choice[] };
+type Choice = { id: string; title: string; artist: string };
+type Question = { correctTrackId: string; previewUrl: string; choices: Choice[] };
 
 export default function Practice(_: InertiaProps) {
   const [question, setQuestion] = useState<Question | null>(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [answered, setAnswered] = useState<number | null>(null);
+  const [answered, setAnswered] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);

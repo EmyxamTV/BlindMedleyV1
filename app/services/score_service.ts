@@ -87,7 +87,7 @@ export class ScoreService {
       isCorrect,
       scoreEarned,
       responseMs,
-      suspiciousFlags: flags,
+      suspiciousFlags: JSON.stringify(flags),
       submittedAt: DateTime.now(),
     });
 
@@ -149,7 +149,7 @@ export class ScoreService {
           artistCorrect,
           scoreEarned: existing.scoreEarned + scoreEarned,
           responseMs,
-          suspiciousFlags: flags,
+          suspiciousFlags: JSON.stringify(flags),
           submittedAt: DateTime.now(),
         })
         .save();
@@ -165,7 +165,7 @@ export class ScoreService {
         artistCorrect,
         scoreEarned,
         responseMs,
-        suspiciousFlags: flags,
+        suspiciousFlags: JSON.stringify(flags),
         submittedAt: DateTime.now(),
       });
     }
@@ -195,7 +195,7 @@ export class ScoreService {
 
   private async validateAnswer(
     round: Round,
-    answerTrackId: number | null,
+    answerTrackId: string | null,
     answerText: string | null,
     answerTarget: AnswerTarget = "both",
   ): Promise<boolean> {

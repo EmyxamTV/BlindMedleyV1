@@ -9,15 +9,15 @@ import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
 interface ShareRow extends Record<string, JSONDataTypes> {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   canEdit: boolean;
   username: string;
   email: string;
 }
 
 interface EditablePlaylist extends Record<string, JSONDataTypes> {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   genre: string | null;

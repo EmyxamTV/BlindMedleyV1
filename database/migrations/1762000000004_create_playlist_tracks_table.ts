@@ -5,17 +5,15 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments("id").notNullable();
+      table.uuid("id").primary().defaultTo(this.raw("uuidv7()"));
       table
-        .integer("playlist_id")
-        .unsigned()
+        .uuid("playlist_id")
         .notNullable()
         .references("id")
         .inTable("playlists")
         .onDelete("CASCADE");
       table
-        .integer("track_id")
-        .unsigned()
+        .uuid("track_id")
         .notNullable()
         .references("id")
         .inTable("tracks_cache")

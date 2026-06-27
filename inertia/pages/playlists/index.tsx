@@ -10,7 +10,7 @@ import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
 interface PlaylistRow extends Record<string, JSONDataTypes> {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   coverUrl: string | null;

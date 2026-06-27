@@ -4,7 +4,7 @@ import { SpotifyService } from "#services/spotify_service";
 import { inject } from "@adonisjs/core";
 
 type ImportOptions = {
-  userId?: number;
+  userId?: string;
   visibility: "public" | "private";
 };
 

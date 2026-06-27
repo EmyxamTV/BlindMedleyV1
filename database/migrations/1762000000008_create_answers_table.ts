@@ -5,26 +5,23 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments("id").notNullable();
+      table.uuid("id").primary().defaultTo(this.raw("uuidv7()"));
       table
-        .integer("round_id")
-        .unsigned()
+        .uuid("round_id")
         .notNullable()
         .references("id")
         .inTable("rounds")
         .onDelete("CASCADE");
       table
-        .integer("game_player_id")
-        .unsigned()
+        .uuid("game_player_id")
         .notNullable()
         .references("id")
         .inTable("game_players")
         .onDelete("CASCADE");
-      table.integer("user_id").unsigned().notNullable().references("id").inTable("users");
+      table.uuid("user_id").notNullable().references("id").inTable("users");
       table.text("answer_text").nullable(); // réponse libre
       table
-        .integer("answer_track_id")
-        .unsigned()
+        .uuid("answer_track_id")
         .nullable()
         .references("id")
         .inTable("tracks_cache"); // choix QCM

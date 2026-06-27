@@ -10,7 +10,7 @@ import type {
 
 type ImportPlaylistOptions = {
   playlistKey?: string;
-  createdBy?: number;
+  createdBy?: string;
   visibility?: "public" | "private";
 };
 
@@ -147,7 +147,7 @@ export class SpotifyService {
                 : null,
               popularity: t.popularity,
               hasPreview: Boolean(previewUrl),
-              metadata: t as unknown as Record<string, unknown>,
+              metadata: JSON.stringify(t),
               cachedAt: DateTime.now(),
               expiresAt: DateTime.now().plus({ days: 7 }),
             },
@@ -164,7 +164,7 @@ export class SpotifyService {
           acc[t.id] = { position: i + 1 };
           return acc;
         },
-        {} as Record<number, { position: number }>,
+        {} as Record<string, { position: number }>,
       ),
     );
 

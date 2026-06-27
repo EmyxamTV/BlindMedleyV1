@@ -5,7 +5,7 @@ import UserTransformer from "#transformers/user_transformer";
 export default class GamePlayerTransformer extends BaseTransformer<GamePlayer> {
   constructor(
     resource: GamePlayer,
-    private currentUserId?: number,
+    private currentUserId?: string,
   ) {
     super(resource);
   }

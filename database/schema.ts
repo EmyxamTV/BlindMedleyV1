@@ -7,27 +7,19 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
-const jsonColumn = {
-  prepare: (value: unknown) =>
-    value === null || value === undefined || typeof value === 'string'
-      ? value
-      : JSON.stringify(value),
-  consume: (value: unknown) => (typeof value === 'string' && value ? JSON.parse(value) : value),
-}
-
 export class AchievementSchema extends BaseModel {
   static $columns = ['color', 'condition', 'description', 'icon', 'id', 'key', 'name', 'xpReward'] as const
   $columns = AchievementSchema.$columns
   @column()
   declare color: string | null
-  @column(jsonColumn)
-  declare condition: Record<string, unknown>
+  @column()
+  declare condition: string
   @column()
   declare description: string | null
   @column()
   declare icon: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare key: string
   @column()
@@ -42,42 +34,42 @@ export class AnswerSchema extends BaseModel {
   @column()
   declare answerText: string | null
   @column()
-  declare answerTrackId: number | null
+  declare answerTrackId: string | null
   @column()
   declare artistCorrect: boolean
   @column()
-  declare gamePlayerId: number
+  declare gamePlayerId: string
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare isCorrect: boolean
   @column()
   declare responseMs: number
   @column()
-  declare roundId: number
+  declare roundId: string
   @column()
   declare scoreEarned: number
   @column.dateTime()
   declare submittedAt: DateTime
-  @column(jsonColumn)
-  declare suspiciousFlags: string[] | null
+  @column()
+  declare suspiciousFlags: string | null
   @column()
   declare titleCorrect: boolean
   @column()
-  declare userId: number
+  declare userId: string
 }
 
 export class FriendshipSchema extends BaseModel {
   static $columns = ['addresseeId', 'createdAt', 'id', 'requesterId', 'status'] as const
   $columns = FriendshipSchema.$columns
   @column()
-  declare addresseeId: number
+  declare addresseeId: string
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
-  declare requesterId: number
+  declare requesterId: string
   @column()
   declare status: string
 }
@@ -90,9 +82,9 @@ export class GamePlayerSchema extends BaseModel {
   @column()
   declare correct: number
   @column()
-  declare gameId: number
+  declare gameId: string
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare incorrect: number
   @column()
@@ -108,7 +100,7 @@ export class GamePlayerSchema extends BaseModel {
   @column()
   declare streak: number
   @column()
-  declare userId: number
+  declare userId: string
   @column()
   declare xpEarned: number
 }
@@ -135,15 +127,15 @@ export class GameSchema extends BaseModel {
   @column()
   declare genreFilter: string | null
   @column()
-  declare hostId: number | null
+  declare hostId: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare maxPlayers: number
   @column()
   declare mode: string
   @column()
-  declare playlistId: number | null
+  declare playlistId: string | null
   @column()
   declare publicId: string | null
   @column()
@@ -157,7 +149,7 @@ export class GameSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare winnerId: number | null
+  declare winnerId: string | null
 }
 
 export class LeaderboardSnapshotSchema extends BaseModel {
@@ -168,7 +160,7 @@ export class LeaderboardSnapshotSchema extends BaseModel {
   @column()
   declare country: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare period: string
   @column()
@@ -176,7 +168,7 @@ export class LeaderboardSnapshotSchema extends BaseModel {
   @column()
   declare score: bigint | number
   @column()
-  declare userId: number
+  declare userId: string
 }
 
 export class PlaylistShareSchema extends BaseModel {
@@ -187,26 +179,26 @@ export class PlaylistShareSchema extends BaseModel {
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
-  declare playlistId: number
+  declare playlistId: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare userId: number
+  declare userId: string
 }
 
 export class PlaylistTrackSchema extends BaseModel {
   static $columns = ['id', 'playlistId', 'position', 'trackId'] as const
   $columns = PlaylistTrackSchema.$columns
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
-  declare playlistId: number
+  declare playlistId: string
   @column()
   declare position: number | null
   @column()
-  declare trackId: number
+  declare trackId: string
 }
 
 export class PlaylistSchema extends BaseModel {
@@ -217,7 +209,7 @@ export class PlaylistSchema extends BaseModel {
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
-  declare createdBy: number | null
+  declare createdBy: string | null
   @column()
   declare decade: string | null
   @column()
@@ -227,7 +219,7 @@ export class PlaylistSchema extends BaseModel {
   @column()
   declare genre: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare isActive: boolean
   @column()
@@ -266,7 +258,7 @@ export class ProfileSchema extends BaseModel {
   @column()
   declare favoriteGenres: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare level: number
   @column()
@@ -280,7 +272,7 @@ export class ProfileSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare userId: number
+  declare userId: string
   @column()
   declare username: string
   @column()
@@ -297,17 +289,17 @@ export class ReportSchema extends BaseModel {
   @column()
   declare details: string | null
   @column()
-  declare gameId: number | null
+  declare gameId: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare reason: string
   @column()
-  declare reportedId: number
+  declare reportedId: string
   @column()
-  declare reporterId: number
+  declare reporterId: string
   @column()
-  declare reviewedBy: number | null
+  declare reviewedBy: string | null
   @column()
   declare status: string
 }
@@ -315,14 +307,14 @@ export class ReportSchema extends BaseModel {
 export class RoundSchema extends BaseModel {
   static $columns = ['distractors', 'endsAt', 'gameId', 'id', 'revealedAt', 'roundNumber', 'roundToken', 'startsAt', 'trackId'] as const
   $columns = RoundSchema.$columns
-  @column(jsonColumn)
-  declare distractors: number[]
+  @column()
+  declare distractors: string
   @column.dateTime()
   declare endsAt: DateTime | null
   @column()
-  declare gameId: number
+  declare gameId: string
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column.dateTime()
   declare revealedAt: DateTime | null
   @column()
@@ -332,7 +324,7 @@ export class RoundSchema extends BaseModel {
   @column.dateTime()
   declare startsAt: DateTime | null
   @column()
-  declare trackId: number
+  declare trackId: string
 }
 
 export class TracksCacheSchema extends BaseModel {
@@ -355,9 +347,9 @@ export class TracksCacheSchema extends BaseModel {
   @column()
   declare hasPreview: boolean
   @column({ isPrimary: true })
-  declare id: number
-  @column(jsonColumn)
-  declare metadata: Record<string, unknown> | null
+  declare id: string
+  @column()
+  declare metadata: string | null
   @column()
   declare popularity: number | null
   @column()
@@ -374,13 +366,13 @@ export class UserAchievementSchema extends BaseModel {
   static $columns = ['achievementId', 'id', 'unlockedAt', 'userId'] as const
   $columns = UserAchievementSchema.$columns
   @column()
-  declare achievementId: number
+  declare achievementId: string
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column.dateTime()
   declare unlockedAt: DateTime
   @column()
-  declare userId: number
+  declare userId: string
 }
 
 export class UserSchema extends BaseModel {
@@ -397,7 +389,7 @@ export class UserSchema extends BaseModel {
   @column()
   declare fullName: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column.dateTime()
   declare lastLoginAt: DateTime | null
   @column.dateTime()

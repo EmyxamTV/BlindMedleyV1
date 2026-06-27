@@ -7,7 +7,7 @@ import type { InertiaProps } from "~/types";
 import type { JSONDataTypes } from "@adonisjs/core/types/transformers";
 
 interface AdminPlaylist extends Record<string, JSONDataTypes> {
-  id: number;
+  id: string;
   name: string;
   spotifyId: string | null;
   genre: string | null;

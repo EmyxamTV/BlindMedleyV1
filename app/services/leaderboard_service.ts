@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import type { LeaderboardEntry } from "#types/leaderboard";
 
 export class LeaderboardService {
-  async addScore(userId: number, score: number, country?: string | null): Promise<void> {
+  async addScore(userId: string, score: number, country?: string | null): Promise<void> {
     const periods = ["global", this.getWeeklyPeriod(), this.getMonthlyPeriod()];
 
     for (const period of periods) {
@@ -59,7 +59,7 @@ export class LeaderboardService {
   }
 
   async getUserRank(
-    userId: number,
+    userId: string,
     period: "global" | "weekly" | "monthly",
   ): Promise<number | null> {
     const periodKey =
@@ -84,7 +84,7 @@ export class LeaderboardService {
     return Number(rank[0].$extras.total) + 1;
   }
 
-  async getFriendsLeaderboard(userId: number, friendIds: number[]): Promise<LeaderboardEntry[]> {
+  async getFriendsLeaderboard(userId: string, friendIds: string[]): Promise<LeaderboardEntry[]> {
     const ids = [...friendIds, userId];
     const snapshots = await LeaderboardSnapshot.query()
       .where("period", "global")

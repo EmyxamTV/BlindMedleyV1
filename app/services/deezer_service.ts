@@ -5,7 +5,7 @@ import type { DeezerPlaylist, DeezerTrack } from "#types/deezer";
 
 type ImportPlaylistOptions = {
   playlistKey?: string;
-  createdBy?: number;
+  createdBy?: string;
   visibility?: "public" | "private";
 };
 
@@ -62,7 +62,7 @@ export class DeezerService {
                 : null,
               popularity: null,
               hasPreview: Boolean(t.preview),
-              metadata: t as unknown as Record<string, unknown>,
+              metadata: JSON.stringify(t),
               cachedAt: DateTime.now(),
               expiresAt: DateTime.now().plus({ days: 30 }),
             },
@@ -79,7 +79,7 @@ export class DeezerService {
           acc[t.id] = { position: i + 1 };
           return acc;
         },
-        {} as Record<number, { position: number }>,
+        {} as Record<string, { position: number }>,
       ),
     );
 
@@ -132,7 +132,7 @@ export class DeezerService {
                 ? Number.parseInt(track.album.release_date.substring(0, 4))
                 : null,
               hasPreview: true,
-              metadata: track as unknown as Record<string, unknown>,
+              metadata: JSON.stringify(track),
               cachedAt: DateTime.now(),
               expiresAt: DateTime.now().plus({ days: 30 }),
             },
@@ -148,7 +148,7 @@ export class DeezerService {
           acc[track.id] = { position: index + 1 };
           return acc;
         },
-        {} as Record<number, { position: number }>,
+        {} as Record<string, { position: number }>,
       ),
     );
 

@@ -4,11 +4,11 @@ export type CreateGamePayload = Awaited<ReturnType<typeof createGameValidator.va
 export type SubmitAnswerPayload = Awaited<ReturnType<typeof submitAnswerValidator.validate>>;
 
 export type CreateGameOptions = CreateGamePayload & {
-  hostId: number;
+  hostId: string;
   roundDurationMs?: number;
 };
 
 export type SubmitAnswerParams = SubmitAnswerPayload & {
-  gameId: number;
-  userId: number;
+  gameId: string;
+  userId: string;
 };

@@ -2,7 +2,7 @@ import { TrackLinks } from "~/components/track_links";
 import type { GamePlayerData, TrackHistory } from "~/types";
 
 export type AnswerProgress = {
-  userId: number;
+  userId: string;
   titleFound: boolean;
   artistFound: boolean;
 };
@@ -15,9 +15,9 @@ export function PlaySidebar({
   history,
 }: {
   players: GamePlayerData[];
-  myUserId: number;
+  myUserId: string;
   answerTarget: string;
-  progressByUserId: Record<number, AnswerProgress>;
+  progressByUserId: Record<string, AnswerProgress>;
   history: TrackHistory[];
 }) {
   return (

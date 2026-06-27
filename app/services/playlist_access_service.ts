@@ -15,7 +15,7 @@ export class PlaylistAccessService {
     });
   }
 
-  async canUse(playlistId: number, user: User) {
+  async canUse(playlistId: string, user: User) {
     if (user.isAdmin) return true;
     const playlist = await this.forUser(Playlist.query().where("id", playlistId), user).first();
     return Boolean(playlist);

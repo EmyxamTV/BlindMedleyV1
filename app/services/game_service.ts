@@ -57,7 +57,7 @@ export class GameService {
     return game;
   }
 
-  async leaveGame(gameId: number, userId: number): Promise<void> {
+  async leaveGame(gameId: string, userId: string): Promise<void> {
     const game = await Game.findOrFail(gameId);
     if (game.status === "finished" || game.status === "cancelled") return;
 
@@ -88,7 +88,7 @@ export class GameService {
     }
   }
 
-  async joinGame(gameId: number, userId: number): Promise<GamePlayer> {
+  async joinGame(gameId: string, userId: string): Promise<GamePlayer> {
     const game = await Game.query().where("id", gameId).where("status", "waiting").firstOrFail();
 
     const playerCount = await GamePlayer.query().where("game_id", gameId).count("* as total");
@@ -109,7 +109,7 @@ export class GameService {
     });
   }
 
-  async startGame(gameId: number, hostId: number): Promise<Game> {
+  async startGame(gameId: string, hostId: string): Promise<Game> {
     const game = await Game.query()
       .where("id", gameId)
       .where("host_id", hostId)
@@ -132,7 +132,7 @@ export class GameService {
     return game;
   }
 
-  async startRound(gameId: number, roundNumber: number): Promise<void> {
+  async startRound(gameId: string, roundNumber: number): Promise<void> {
     const game = await Game.findOrFail(gameId);
     if (game.status === "finished" || game.status === "cancelled") return;
 
@@ -160,7 +160,7 @@ export class GameService {
     );
   }
 
-  async endRound(gameId: number, roundNumber: number): Promise<void> {
+  async endRound(gameId: string, roundNumber: number): Promise<void> {
     const game = await Game.findOrFail(gameId);
     if (game.status === "finished") return;
 
@@ -188,7 +188,7 @@ export class GameService {
     }
   }
 
-  async finishGame(gameId: number): Promise<Game> {
+  async finishGame(gameId: string): Promise<Game> {
     const game = await Game.findOrFail(gameId);
 
     const players = await GamePlayer.query().where("game_id", gameId).orderBy("score", "desc");
@@ -221,7 +221,7 @@ export class GameService {
     return finishedGame;
   }
 
-  async getGameState(gameId: number) {
+  async getGameState(gameId: string) {
     const game = await Game.query()
       .where("id", gameId)
       .preload("players", (q) => q.preload("user", (uq) => uq.preload("profile")))

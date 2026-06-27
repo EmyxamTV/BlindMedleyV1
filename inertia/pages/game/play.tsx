@@ -153,7 +153,7 @@ export default function Play({
               : [
                   ...current,
                   {
-                    userId: message.userId as number,
+                    userId: message.userId as string,
                     responseMs: message.responseMs as number,
                     isCorrect: message.isCorrect as boolean,
                   },
@@ -176,7 +176,7 @@ export default function Play({
           message.roundNumber === currentRound?.roundNumber
         ) {
           const progress = {
-            userId: message.userId as number,
+            userId: message.userId as string,
             titleFound: Boolean(message.titleFound),
             artistFound: Boolean(message.artistFound),
           };
