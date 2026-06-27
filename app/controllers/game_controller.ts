@@ -179,6 +179,7 @@ export default class GameController {
       game: GameTransformer.transform(game, auth.user!.id),
       players: GamePlayerTransformer.transform(game.players, auth.user!.id),
       myXpEarned: myPlayer?.xpEarned ?? 0,
+      history: await this.getHistory(game.id),
     });
   }
 
@@ -262,17 +263,40 @@ export default class GameController {
   }
 
   private async getHistory(gameId: string) {
-    const rounds = await Round.query()
-      .where("game_id", gameId)
-      .whereNotNull("revealed_at")
-      .preload("track")
-      .orderBy("round_number", "desc");
+    const [players, rounds] = await Promise.all([
+      GamePlayer.query()
+        .where("game_id", gameId)
+        .orderBy("rank")
+        .preload("user", (q) => q.preload("profile")),
+      Round.query()
+        .where("game_id", gameId)
+        .whereNotNull("revealed_at")
+        .preload("track")
+        .preload("answers")
+        .orderBy("round_number", "desc"),
+    ]);
 
     return rounds.map((round) => ({
       roundNumber: round.roundNumber,
       title: round.track?.title ?? "",
       artist: round.track?.artist ?? "",
       coverUrl: round.track?.coverUrl ?? null,
+      players: players.map((player) => {
+        const answers = round.answers.filter((answer) => answer.gamePlayerId === player.id);
+        const scoreEarned = answers.reduce((total, answer) => total + answer.scoreEarned, 0);
+
+        return {
+          userId: player.userId,
+          username:
+            player.user?.profile?.username ?? player.user?.fullName ?? `User${player.userId}`,
+          avatarUrl: player.user?.profile?.avatarUrl ?? null,
+          won: answers.some(
+            (answer) =>
+              answer.isCorrect || answer.titleCorrect || answer.artistCorrect || answer.scoreEarned > 0,
+          ),
+          scoreEarned,
+        };
+      }),
     }));
   }
 }
