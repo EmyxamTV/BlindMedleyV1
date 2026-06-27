@@ -8,6 +8,11 @@ type ImportOptions = {
   visibility: "public" | "private";
 };
 
+export type PlaylistImportResult = {
+  playlist: Playlist;
+  skippedCount: number;
+};
+
 @inject()
 export class PlaylistImportService {
   constructor(
@@ -15,7 +20,7 @@ export class PlaylistImportService {
     private readonly deezerService: DeezerService,
   ) {}
 
-  async importFromUrl(url: string, options: ImportOptions): Promise<Playlist> {
+  async importFromUrl(url: string, options: ImportOptions): Promise<PlaylistImportResult> {
     const deezerMatch = url.match(/deezer\.com\/(?:[a-z]+\/)?playlist\/(\d+)/);
     if (deezerMatch) {
       return this.deezerService.importPlaylist(deezerMatch[1], {

@@ -14,6 +14,11 @@ type ImportPlaylistOptions = {
   visibility?: "public" | "private";
 };
 
+export type ImportedPlaylist = {
+  playlist: Playlist;
+  skippedCount: number;
+};
+
 // Simple in-memory token cache (remplacé par Redis en prod)
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
@@ -96,7 +101,7 @@ export class SpotifyService {
   async importPlaylist(
     spotifyPlaylistId: string,
     options: ImportPlaylistOptions = {},
-  ): Promise<Playlist> {
+  ): Promise<ImportedPlaylist> {
     const [info, allTracks] = await Promise.all([
       this.getPlaylistInfo(spotifyPlaylistId),
       this.getAllPlaylistTracks(spotifyPlaylistId),
@@ -154,7 +159,7 @@ export class SpotifyService {
           );
         }),
       );
-      trackRecords.push(...records);
+      trackRecords.push(...records.filter((record) => record.hasPreview));
     }
 
     // Associer les tracks à la playlist via pivot
@@ -171,7 +176,7 @@ export class SpotifyService {
     // Mettre à jour le compte
     await playlist.merge({ trackCount: trackRecords.length }).save();
 
-    return playlist;
+    return { playlist, skippedCount: Math.max(0, info.tracks.total - trackRecords.length) };
   }
 
   private async getAllPlaylistTracks(spotifyPlaylistId: string): Promise<SpotifyTrackObject[]> {

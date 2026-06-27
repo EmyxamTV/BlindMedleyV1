@@ -9,6 +9,11 @@ type ImportPlaylistOptions = {
   visibility?: "public" | "private";
 };
 
+export type ImportedPlaylist = {
+  playlist: Playlist;
+  skippedCount: number;
+};
+
 export class DeezerService {
   private readonly BASE = "https://api.deezer.com";
 
@@ -22,7 +27,7 @@ export class DeezerService {
   async importPlaylist(
     deezerPlaylistId: string,
     options: ImportPlaylistOptions = {},
-  ): Promise<Playlist> {
+  ): Promise<ImportedPlaylist> {
     const info = await this.fetch<DeezerPlaylist>(`/playlist/${deezerPlaylistId}`);
 
     // Récupérer toutes les tracks (pagination 25 par défaut)
@@ -84,7 +89,7 @@ export class DeezerService {
     );
 
     await playlist.merge({ trackCount: trackRecords.length }).save();
-    return playlist;
+    return { playlist, skippedCount: Math.max(0, info.nb_tracks - trackRecords.length) };
   }
 
   /**

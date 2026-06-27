@@ -32,6 +32,7 @@ export default class InertiaMiddleware extends BaseInertiaMiddleware {
       flash: ctx.inertia.always({
         error: error,
         success: session?.flashMessages.get("success"),
+        playlistImport: session?.flashMessages.get("playlistImport"),
       }),
       user: ctx.inertia.always(auth?.user ? UserTransformer.transform(auth.user) : undefined),
     };

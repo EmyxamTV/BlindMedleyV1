@@ -4,6 +4,7 @@ import Playlist from "#models/playlist";
 import PlaylistShare from "#models/playlist_share";
 import User from "#models/user";
 import PlaylistTransformer from "#transformers/playlist_transformer";
+import TrackCacheTransformer from "#transformers/track_cache_transformer";
 import { PlaylistAccessService } from "#services/playlist_access_service";
 import { PlaylistImportService } from "#services/playlist_import_service";
 import {
@@ -77,12 +78,16 @@ export default class PlaylistController {
     const user = auth.user!;
 
     try {
-      const playlist = await this.importer.importFromUrl(url, {
+      const result = await this.importer.importFromUrl(url, {
         userId: user.id,
         visibility: user.isAdmin ? "public" : "private",
       });
       session.flash("success", "Playlist importée");
-      return response.redirect().toRoute("playlists.edit", { id: playlist.id });
+      session.flash("playlistImport", {
+        importedCount: result.playlist.trackCount,
+        skippedCount: result.skippedCount,
+      });
+      return response.redirect().toRoute("playlists.edit", { id: result.playlist.id });
     } catch (error) {
       if ((error as Error).message === "INVALID_PLAYLIST_URL") {
         session.flash("error", "URL invalide: colle une URL Spotify ou Deezer");
@@ -92,7 +97,7 @@ export default class PlaylistController {
     }
   }
 
-  async edit({ inertia, params, auth }: HttpContext) {
+  async edit({ inertia, params, request, auth }: HttpContext) {
     const user = auth.user!;
     const playlist = await Playlist.query()
       .where("id", params.id)
@@ -104,9 +109,17 @@ export default class PlaylistController {
     }
 
     this.withFlags(playlist, user, true);
+    const trackPage = Math.max(1, Number(request.input("trackPage", 1)) || 1);
+    const tracks = await playlist
+      .related("tracks")
+      .query()
+      .orderBy("playlist_tracks.position", "asc")
+      .paginate(trackPage, 100);
 
     return inertia.render("playlists/edit", {
       playlist: PlaylistTransformer.transform(playlist),
+      tracks: TrackCacheTransformer.transform(tracks.all()),
+      tracksMeta: tracks.getMeta(),
       shares: playlist.shares.map((share) => ({
         id: share.id,
         userId: share.userId,
