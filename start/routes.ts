@@ -6,16 +6,14 @@ const SessionController = () => import("#controllers/session_controller");
 const SpotifyOAuthController = () => import("#controllers/spotify_oauth_controller");
 const ProfileController = () => import("#controllers/profile_controller");
 const GameController = () => import("#controllers/game_controller");
+const PlaylistController = () => import("#controllers/playlist_controller");
 const LeaderboardController = () => import("#controllers/leaderboard_controller");
 const PracticeController = () => import("#controllers/practice_controller");
 const FriendshipController = () => import("#controllers/friendship_controller");
 const AdminController = () => import("#controllers/admin/admin_controller");
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
-router
-  .on("/")
-  .renderInertia("home", {})
-  .as("home");
+router.on("/").renderInertia("home", {}).as("home");
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 router
@@ -74,6 +72,15 @@ router
 // ─── Game ─────────────────────────────────────────────────────────────────────
 router
   .group(() => {
+    router.get("/playlists", [PlaylistController, "index"]).as("playlists.index");
+    router.get("/playlists/create", [PlaylistController, "create"]).as("playlists.create");
+    router.post("/playlists", [PlaylistController, "store"]).as("playlists.store");
+    router.get("/playlists/:id/edit", [PlaylistController, "edit"]).as("playlists.edit");
+    router.post("/playlists/:id", [PlaylistController, "update"]).as("playlists.update");
+    router.post("/playlists/:id/share", [PlaylistController, "share"]).as("playlists.share");
+    router
+      .post("/playlists/:id/share/:shareId/delete", [PlaylistController, "unshare"])
+      .as("playlists.unshare");
     router.get("/game", [GameController, "index"]).as("game.index");
     router
       .post("/game/starter-playlist", [GameController, "createStarterPlaylist"])

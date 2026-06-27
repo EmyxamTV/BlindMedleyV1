@@ -41,6 +41,9 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
               <Link route="leaderboard.index" className="nav-link">
                 Classement
               </Link>
+              <Link route="playlists.index" className="nav-link">
+                Playlists
+              </Link>
               <Link route="profile.show" className="nav-link">
                 Profil
               </Link>

@@ -59,12 +59,12 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/login'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/user').loginValidator)>>
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/user').loginValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/session_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/session_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/session_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'session.destroy': {
@@ -98,9 +98,9 @@ export interface Registry {
       body: {}
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/spotify_validators').spotifyCallbackValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/spotify_oauth_controller').default['callback']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/spotify_oauth_controller').default['callback']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/spotify_oauth_controller').default['callback']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'profile.show': {
@@ -146,45 +146,45 @@ export interface Registry {
       body: {}
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/leaderboard_validators').leaderboardQueryValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/leaderboard_controller').default['index']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leaderboard_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/leaderboard_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'friends.request': {
     methods: ["POST"]
     pattern: '/friends/:userId/request'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/friendship_validators').friendRequestParamsValidator)>>
       paramsTuple: [ParamValue]
       params: { userId: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/friendship_validators').friendRequestParamsValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['request']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['request']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['request']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'friends.accept': {
     methods: ["POST"]
     pattern: '/friends/:id/accept'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/friendship_validators').friendshipParamsValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/friendship_validators').friendshipParamsValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['accept']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['accept']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['accept']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'friends.decline': {
     methods: ["POST"]
     pattern: '/friends/:id/decline'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/friendship_validators').friendshipParamsValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/friendship_validators').friendshipParamsValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['decline']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['decline']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/friendship_controller').default['decline']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'practice.index': {
@@ -230,9 +230,93 @@ export interface Registry {
       body: {}
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/practice_validators').previewQueryValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['preview']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['preview']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['preview']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/playlists'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/playlist_validators').playlistsQueryValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.create': {
+    methods: ["GET","HEAD"]
+    pattern: '/playlists/create'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['create']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['create']>>>
+    }
+  }
+  'playlists.store': {
+    methods: ["POST"]
+    pattern: '/playlists'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/playlist_validators').createPlaylistValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/playlist_validators').createPlaylistValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.edit': {
+    methods: ["GET","HEAD"]
+    pattern: '/playlists/:id/edit'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['edit']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['edit']>>>
+    }
+  }
+  'playlists.update': {
+    methods: ["POST"]
+    pattern: '/playlists/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/playlist_validators').updatePlaylistValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/playlist_validators').updatePlaylistValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.share': {
+    methods: ["POST"]
+    pattern: '/playlists/:id/share'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/playlist_validators').sharePlaylistValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/playlist_validators').sharePlaylistValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['share']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['share']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'playlists.unshare': {
+    methods: ["POST"]
+    pattern: '/playlists/:id/share/:shareId/delete'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; shareId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['unshare']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['unshare']>>>
     }
   }
   'game.index': {
@@ -287,12 +371,12 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/game/:id/join'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/game_validators').joinGameValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/game_validators').joinGameValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['join']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['join']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['join']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'game.start': {
@@ -398,33 +482,33 @@ export interface Registry {
       body: {}
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/admin_validators').adminUsersQueryValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['users']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['users']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['users']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'admin.ban': {
     methods: ["POST"]
     pattern: '/admin/users/:id/ban'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').banUserValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').banUserValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['banUser']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['banUser']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['banUser']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'admin.suspend': {
     methods: ["POST"]
     pattern: '/admin/users/:id/suspend'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').suspendUserValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').suspendUserValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['suspendUser']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['suspendUser']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['suspendUser']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'admin.unban': {
@@ -455,12 +539,12 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/admin/playlists/import'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').importPlaylistValidator)>>
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').importPlaylistValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['importPlaylist']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['importPlaylist']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['importPlaylist']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'admin.playlists.toggle': {

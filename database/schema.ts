@@ -4,550 +4,420 @@
  * Run "node ace migration:run" command to re-generate this file
  */
 
-import { BaseModel, column } from "@adonisjs/lucid/orm";
-import { DateTime } from "luxon";
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { DateTime } from 'luxon'
 
 const jsonColumn = {
   prepare: (value: unknown) =>
-    value === null || value === undefined || typeof value === "string"
+    value === null || value === undefined || typeof value === 'string'
       ? value
       : JSON.stringify(value),
-  consume: (value: unknown) => (typeof value === "string" && value ? JSON.parse(value) : value),
-};
+  consume: (value: unknown) => (typeof value === 'string' && value ? JSON.parse(value) : value),
+}
 
 export class AchievementSchema extends BaseModel {
-  static $columns = [
-    "color",
-    "condition",
-    "description",
-    "icon",
-    "id",
-    "key",
-    "name",
-    "xpReward",
-  ] as const;
-  $columns = AchievementSchema.$columns;
+  static $columns = ['color', 'condition', 'description', 'icon', 'id', 'key', 'name', 'xpReward'] as const
+  $columns = AchievementSchema.$columns
   @column()
-  declare color: string | null;
+  declare color: string | null
   @column(jsonColumn)
-  declare condition: Record<string, unknown>;
+  declare condition: Record<string, unknown>
   @column()
-  declare description: string | null;
+  declare description: string | null
   @column()
-  declare icon: string | null;
+  declare icon: string | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare key: string;
+  declare key: string
   @column()
-  declare name: string;
+  declare name: string
   @column()
-  declare xpReward: number;
+  declare xpReward: number
 }
 
 export class AnswerSchema extends BaseModel {
-  static $columns = [
-    "answerText",
-    "answerTrackId",
-    "artistCorrect",
-    "gamePlayerId",
-    "id",
-    "isCorrect",
-    "responseMs",
-    "roundId",
-    "scoreEarned",
-    "submittedAt",
-    "suspiciousFlags",
-    "titleCorrect",
-    "userId",
-  ] as const;
-  $columns = AnswerSchema.$columns;
+  static $columns = ['answerText', 'answerTrackId', 'artistCorrect', 'gamePlayerId', 'id', 'isCorrect', 'responseMs', 'roundId', 'scoreEarned', 'submittedAt', 'suspiciousFlags', 'titleCorrect', 'userId'] as const
+  $columns = AnswerSchema.$columns
   @column()
-  declare answerText: string | null;
+  declare answerText: string | null
   @column()
-  declare answerTrackId: number | null;
+  declare answerTrackId: number | null
   @column()
-  declare artistCorrect: boolean;
+  declare artistCorrect: boolean
   @column()
-  declare gamePlayerId: number;
+  declare gamePlayerId: number
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare isCorrect: boolean;
+  declare isCorrect: boolean
   @column()
-  declare responseMs: number;
+  declare responseMs: number
   @column()
-  declare roundId: number;
+  declare roundId: number
   @column()
-  declare scoreEarned: number;
+  declare scoreEarned: number
   @column.dateTime()
-  declare submittedAt: DateTime;
+  declare submittedAt: DateTime
   @column(jsonColumn)
-  declare suspiciousFlags: string[] | null;
+  declare suspiciousFlags: string[] | null
   @column()
-  declare titleCorrect: boolean;
+  declare titleCorrect: boolean
   @column()
-  declare userId: number;
+  declare userId: number
 }
 
 export class FriendshipSchema extends BaseModel {
-  static $columns = ["addresseeId", "createdAt", "id", "requesterId", "status"] as const;
-  $columns = FriendshipSchema.$columns;
+  static $columns = ['addresseeId', 'createdAt', 'id', 'requesterId', 'status'] as const
+  $columns = FriendshipSchema.$columns
   @column()
-  declare addresseeId: number;
+  declare addresseeId: number
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare requesterId: number;
+  declare requesterId: number
   @column()
-  declare status: string;
+  declare status: string
 }
 
 export class GamePlayerSchema extends BaseModel {
-  static $columns = [
-    "bestStreak",
-    "correct",
-    "gameId",
-    "id",
-    "incorrect",
-    "isConnected",
-    "joinedAt",
-    "leftAt",
-    "rank",
-    "score",
-    "streak",
-    "userId",
-    "xpEarned",
-  ] as const;
-  $columns = GamePlayerSchema.$columns;
+  static $columns = ['bestStreak', 'correct', 'gameId', 'id', 'incorrect', 'isConnected', 'joinedAt', 'leftAt', 'rank', 'score', 'streak', 'userId', 'xpEarned'] as const
+  $columns = GamePlayerSchema.$columns
   @column()
-  declare bestStreak: number;
+  declare bestStreak: number
   @column()
-  declare correct: number;
+  declare correct: number
   @column()
-  declare gameId: number;
+  declare gameId: number
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare incorrect: number;
+  declare incorrect: number
   @column()
-  declare isConnected: boolean;
+  declare isConnected: boolean
   @column.dateTime()
-  declare joinedAt: DateTime;
+  declare joinedAt: DateTime
   @column.dateTime()
-  declare leftAt: DateTime | null;
+  declare leftAt: DateTime | null
   @column()
-  declare rank: number | null;
+  declare rank: number | null
   @column()
-  declare score: number;
+  declare score: number
   @column()
-  declare streak: number;
+  declare streak: number
   @column()
-  declare userId: number;
+  declare userId: number
   @column()
-  declare xpEarned: number;
+  declare xpEarned: number
 }
 
 export class GameSchema extends BaseModel {
-  static $columns = [
-    "answerMode",
-    "answerTarget",
-    "code",
-    "createdAt",
-    "currentRound",
-    "decadeFilter",
-    "difficulty",
-    "finishedAt",
-    "genreFilter",
-    "hostId",
-    "id",
-    "maxPlayers",
-    "mode",
-    "playlistId",
-    "publicId",
-    "roundCount",
-    "roundDurationMs",
-    "startedAt",
-    "status",
-    "updatedAt",
-    "winnerId",
-  ] as const;
-  $columns = GameSchema.$columns;
+  static $columns = ['answerMode', 'answerTarget', 'code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
+  $columns = GameSchema.$columns
   @column()
-  declare answerMode: string;
+  declare answerMode: string
   @column()
-  declare answerTarget: string;
+  declare answerTarget: string
   @column()
-  declare code: string | null;
+  declare code: string | null
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column()
-  declare currentRound: number;
+  declare currentRound: number
   @column()
-  declare decadeFilter: string | null;
+  declare decadeFilter: string | null
   @column()
-  declare difficulty: number;
+  declare difficulty: number
   @column.dateTime()
-  declare finishedAt: DateTime | null;
+  declare finishedAt: DateTime | null
   @column()
-  declare genreFilter: string | null;
+  declare genreFilter: string | null
   @column()
-  declare hostId: number | null;
+  declare hostId: number | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare maxPlayers: number;
+  declare maxPlayers: number
   @column()
-  declare mode: string;
+  declare mode: string
   @column()
-  declare playlistId: number | null;
+  declare playlistId: number | null
   @column()
-  declare publicId: string | null;
+  declare publicId: string | null
   @column()
-  declare roundCount: number;
+  declare roundCount: number
   @column()
-  declare roundDurationMs: number;
+  declare roundDurationMs: number
   @column.dateTime()
-  declare startedAt: DateTime | null;
+  declare startedAt: DateTime | null
   @column()
-  declare status: string;
+  declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare updatedAt: DateTime | null
   @column()
-  declare winnerId: number | null;
+  declare winnerId: number | null
 }
 
 export class LeaderboardSnapshotSchema extends BaseModel {
-  static $columns = ["computedAt", "country", "id", "period", "rank", "score", "userId"] as const;
-  $columns = LeaderboardSnapshotSchema.$columns;
+  static $columns = ['computedAt', 'country', 'id', 'period', 'rank', 'score', 'userId'] as const
+  $columns = LeaderboardSnapshotSchema.$columns
   @column.dateTime()
-  declare computedAt: DateTime;
+  declare computedAt: DateTime
   @column()
-  declare country: string | null;
+  declare country: string | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare period: string;
+  declare period: string
   @column()
-  declare rank: number | null;
+  declare rank: number | null
   @column()
-  declare score: bigint | number;
+  declare score: bigint | number
   @column()
-  declare userId: number;
+  declare userId: number
+}
+
+export class PlaylistShareSchema extends BaseModel {
+  static $columns = ['canEdit', 'createdAt', 'id', 'playlistId', 'updatedAt', 'userId'] as const
+  $columns = PlaylistShareSchema.$columns
+  @column()
+  declare canEdit: boolean
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare playlistId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
 }
 
 export class PlaylistTrackSchema extends BaseModel {
-  static $columns = ["id", "playlistId", "position", "trackId"] as const;
-  $columns = PlaylistTrackSchema.$columns;
+  static $columns = ['id', 'playlistId', 'position', 'trackId'] as const
+  $columns = PlaylistTrackSchema.$columns
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare playlistId: number;
+  declare playlistId: number
   @column()
-  declare position: number | null;
+  declare position: number | null
   @column()
-  declare trackId: number;
+  declare trackId: number
 }
 
 export class PlaylistSchema extends BaseModel {
-  static $columns = [
-    "coverUrl",
-    "createdAt",
-    "createdBy",
-    "decade",
-    "description",
-    "difficulty",
-    "genre",
-    "id",
-    "isActive",
-    "isCurated",
-    "lastSyncedAt",
-    "name",
-    "spotifyId",
-    "trackCount",
-    "updatedAt",
-  ] as const;
-  $columns = PlaylistSchema.$columns;
+  static $columns = ['coverUrl', 'createdAt', 'createdBy', 'decade', 'description', 'difficulty', 'genre', 'id', 'isActive', 'isCurated', 'lastSyncedAt', 'name', 'spotifyId', 'trackCount', 'updatedAt', 'visibility'] as const
+  $columns = PlaylistSchema.$columns
   @column()
-  declare coverUrl: string | null;
+  declare coverUrl: string | null
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column()
-  declare createdBy: number | null;
+  declare createdBy: number | null
   @column()
-  declare decade: string | null;
+  declare decade: string | null
   @column()
-  declare description: string | null;
+  declare description: string | null
   @column()
-  declare difficulty: number;
+  declare difficulty: number
   @column()
-  declare genre: string | null;
+  declare genre: string | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare isActive: boolean;
+  declare isActive: boolean
   @column()
-  declare isCurated: boolean;
+  declare isCurated: boolean
   @column.dateTime()
-  declare lastSyncedAt: DateTime | null;
+  declare lastSyncedAt: DateTime | null
   @column()
-  declare name: string;
+  declare name: string
   @column()
-  declare spotifyId: string | null;
+  declare spotifyId: string | null
   @column()
-  declare trackCount: number;
+  declare trackCount: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare updatedAt: DateTime | null
+  @column()
+  declare visibility: string
 }
 
 export class ProfileSchema extends BaseModel {
-  static $columns = [
-    "avatarUrl",
-    "avgResponseMs",
-    "avgScore",
-    "bestStreak",
-    "bio",
-    "country",
-    "createdAt",
-    "favoriteGenres",
-    "id",
-    "level",
-    "totalAnswers",
-    "totalCorrect",
-    "totalGames",
-    "totalWins",
-    "updatedAt",
-    "userId",
-    "username",
-    "xp",
-    "xpToNextLevel",
-  ] as const;
-  $columns = ProfileSchema.$columns;
+  static $columns = ['avatarUrl', 'avgResponseMs', 'avgScore', 'bestStreak', 'bio', 'country', 'createdAt', 'favoriteGenres', 'id', 'level', 'totalAnswers', 'totalCorrect', 'totalGames', 'totalWins', 'updatedAt', 'userId', 'username', 'xp', 'xpToNextLevel'] as const
+  $columns = ProfileSchema.$columns
   @column()
-  declare avatarUrl: string | null;
+  declare avatarUrl: string | null
   @column()
-  declare avgResponseMs: number;
+  declare avgResponseMs: number
   @column()
-  declare avgScore: number;
+  declare avgScore: number
   @column()
-  declare bestStreak: number;
+  declare bestStreak: number
   @column()
-  declare bio: string | null;
+  declare bio: string | null
   @column()
-  declare country: string | null;
+  declare country: string | null
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column()
-  declare favoriteGenres: string | null;
+  declare favoriteGenres: string | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare level: number;
+  declare level: number
   @column()
-  declare totalAnswers: number;
+  declare totalAnswers: number
   @column()
-  declare totalCorrect: number;
+  declare totalCorrect: number
   @column()
-  declare totalGames: number;
+  declare totalGames: number
   @column()
-  declare totalWins: number;
+  declare totalWins: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare updatedAt: DateTime | null
   @column()
-  declare userId: number;
+  declare userId: number
   @column()
-  declare username: string;
+  declare username: string
   @column()
-  declare xp: number;
+  declare xp: number
   @column()
-  declare xpToNextLevel: number;
+  declare xpToNextLevel: number
 }
 
 export class ReportSchema extends BaseModel {
-  static $columns = [
-    "createdAt",
-    "details",
-    "gameId",
-    "id",
-    "reason",
-    "reportedId",
-    "reporterId",
-    "reviewedBy",
-    "status",
-  ] as const;
-  $columns = ReportSchema.$columns;
+  static $columns = ['createdAt', 'details', 'gameId', 'id', 'reason', 'reportedId', 'reporterId', 'reviewedBy', 'status'] as const
+  $columns = ReportSchema.$columns
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column()
-  declare details: string | null;
+  declare details: string | null
   @column()
-  declare gameId: number | null;
+  declare gameId: number | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column()
-  declare reason: string;
+  declare reason: string
   @column()
-  declare reportedId: number;
+  declare reportedId: number
   @column()
-  declare reporterId: number;
+  declare reporterId: number
   @column()
-  declare reviewedBy: number | null;
+  declare reviewedBy: number | null
   @column()
-  declare status: string;
+  declare status: string
 }
 
 export class RoundSchema extends BaseModel {
-  static $columns = [
-    "distractors",
-    "endsAt",
-    "gameId",
-    "id",
-    "revealedAt",
-    "roundNumber",
-    "roundToken",
-    "startsAt",
-    "trackId",
-  ] as const;
-  $columns = RoundSchema.$columns;
+  static $columns = ['distractors', 'endsAt', 'gameId', 'id', 'revealedAt', 'roundNumber', 'roundToken', 'startsAt', 'trackId'] as const
+  $columns = RoundSchema.$columns
   @column(jsonColumn)
-  declare distractors: number[];
+  declare distractors: number[]
   @column.dateTime()
-  declare endsAt: DateTime | null;
+  declare endsAt: DateTime | null
   @column()
-  declare gameId: number;
+  declare gameId: number
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column.dateTime()
-  declare revealedAt: DateTime | null;
+  declare revealedAt: DateTime | null
   @column()
-  declare roundNumber: number;
+  declare roundNumber: number
   @column()
-  declare roundToken: string;
+  declare roundToken: string
   @column.dateTime()
-  declare startsAt: DateTime | null;
+  declare startsAt: DateTime | null
   @column()
-  declare trackId: number;
+  declare trackId: number
 }
 
 export class TracksCacheSchema extends BaseModel {
-  static $columns = [
-    "album",
-    "artist",
-    "cachedAt",
-    "coverUrl",
-    "durationMs",
-    "expiresAt",
-    "genre",
-    "hasPreview",
-    "id",
-    "metadata",
-    "popularity",
-    "previewUrl",
-    "releaseYear",
-    "spotifyId",
-    "title",
-  ] as const;
-  $columns = TracksCacheSchema.$columns;
+  static $columns = ['album', 'artist', 'cachedAt', 'coverUrl', 'durationMs', 'expiresAt', 'genre', 'hasPreview', 'id', 'metadata', 'popularity', 'previewUrl', 'releaseYear', 'spotifyId', 'title'] as const
+  $columns = TracksCacheSchema.$columns
   @column()
-  declare album: string | null;
+  declare album: string | null
   @column()
-  declare artist: string;
+  declare artist: string
   @column.dateTime()
-  declare cachedAt: DateTime;
+  declare cachedAt: DateTime
   @column()
-  declare coverUrl: string | null;
+  declare coverUrl: string | null
   @column()
-  declare durationMs: number | null;
+  declare durationMs: number | null
   @column.dateTime()
-  declare expiresAt: DateTime;
+  declare expiresAt: DateTime
   @column()
-  declare genre: string | null;
+  declare genre: string | null
   @column()
-  declare hasPreview: boolean;
+  declare hasPreview: boolean
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column(jsonColumn)
-  declare metadata: Record<string, unknown> | null;
+  declare metadata: Record<string, unknown> | null
   @column()
-  declare popularity: number | null;
+  declare popularity: number | null
   @column()
-  declare previewUrl: string | null;
+  declare previewUrl: string | null
   @column()
-  declare releaseYear: number | null;
+  declare releaseYear: number | null
   @column()
-  declare spotifyId: string;
+  declare spotifyId: string
   @column()
-  declare title: string;
+  declare title: string
 }
 
 export class UserAchievementSchema extends BaseModel {
-  static $columns = ["achievementId", "id", "unlockedAt", "userId"] as const;
-  $columns = UserAchievementSchema.$columns;
+  static $columns = ['achievementId', 'id', 'unlockedAt', 'userId'] as const
+  $columns = UserAchievementSchema.$columns
   @column()
-  declare achievementId: number;
+  declare achievementId: number
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column.dateTime()
-  declare unlockedAt: DateTime;
+  declare unlockedAt: DateTime
   @column()
-  declare userId: number;
+  declare userId: number
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = [
-    "banExpiresAt",
-    "banReason",
-    "createdAt",
-    "email",
-    "fullName",
-    "id",
-    "lastLoginAt",
-    "lockedUntil",
-    "loginAttempts",
-    "password",
-    "role",
-    "spotifyAccessToken",
-    "spotifyId",
-    "spotifyRefreshToken",
-    "spotifyTokenExpiresAt",
-    "status",
-    "updatedAt",
-  ] as const;
-  $columns = UserSchema.$columns;
+  static $columns = ['banExpiresAt', 'banReason', 'createdAt', 'email', 'fullName', 'id', 'lastLoginAt', 'lockedUntil', 'loginAttempts', 'password', 'role', 'spotifyAccessToken', 'spotifyId', 'spotifyRefreshToken', 'spotifyTokenExpiresAt', 'status', 'updatedAt'] as const
+  $columns = UserSchema.$columns
   @column.dateTime()
-  declare banExpiresAt: DateTime | null;
+  declare banExpiresAt: DateTime | null
   @column()
-  declare banReason: string | null;
+  declare banReason: string | null
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
   @column()
-  declare email: string;
+  declare email: string
   @column()
-  declare fullName: string | null;
+  declare fullName: string | null
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
   @column.dateTime()
-  declare lastLoginAt: DateTime | null;
+  declare lastLoginAt: DateTime | null
   @column.dateTime()
-  declare lockedUntil: DateTime | null;
+  declare lockedUntil: DateTime | null
   @column()
-  declare loginAttempts: number;
+  declare loginAttempts: number
   @column({ serializeAs: null })
-  declare password: string;
+  declare password: string
   @column()
-  declare role: string;
+  declare role: string
   @column()
-  declare spotifyAccessToken: string | null;
+  declare spotifyAccessToken: string | null
   @column()
-  declare spotifyId: string | null;
+  declare spotifyId: string | null
   @column()
-  declare spotifyRefreshToken: string | null;
+  declare spotifyRefreshToken: string | null
   @column.dateTime()
-  declare spotifyTokenExpiresAt: DateTime | null;
+  declare spotifyTokenExpiresAt: DateTime | null
   @column()
-  declare status: string;
+  declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare updatedAt: DateTime | null
 }

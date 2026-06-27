@@ -3,6 +3,12 @@ import Playlist from "#models/playlist";
 import { DateTime } from "luxon";
 import type { DeezerPlaylist, DeezerTrack } from "#types/deezer";
 
+type ImportPlaylistOptions = {
+  playlistKey?: string;
+  createdBy?: number;
+  visibility?: "public" | "private";
+};
+
 export class DeezerService {
   private readonly BASE = "https://api.deezer.com";
 
@@ -13,7 +19,10 @@ export class DeezerService {
   }
 
   /** Importe une playlist Deezer complète (toutes pages) */
-  async importPlaylist(deezerPlaylistId: string): Promise<Playlist> {
+  async importPlaylist(
+    deezerPlaylistId: string,
+    options: ImportPlaylistOptions = {},
+  ): Promise<Playlist> {
     const info = await this.fetch<DeezerPlaylist>(`/playlist/${deezerPlaylistId}`);
 
     // Récupérer toutes les tracks (pagination 25 par défaut)
@@ -21,13 +30,15 @@ export class DeezerService {
 
     // Upsert playlist
     const playlist = await Playlist.updateOrCreate(
-      { spotifyId: `deezer:${deezerPlaylistId}` },
+      { spotifyId: options.playlistKey ?? `deezer:${deezerPlaylistId}` },
       {
         name: info.title,
         description: info.description || null,
         coverUrl: info.picture_medium ?? null,
         trackCount: allTracks.length,
         isActive: true,
+        createdBy: options.createdBy,
+        visibility: options.visibility ?? "public",
         lastSyncedAt: DateTime.now(),
       },
     );
@@ -94,7 +105,7 @@ export class DeezerService {
       { spotifyId: "deezer:starter-chart" },
       {
         name: "Hits du moment",
-        description: "Selection publique Deezer mise a jour automatiquement.",
+        description: "Sélection publique Deezer mise à jour automatiquement.",
         coverUrl: tracks[0]?.album.cover_medium ?? null,
         trackCount: tracks.length,
         isActive: true,
@@ -178,4 +189,3 @@ export class DeezerService {
     }
   }
 }
-

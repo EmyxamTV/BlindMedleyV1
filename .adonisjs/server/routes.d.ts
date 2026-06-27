@@ -23,6 +23,13 @@ export type ScannedRoutes = {
     'bandle.index': { paramsTuple?: []; params?: {} }
     'practice.question': { paramsTuple?: []; params?: {} }
     'practice.preview': { paramsTuple?: []; params?: {} }
+    'playlists.index': { paramsTuple?: []; params?: {} }
+    'playlists.create': { paramsTuple?: []; params?: {} }
+    'playlists.store': { paramsTuple?: []; params?: {} }
+    'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.share': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.unshare': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'shareId': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.starter_playlist': { paramsTuple?: []; params?: {} }
     'game.create': { paramsTuple?: []; params?: {} }
@@ -57,6 +64,9 @@ export type ScannedRoutes = {
     'bandle.index': { paramsTuple?: []; params?: {} }
     'practice.question': { paramsTuple?: []; params?: {} }
     'practice.preview': { paramsTuple?: []; params?: {} }
+    'playlists.index': { paramsTuple?: []; params?: {} }
+    'playlists.create': { paramsTuple?: []; params?: {} }
+    'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -79,6 +89,9 @@ export type ScannedRoutes = {
     'bandle.index': { paramsTuple?: []; params?: {} }
     'practice.question': { paramsTuple?: []; params?: {} }
     'practice.preview': { paramsTuple?: []; params?: {} }
+    'playlists.index': { paramsTuple?: []; params?: {} }
+    'playlists.create': { paramsTuple?: []; params?: {} }
+    'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -96,6 +109,10 @@ export type ScannedRoutes = {
     'friends.request': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
     'friends.accept': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.store': { paramsTuple?: []; params?: {} }
+    'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.share': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.unshare': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'shareId': ParamValue} }
     'game.starter_playlist': { paramsTuple?: []; params?: {} }
     'game.create': { paramsTuple?: []; params?: {} }
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

@@ -120,6 +120,48 @@ const routes = {
     tokens: [{"old":"/audio/preview","type":0,"val":"audio","end":""},{"old":"/audio/preview","type":0,"val":"preview","end":""}],
     types: placeholder as Registry['practice.preview']['types'],
   },
+  'playlists.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/playlists',
+    tokens: [{"old":"/playlists","type":0,"val":"playlists","end":""}],
+    types: placeholder as Registry['playlists.index']['types'],
+  },
+  'playlists.create': {
+    methods: ["GET","HEAD"],
+    pattern: '/playlists/create',
+    tokens: [{"old":"/playlists/create","type":0,"val":"playlists","end":""},{"old":"/playlists/create","type":0,"val":"create","end":""}],
+    types: placeholder as Registry['playlists.create']['types'],
+  },
+  'playlists.store': {
+    methods: ["POST"],
+    pattern: '/playlists',
+    tokens: [{"old":"/playlists","type":0,"val":"playlists","end":""}],
+    types: placeholder as Registry['playlists.store']['types'],
+  },
+  'playlists.edit': {
+    methods: ["GET","HEAD"],
+    pattern: '/playlists/:id/edit',
+    tokens: [{"old":"/playlists/:id/edit","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/edit","type":1,"val":"id","end":""},{"old":"/playlists/:id/edit","type":0,"val":"edit","end":""}],
+    types: placeholder as Registry['playlists.edit']['types'],
+  },
+  'playlists.update': {
+    methods: ["POST"],
+    pattern: '/playlists/:id',
+    tokens: [{"old":"/playlists/:id","type":0,"val":"playlists","end":""},{"old":"/playlists/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['playlists.update']['types'],
+  },
+  'playlists.share': {
+    methods: ["POST"],
+    pattern: '/playlists/:id/share',
+    tokens: [{"old":"/playlists/:id/share","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/share","type":1,"val":"id","end":""},{"old":"/playlists/:id/share","type":0,"val":"share","end":""}],
+    types: placeholder as Registry['playlists.share']['types'],
+  },
+  'playlists.unshare': {
+    methods: ["POST"],
+    pattern: '/playlists/:id/share/:shareId/delete',
+    tokens: [{"old":"/playlists/:id/share/:shareId/delete","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/share/:shareId/delete","type":1,"val":"id","end":""},{"old":"/playlists/:id/share/:shareId/delete","type":0,"val":"share","end":""},{"old":"/playlists/:id/share/:shareId/delete","type":1,"val":"shareId","end":""},{"old":"/playlists/:id/share/:shareId/delete","type":0,"val":"delete","end":""}],
+    types: placeholder as Registry['playlists.unshare']['types'],
+  },
   'game.index': {
     methods: ["GET","HEAD"],
     pattern: '/game',

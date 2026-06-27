@@ -37,6 +37,15 @@ export interface ApiDefinition {
   bandle: {
     index: typeof routes['bandle.index']
   }
+  playlists: {
+    index: typeof routes['playlists.index']
+    create: typeof routes['playlists.create']
+    store: typeof routes['playlists.store']
+    edit: typeof routes['playlists.edit']
+    update: typeof routes['playlists.update']
+    share: typeof routes['playlists.share']
+    unshare: typeof routes['playlists.unshare']
+  }
   game: {
     index: typeof routes['game.index']
     starterPlaylist: typeof routes['game.starter_playlist']

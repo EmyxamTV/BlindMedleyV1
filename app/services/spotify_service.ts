@@ -8,6 +8,12 @@ import type {
   SpotifyTrackObject,
 } from "#types/spotify";
 
+type ImportPlaylistOptions = {
+  playlistKey?: string;
+  createdBy?: number;
+  visibility?: "public" | "private";
+};
+
 // Simple in-memory token cache (remplacé par Redis en prod)
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
@@ -87,7 +93,10 @@ export class SpotifyService {
       .filter((t): t is SpotifyTrackObject => t !== null && Boolean(t.id));
   }
 
-  async importPlaylist(spotifyPlaylistId: string): Promise<Playlist> {
+  async importPlaylist(
+    spotifyPlaylistId: string,
+    options: ImportPlaylistOptions = {},
+  ): Promise<Playlist> {
     const [info, allTracks] = await Promise.all([
       this.getPlaylistInfo(spotifyPlaylistId),
       this.getAllPlaylistTracks(spotifyPlaylistId),
@@ -95,12 +104,14 @@ export class SpotifyService {
 
     // Upsert playlist
     const playlist = await Playlist.updateOrCreate(
-      { spotifyId: spotifyPlaylistId },
+      { spotifyId: options.playlistKey ?? spotifyPlaylistId },
       {
         name: info.name,
         description: info.description || null,
         coverUrl: info.images?.[0]?.url ?? null,
         trackCount: allTracks.length,
+        createdBy: options.createdBy,
+        visibility: options.visibility ?? "public",
         lastSyncedAt: DateTime.now(),
       },
     );

@@ -28,5 +28,8 @@ declare module '@adonisjs/inertia/types' {
     'leaderboard': ExtractProps<(typeof import('../../inertia/pages/leaderboard.tsx'))['default']>
     'practice': ExtractProps<(typeof import('../../inertia/pages/practice.tsx'))['default']>
     'profile': ExtractProps<(typeof import('../../inertia/pages/profile.tsx'))['default']>
+    'playlists/create': ExtractProps<(typeof import('../../inertia/pages/playlists/create.tsx'))['default']>
+    'playlists/edit': ExtractProps<(typeof import('../../inertia/pages/playlists/edit.tsx'))['default']>
+    'playlists/index': ExtractProps<(typeof import('../../inertia/pages/playlists/index.tsx'))['default']>
   }
 }

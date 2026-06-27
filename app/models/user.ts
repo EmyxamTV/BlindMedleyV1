@@ -9,6 +9,7 @@ import Profile from "#models/profile";
 import GamePlayer from "#models/game_player";
 import Achievement from "#models/achievement";
 import Friendship from "#models/friendship";
+import PlaylistShare from "#models/playlist_share";
 
 export default class User extends compose(UserSchema, withAuthFinder(hash)) {
   declare role: "player" | "moderator" | "admin";
@@ -32,6 +33,9 @@ export default class User extends compose(UserSchema, withAuthFinder(hash)) {
 
   @hasMany(() => Friendship, { foreignKey: "addresseeId" })
   declare receivedFriendRequests: HasMany<typeof Friendship>;
+
+  @hasMany(() => PlaylistShare)
+  declare playlistShares: HasMany<typeof PlaylistShare>;
 
   get initials() {
     const [first, last] = this.fullName ? this.fullName.split(" ") : this.email.split("@");

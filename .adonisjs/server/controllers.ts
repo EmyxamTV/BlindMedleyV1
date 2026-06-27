@@ -15,4 +15,5 @@ export const controllers = {
   Profile: () => import('#controllers/profile_controller'),
   Session: () => import('#controllers/session_controller'),
   SpotifyOauth: () => import('#controllers/spotify_oauth_controller'),
+  Playlist: () => import('#controllers/playlist_controller'),
 }

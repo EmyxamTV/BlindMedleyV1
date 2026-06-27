@@ -7,6 +7,7 @@ import Answer from "#models/answer";
 import { GameService } from "#services/game_service";
 import { RoundService } from "#services/round_service";
 import { DeezerService } from "#services/deezer_service";
+import { PlaylistAccessService } from "#services/playlist_access_service";
 import AnswerTransformer from "#transformers/answer_transformer";
 import GamePlayerTransformer from "#transformers/game_player_transformer";
 import GameTransformer from "#transformers/game_transformer";
@@ -24,6 +25,7 @@ export default class GameController {
     private readonly gameService: GameService,
     private readonly roundService: RoundService,
     private readonly deezerService: DeezerService,
+    private readonly playlistAccess: PlaylistAccessService,
   ) {}
 
   // ── Résoudre un publicId → Game (lève 404 si introuvable) ─────────────
@@ -33,11 +35,17 @@ export default class GameController {
 
   // Page lobby / création
   async index({ inertia, auth }: HttpContext) {
-    let playlists = await Playlist.query().where("is_active", true).orderBy("name");
+    let playlists = await this.playlistAccess
+      .forUser(Playlist.query(), auth.user!)
+      .where("is_active", true)
+      .orderBy("name");
 
     if (playlists.length === 0) {
       await this.deezerService.importStarterPlaylist();
-      playlists = await Playlist.query().where("is_active", true).orderBy("name");
+      playlists = await this.playlistAccess
+        .forUser(Playlist.query(), auth.user!)
+        .where("is_active", true)
+        .orderBy("name");
     }
 
     const publicGames = await Game.query()
@@ -65,6 +73,9 @@ export default class GameController {
   // Créer une partie
   async create({ request, auth, response }: HttpContext) {
     const payload = await request.validateUsing(createGameValidator);
+    if (!(await this.playlistAccess.canUse(payload.playlistId, auth.user!))) {
+      return response.notFound();
+    }
 
     const game = await this.gameService.createGame({ ...payload, hostId: auth.user!.id });
 
@@ -214,6 +225,9 @@ export default class GameController {
 
     if (previousGame.mode === "matchmaking") throw new Error("UNSUPPORTED_GAME_MODE");
     if (!previousGame.playlistId) throw new Error("PLAYLIST_NOT_FOUND");
+    if (!(await this.playlistAccess.canUse(previousGame.playlistId, auth.user!))) {
+      return response.notFound();
+    }
 
     const game = await this.gameService.createGame({
       mode: previousGame.mode,

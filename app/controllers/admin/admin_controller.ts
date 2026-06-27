@@ -2,8 +2,7 @@ import type { HttpContext } from "@adonisjs/core/http";
 import User from "#models/user";
 import Game from "#models/game";
 import Playlist from "#models/playlist";
-import { SpotifyService } from "#services/spotify_service";
-import { DeezerService } from "#services/deezer_service";
+import { PlaylistImportService } from "#services/playlist_import_service";
 import GameTransformer from "#transformers/game_transformer";
 import PlaylistTransformer from "#transformers/playlist_transformer";
 import UserTransformer from "#transformers/user_transformer";
@@ -18,10 +17,7 @@ import { inject } from "@adonisjs/core";
 
 @inject()
 export default class AdminController {
-  constructor(
-    private readonly spotifyService: SpotifyService,
-    private readonly deezerService: DeezerService,
-  ) {}
+  constructor(private readonly playlistImportService: PlaylistImportService) {}
 
   async dashboard({ inertia }: HttpContext) {
     const [totalUsers, totalGames, activePlaylists] = await Promise.all([
@@ -128,7 +124,7 @@ export default class AdminController {
     // Deezer : https://www.deezer.com/fr/playlist/1234567890
     const deezerMatch = url.match(/deezer\.com\/(?:[a-z]+\/)?playlist\/(\d+)/);
     if (deezerMatch) {
-      await this.deezerService.importPlaylist(deezerMatch[1]);
+      await this.playlistImportService.importFromUrl(url, { visibility: "public" });
       session.flash("success", "Playlist Deezer importée avec succès");
       return response.redirect().back();
     }
@@ -136,7 +132,7 @@ export default class AdminController {
     // Spotify : https://open.spotify.com/playlist/xxxxx
     const spotifyMatch = url.match(/playlist\/([a-zA-Z0-9]+)/);
     if (spotifyMatch) {
-      await this.spotifyService.importPlaylist(spotifyMatch[1]);
+      await this.playlistImportService.importFromUrl(url, { visibility: "public" });
       session.flash("success", "Playlist Spotify importée avec succès (previews Deezer)");
       return response.redirect().back();
     }
