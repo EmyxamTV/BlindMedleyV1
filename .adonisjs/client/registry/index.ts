@@ -12,6 +12,12 @@ const routes = {
     tokens: [{"old":"/","type":0,"val":"/","end":""}],
     types: placeholder as Registry['home']['types'],
   },
+  'privacy_policy': {
+    methods: ["GET","HEAD"],
+    pattern: '/politique-confidentialite',
+    tokens: [{"old":"/politique-confidentialite","type":0,"val":"politique-confidentialite","end":""}],
+    types: placeholder as Registry['privacy_policy']['types'],
+  },
   'new_account.create': {
     methods: ["GET","HEAD"],
     pattern: '/signup',

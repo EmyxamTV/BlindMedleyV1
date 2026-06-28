@@ -4,7 +4,7 @@ import type { InertiaProps } from "~/types";
 
 export default function Home({ user }: InertiaProps) {
   return (
-    <div className="home">
+    <div className="mx-auto max-w-[1100px] px-6">
       <section className="hero">
         <div className="hero-badge">🎵 Blind Test Musical</div>
         <h1 className="hero-title">
@@ -24,7 +24,10 @@ export default function Home({ user }: InertiaProps) {
               <Link route="new_account.create" className={buttonClassName({ size: "lg" })}>
                 Commencer gratuitement
               </Link>
-              <Link route="session.create" className={buttonClassName({ variant: "ghost", size: "lg" })}>
+              <Link
+                route="session.create"
+                className={buttonClassName({ variant: "ghost", size: "lg" })}
+              >
                 Se connecter
               </Link>
             </>
@@ -82,6 +85,13 @@ export default function Home({ user }: InertiaProps) {
           </div>
         </div>
       </section>
+
+      <footer className="mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/10 py-8 text-sm text-slate-500 sm:flex-row">
+        <p>All rights reserved 2026 Blindmedley</p>
+        <Link route="privacy_policy" className="font-semibold text-violet-300 hover:text-white">
+          Politique de confidentialité
+        </Link>
+      </footer>
     </div>
   );
 }

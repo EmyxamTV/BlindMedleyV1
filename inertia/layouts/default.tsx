@@ -35,7 +35,7 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
           </Link>
 
           {user && (
-            <nav className="navbar-nav">
+            <nav className="navbar-nav justify-center">
               <Link
                 route="playlists.index"
                 className={cn("nav-link", isActivePath("/playlists") && "active")}
@@ -59,12 +59,6 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
                 className={cn("nav-link", isActivePath("/leaderboard") && "active")}
               >
                 Classement
-              </Link>
-              <Link
-                route="profile.show"
-                className={cn("nav-link", isActivePath("/profile") && "active")}
-              >
-                Profil
               </Link>
             </nav>
           )}
@@ -174,23 +168,6 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
               <polyline points="17 6 23 6 23 12" />
             </svg>
             Classement
-          </Link>
-          <Link
-            route="profile.show"
-            className={cn("mobile-nav-link", isActivePath("/profile") && "active")}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Profil
           </Link>
         </nav>
       )}

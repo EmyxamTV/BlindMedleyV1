@@ -4,6 +4,8 @@ export function pageTitle(component: string, props: PageProps) {
   switch (component) {
     case "home":
       return "Accueil";
+    case "privacy_policy":
+      return "Politique de confidentialité";
     case "auth/login":
       return "Connexion";
     case "auth/signup":

@@ -14,6 +14,7 @@ const AdminController = () => import("#controllers/admin/admin_controller");
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
 router.on("/").renderInertia("home", {}).as("home");
+router.on("/politique-confidentialite").renderInertia("privacy_policy", {}).as("privacy_policy");
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 router
