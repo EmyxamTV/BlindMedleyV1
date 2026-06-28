@@ -88,9 +88,14 @@ export default function Home({ user }: InertiaProps) {
 
       <footer className="mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/10 py-8 text-sm text-slate-500 sm:flex-row">
         <p>All rights reserved 2026 Blindmedley</p>
-        <Link route="privacy_policy" className="font-semibold text-violet-300 hover:text-white">
-          Politique de confidentialité
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link route="cgu" className="font-semibold text-violet-300 hover:text-white">
+            CGU
+          </Link>
+          <Link route="privacy_policy" className="font-semibold text-violet-300 hover:text-white">
+            Politique de confidentialité
+          </Link>
+        </div>
       </footer>
     </div>
   );

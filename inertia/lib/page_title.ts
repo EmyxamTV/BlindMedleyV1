@@ -6,6 +6,8 @@ export function pageTitle(component: string, props: PageProps) {
       return "Accueil";
     case "privacy_policy":
       return "Politique de confidentialité";
+    case "cgu":
+      return "Conditions générales d’utilisation";
     case "auth/login":
       return "Connexion";
     case "auth/signup":

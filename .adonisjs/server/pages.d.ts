@@ -18,6 +18,7 @@ declare module '@adonisjs/inertia/types' {
     'auth/login': ExtractProps<(typeof import('../../inertia/pages/auth/login.tsx'))['default']>
     'auth/signup': ExtractProps<(typeof import('../../inertia/pages/auth/signup.tsx'))['default']>
     'bandle': ExtractProps<(typeof import('../../inertia/pages/bandle.tsx'))['default']>
+    'cgu': ExtractProps<(typeof import('../../inertia/pages/cgu.tsx'))['default']>
     'errors/not_found': ExtractProps<(typeof import('../../inertia/pages/errors/not_found.tsx'))['default']>
     'errors/server_error': ExtractProps<(typeof import('../../inertia/pages/errors/server_error.tsx'))['default']>
     'game/index': ExtractProps<(typeof import('../../inertia/pages/game/index.tsx'))['default']>
