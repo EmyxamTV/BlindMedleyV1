@@ -1,13 +1,14 @@
 import { Data } from "@generated/data";
 import { toast, Toaster } from "sonner";
-import { usePage } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import { ReactElement, useEffect } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { buttonClassName } from "~/components/ui/button";
 import { cn } from "~/lib/cn";
+import { pageTitle } from "~/lib/page_title";
 
 export default function Layout({ children }: { children: ReactElement<Data.SharedProps> }) {
-  const { url } = usePage();
+  const { component, url } = usePage();
   const props = children.props;
 
   useEffect(() => {
@@ -25,6 +26,8 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
 
   return (
     <>
+      <Head title={pageTitle(component, props)} />
+
       <header className="navbar">
         <div className="navbar-inner">
           <Link route="home" className="navbar-logo">

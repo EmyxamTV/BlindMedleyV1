@@ -6,8 +6,8 @@ import { PlaySidebar, type AnswerProgress } from "~/components/game/play_sidebar
 import { TextAnswerForm } from "~/components/game/text_answer_form";
 import { Timer, type AnswerPing } from "~/components/game/timer";
 import { TrackLinks } from "~/components/track_links";
+import { useAudioVolume } from "~/hooks/use_audio_volume";
 import { useLeaveBeacon } from "~/hooks/use_leave_beacon";
-import { usePersistedNumber } from "~/hooks/use_persisted_number";
 import { createRealtimeUid } from "~/lib/realtime";
 import { routeUrl } from "~/lib/routes";
 import type {
@@ -18,8 +18,6 @@ import type {
   RoundChoice,
   TrackHistory,
 } from "~/types";
-
-const VOLUME_STORAGE_KEY = "blindmedley-game-volume";
 
 interface Props extends InertiaProps {
   game: GameWithPlayers;
@@ -67,7 +65,7 @@ export default function Play({
   const [currentRound, setCurrentRound] = useState<ClientRound | null>(round);
   const [gameStatus, setGameStatus] = useState(game.status);
   const [revealed, setRevealed] = useState<TrackHistory | null>(null);
-  const [volume, setVolume] = usePersistedNumber(VOLUME_STORAGE_KEY, 75, 0, 100);
+  const [volume, setVolume] = useAudioVolume();
   const [history, setHistory] = useState<TrackHistory[]>(initialHistory);
   const [answerPings, setAnswerPings] = useState<AnswerPing[]>([]);
   const [answerProgress, setAnswerProgress] = useState<Record<number, AnswerProgress>>({});

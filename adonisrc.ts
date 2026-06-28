@@ -1,7 +1,7 @@
-import { indexPages } from "@adonisjs/inertia";
-import { indexEntities } from "@adonisjs/core";
-import { defineConfig } from "@adonisjs/core/app";
-import { generateRegistry } from "@tuyau/core/hooks";
+import { indexPages } from "@adonisjs/inertia"
+import { indexEntities } from "@adonisjs/core"
+import { defineConfig } from "@adonisjs/core/app"
+import { generateRegistry } from "@tuyau/core/hooks"
 
 export default defineConfig({
   /*
@@ -136,4 +136,4 @@ export default defineConfig({
     ],
     buildStarting: [() => import("@adonisjs/vite/build_hook")],
   },
-});
+})

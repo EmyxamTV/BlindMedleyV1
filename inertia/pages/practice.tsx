@@ -1,6 +1,8 @@
 import { Link } from "@adonisjs/inertia/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AudioPlayer } from "~/components/game/audio_player";
 import { buttonClassName } from "~/components/ui/button";
+import { useAudioVolume } from "~/hooks/use_audio_volume";
 import type { InertiaProps } from "~/types";
 
 type Choice = { id: string; title: string; artist: string };
@@ -13,13 +15,10 @@ export default function Practice(_: InertiaProps) {
   const [answered, setAnswered] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(30);
-  const [volume, setVolume] = useState(75);
+  const [volume, setVolume] = useAudioVolume();
+  const [playKey, setPlayKey] = useState(0);
   const startedAt = useRef(Date.now());
   const nextQuestionTimer = useRef<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   const loadQuestion = useCallback(async () => {
     setQuestion(null);
@@ -50,25 +49,9 @@ export default function Practice(_: InertiaProps) {
     [],
   );
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.pause();
-    audio.currentTime = 0;
-    setPlaying(false);
-    setPosition(0);
-  }, [question]);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-    audioRef.current.volume = volume / 100;
-  }, [volume]);
-
-  function toggleAudio() {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (audio.paused) audio.play().catch(() => setError("Impossible de lancer cet extrait audio."));
-    else audio.pause();
+  function listen() {
+    setError(null);
+    setPlayKey((value) => value + 1);
   }
 
   function answer(choice: Choice) {
@@ -83,7 +66,7 @@ export default function Practice(_: InertiaProps) {
     } else {
       const solution = question.choices.find((item) => item.id === question.correctTrackId);
       setStreak(0);
-      setFeedback(`Pas cette fois — c’était ${solution?.title} · ${solution?.artist}`);
+      setFeedback(`Pas cette fois - c'était ${solution?.title} · ${solution?.artist}`);
     }
     nextQuestionTimer.current = window.setTimeout(() => void loadQuestion(), 1_800);
   }
@@ -109,7 +92,7 @@ export default function Practice(_: InertiaProps) {
           </div>
           <div>
             <span>Série</span>
-            <strong>{streak > 0 ? `×${streak}` : "—"}</strong>
+            <strong>{streak > 0 ? `×${streak}` : "-"}</strong>
           </div>
         </aside>
 
@@ -124,48 +107,22 @@ export default function Practice(_: InertiaProps) {
           ) : !question ? (
             <div className="practice-empty">
               <div className="spinner-large" />
-              <p>Préparation de l’extrait…</p>
+              <p>Préparation de l'extrait...</p>
             </div>
           ) : (
             <>
-              <div className="practice-audio player-practice">
-                <audio
-                  ref={audioRef}
-                  src={question.previewUrl}
-                  onPlay={() => setPlaying(true)}
-                  onPause={() => setPlaying(false)}
-                  onEnded={() => {
-                    setPlaying(false);
-                    setPosition(0);
-                  }}
-                  onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 30)}
-                  onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
-                />
-                <button
-                  type="button"
-                  className="practice-play"
-                  onClick={toggleAudio}
-                  aria-label={playing ? "Mettre en pause" : "Démarrer l extrait"}
-                >
-                  {playing ? "Ⅱ" : "▶"}
+              <AudioPlayer
+                key={question.previewUrl}
+                previewUrl={question.previewUrl}
+                volume={volume}
+                onVolumeChange={setVolume}
+                autoPlay={false}
+                playKey={playKey}
+              />
+              <div className="mt-4 mb-6 flex justify-center">
+                <button className={buttonClassName()} disabled={answered !== null} onClick={listen}>
+                  ▶ Écouter l'extrait
                 </button>
-                <div className="practice-player-info">
-                  <strong>{playing ? "Extrait en cours" : "Prêt à écouter"}</strong>
-                  <span>Quel est ce morceau ?</span>
-                  <div className="practice-progress">
-                    <i style={{ width: `${Math.min(100, (position / duration) * 100)}%` }} />
-                  </div>
-                </div>
-                <label className="practice-volume">
-                  <span>🔊</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={volume}
-                    onChange={(event) => setVolume(Number(event.target.value))}
-                  />
-                </label>
               </div>
               <div className="choices-grid practice-choices">
                 {question.choices.map((choice) => {

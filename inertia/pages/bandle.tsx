@@ -1,6 +1,8 @@
 import { Link } from "@adonisjs/inertia/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AudioPlayer } from "~/components/game/audio_player";
 import { buttonClassName } from "~/components/ui/button";
+import { useAudioVolume } from "~/hooks/use_audio_volume";
 import type { InertiaProps } from "~/types";
 
 type Choice = { id: string; title: string; artist: string };
@@ -14,10 +16,10 @@ export default function Bandle(_: InertiaProps) {
   const [score, setScore] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const audio = useRef<HTMLAudioElement>(null);
-  const stopTimer = useRef<number | null>(null);
+  const [volume, setVolume] = useAudioVolume();
+  const [playKey, setPlayKey] = useState(0);
+
   const load = useCallback(async () => {
-    if (stopTimer.current) window.clearTimeout(stopTimer.current);
     setQuestion(null);
     setAttempt(1);
     setResult(null);
@@ -32,48 +34,34 @@ export default function Bandle(_: InertiaProps) {
       setError(reason instanceof Error ? reason.message : "Impossible de charger un morceau.");
     }
   }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
-  useEffect(
-    () => () => {
-      if (stopTimer.current) window.clearTimeout(stopTimer.current);
-    },
-    [],
-  );
-  async function listen() {
-    if (!audio.current) return;
+
+  function listen() {
     setAudioError(null);
-    audio.current.currentTime = 0;
-    try {
-      await audio.current.play();
-    } catch {
-      void load();
-      return;
-    }
-    if (stopTimer.current) window.clearTimeout(stopTimer.current);
-    stopTimer.current = window.setTimeout(() => audio.current?.pause(), attempt * 1000);
+    setPlayKey((value) => value + 1);
   }
+
   function answer(choice: Choice) {
     if (!question || result) return;
     if (choice.id === question.correctTrackId) {
       setScore((value) => value + 1_500 - (attempt - 1) * 250);
       setResult("correct");
-      audio.current?.pause();
       return;
     }
-    if (attempt === MAX_ATTEMPTS) {
-      setResult("lost");
-      audio.current?.pause();
-    } else setAttempt((value) => value + 1);
+    if (attempt === MAX_ATTEMPTS) setResult("lost");
+    else setAttempt((value) => value + 1);
   }
+
   const solution = question?.choices.find((choice) => choice.id === question.correctTrackId);
   return (
     <div className="bandle-page">
       <header className="bandle-head">
         <div>
           <span className="eyebrow">MODE PROGRESSIF</span>
-          <h1>Devine avant d’en entendre trop.</h1>
+          <h1>Devine avant d'en entendre trop.</h1>
           <p>Chaque erreur révèle une seconde supplémentaire.</p>
         </div>
         <b>{score.toLocaleString("fr-FR")} pts</b>
@@ -95,11 +83,15 @@ export default function Bandle(_: InertiaProps) {
           </div>
         ) : (
           <>
-            <audio
-              ref={audio}
-              src={question.previewUrl}
-              preload="auto"
-              onError={() => void load()}
+            <AudioPlayer
+              previewUrl={question.previewUrl}
+              volume={volume}
+              onVolumeChange={setVolume}
+              autoPlay={false}
+              playKey={playKey}
+              maxPlayMs={attempt * 1000}
+              disabled={Boolean(result)}
+              onPlayError={() => setAudioError("Impossible de lancer cet extrait.")}
             />
             <div className="bandle-stage">
               <span>EXTRAIT {attempt}</span>
@@ -117,7 +109,7 @@ export default function Bandle(_: InertiaProps) {
               disabled={Boolean(result)}
               onClick={listen}
             >
-              ▶ Écouter l’extrait
+              ▶ Écouter l'extrait
             </button>
             {audioError && (
               <p className="bandle-audio-error">
