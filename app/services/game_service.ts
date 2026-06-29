@@ -269,6 +269,7 @@ export class GameService {
       serverReceivedAt,
       allowRetry: game.answerMode === "text",
       answerTarget: game.answerTarget,
+      roundDurationMs: game.roundDurationMs,
     });
 
     // Broadcaster la mise à jour des scores

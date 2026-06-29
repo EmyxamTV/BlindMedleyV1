@@ -4,6 +4,7 @@ import type { routes } from './index.ts'
 export interface ApiDefinition {
   home: typeof routes['home']
   privacyPolicy: typeof routes['privacy_policy']
+  cgu: typeof routes['cgu']
   newAccount: {
     create: typeof routes['new_account.create']
     store: typeof routes['new_account.store']
@@ -77,6 +78,9 @@ export interface ApiDefinition {
     playlists: typeof routes['admin.playlists'] & {
       import: typeof routes['admin.playlists.import']
       toggle: typeof routes['admin.playlists.toggle']
+      tracks: {
+        update: typeof routes['admin.playlists.tracks.update']
+      }
     }
   }
 }

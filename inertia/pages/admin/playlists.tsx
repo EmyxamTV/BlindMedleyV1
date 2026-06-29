@@ -14,6 +14,14 @@ interface AdminPlaylist extends Record<string, JSONDataTypes> {
   trackCount: number;
   isActive: boolean;
   lastSyncedAt: string | null;
+  tracks: {
+    id: string;
+    title: string;
+    artist: string;
+    album: string | null;
+    coverUrl: string | null;
+    hasPreview: boolean;
+  }[];
 }
 
 interface Props extends InertiaProps {
@@ -190,6 +198,107 @@ export default function AdminPlaylists({ playlists }: Props) {
             </table>
           </div>
         )}
+      </section>
+
+      <section className="admin-section">
+        <h2>Éditer les morceaux</h2>
+        <div className="grid gap-4">
+          {playlists.map((playlist) => (
+            <details
+              key={playlist.id}
+              className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+            >
+              <summary className="cursor-pointer list-none">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-base font-black text-white">{playlist.name}</p>
+                    <p className="text-sm text-slate-400">
+                      {playlist.tracks.length} morceaux à éditer
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-violet-300/20 bg-violet-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-violet-200">
+                    Ouvrir
+                  </span>
+                </div>
+              </summary>
+
+              <div className="mt-4 grid gap-3">
+                {playlist.tracks.length === 0 ? (
+                  <p className="rounded-lg border border-white/10 bg-black/20 p-4 text-sm text-slate-400">
+                    Aucun morceau dans cette playlist.
+                  </p>
+                ) : (
+                  playlist.tracks.map((track) => (
+                    <Form
+                      key={track.id}
+                      route="admin.playlists.tracks.update"
+                      routeParams={{ id: playlist.id, trackId: track.id }}
+                    >
+                      {({ errors, processing }) => (
+                        <div className="grid gap-3 rounded-lg border border-white/10 bg-black/20 p-3 md:grid-cols-[56px_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start">
+                          <div className="h-12 w-12 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                            {track.coverUrl ? (
+                              <img
+                                src={track.coverUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-lg">
+                                🎵
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor={`track-${track.id}-title`}
+                              className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500"
+                            >
+                              Titre
+                            </label>
+                            <Input
+                              id={`track-${track.id}-title`}
+                              name="title"
+                              defaultValue={track.title}
+                              className="text-white"
+                            />
+                            {errors.title && <FieldError>{errors.title}</FieldError>}
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor={`track-${track.id}-artist`}
+                              className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500"
+                            >
+                              Artiste
+                            </label>
+                            <Input
+                              id={`track-${track.id}-artist`}
+                              name="artist"
+                              defaultValue={track.artist}
+                              className="text-white"
+                            />
+                            {errors.artist && <FieldError>{errors.artist}</FieldError>}
+                          </div>
+
+                          <div className="flex flex-col gap-2 md:pt-6">
+                            <Button type="submit" size="sm" disabled={processing}>
+                              Enregistrer
+                            </Button>
+                            <span className="text-xs text-slate-500">
+                              {track.hasPreview ? "Extrait OK" : "Sans extrait"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </Form>
+                  ))
+                )}
+              </div>
+            </details>
+          ))}
+        </div>
       </section>
     </div>
   );

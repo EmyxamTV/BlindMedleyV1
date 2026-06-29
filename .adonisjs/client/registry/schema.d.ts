@@ -31,6 +31,18 @@ export interface Registry {
       errorResponse: unknown
     }
   }
+  'cgu': {
+    methods: ["GET","HEAD"]
+    pattern: '/conditions-generales-utilisation'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: unknown
+      errorResponse: unknown
+    }
+  }
   'new_account.create': {
     methods: ["GET","HEAD"]
     pattern: '/signup'
@@ -629,6 +641,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['togglePlaylist']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['togglePlaylist']>>>
+    }
+  }
+  'admin.playlists.tracks.update': {
+    methods: ["POST"]
+    pattern: '/admin/playlists/:id/tracks/:trackId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').updatePlaylistTrackValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; trackId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').updatePlaylistTrackValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['updatePlaylistTrack']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['updatePlaylistTrack']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
 }

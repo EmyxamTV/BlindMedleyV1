@@ -9,9 +9,12 @@ import type {
   ProcessSeparateAnswerParams,
 } from "#types/score";
 
-const MAX_SCORE_PER_ROUND = 1000;
-const SPEED_BONUS_MAX = 500;
-const COMBO_MULTIPLIERS = [1, 1, 1.2, 1.5, 2, 2.5]; // index = streak
+const BASE_SCORE = 500;
+const SPEED_BONUS_MAX = 350;
+const INSTANT_BONUS_MAX = 75;
+const STREAK_BONUS_STEP = 35;
+const STREAK_BONUS_MAX = 175;
+const DEFAULT_ROUND_DURATION_MS = 25_000;
 
 export class ScoreService {
   async processAnswer(params: ProcessAnswerParams): Promise<AnswerResult> {
@@ -45,6 +48,7 @@ export class ScoreService {
         existing,
         answerText: params.answerText,
         responseMs,
+        roundDurationMs: params.roundDurationMs,
       });
     }
 
@@ -58,7 +62,11 @@ export class ScoreService {
 
     // Score calculé côté serveur
     const scoreEarned = isCorrect
-      ? this.calculateScore(responseMs, gamePlayer.streak, round.game?.roundDurationMs ?? 30000)
+      ? this.calculateScore(
+          responseMs,
+          gamePlayer.streak,
+          params.roundDurationMs ?? round.game?.roundDurationMs ?? DEFAULT_ROUND_DURATION_MS,
+        )
       : 0;
 
     // Flags anti-triche
@@ -135,7 +143,7 @@ export class ScoreService {
     const baseScore = this.calculateScore(
       responseMs,
       gamePlayer.streak,
-      round.game?.roundDurationMs ?? 30000,
+      params.roundDurationMs ?? round.game?.roundDurationMs ?? DEFAULT_ROUND_DURATION_MS,
     );
     const scoreEarned = Math.floor((baseScore * (Number(titleNew) + Number(artistNew))) / 2);
     const flags = this.detectSuspiciousFlags(responseMs, true, gamePlayer);
@@ -269,11 +277,33 @@ export class ScoreService {
   }
 
   private calculateScore(responseMs: number, streak: number, roundDurationMs: number): number {
-    const speedRatio = Math.max(0, 1 - responseMs / roundDurationMs);
-    const speedBonus = Math.floor(speedRatio * SPEED_BONUS_MAX);
-    const base = MAX_SCORE_PER_ROUND - SPEED_BONUS_MAX + speedBonus;
-    const multiplierIndex = Math.min(streak, COMBO_MULTIPLIERS.length - 1);
-    return Math.floor(base * COMBO_MULTIPLIERS[multiplierIndex]);
+    const safeDuration = Math.max(5_000, roundDurationMs || DEFAULT_ROUND_DURATION_MS);
+    const responseRatio = Math.min(1, Math.max(0, responseMs / safeDuration));
+    const timeLeftRatio = 1 - responseRatio;
+
+    // Courbe réaliste : répondre deux fois plus vite ne double pas le score.
+    // Ça récompense la vitesse, mais laisse une bonne réponse tardive valoir quelque chose.
+    const speedBonus = Math.round(Math.pow(timeLeftRatio, 1.35) * SPEED_BONUS_MAX);
+
+    // Petit bonus pour les réponses vraiment rapides, progressif et plafonné.
+    const instantWindowRatio = Math.max(0, 1 - responseMs / Math.min(7_000, safeDuration * 0.35));
+    const instantBonus = Math.round(Math.pow(instantWindowRatio, 1.8) * INSTANT_BONUS_MAX);
+
+    // Les rounds courts sont plus difficiles, mais le bonus reste léger.
+    const durationModifier = this.durationModifier(safeDuration);
+
+    // Le streak donne un avantage, sans transformer la partie en x2.5 permanent.
+    const streakBonus = Math.min(STREAK_BONUS_MAX, Math.max(0, streak) * STREAK_BONUS_STEP);
+
+    return Math.max(100, Math.round((BASE_SCORE + speedBonus + instantBonus) * durationModifier + streakBonus));
+  }
+
+  private durationModifier(roundDurationMs: number): number {
+    if (roundDurationMs <= 10_000) return 1.18;
+    if (roundDurationMs <= 15_000) return 1.12;
+    if (roundDurationMs <= 20_000) return 1.06;
+    if (roundDurationMs <= 25_000) return 1;
+    return 0.95;
   }
 
   private detectSuspiciousFlags(

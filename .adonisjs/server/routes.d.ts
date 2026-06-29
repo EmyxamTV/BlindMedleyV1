@@ -6,6 +6,7 @@ export type ScannedRoutes = {
   ALL: {
     'home': { paramsTuple?: []; params?: {} }
     'privacy_policy': { paramsTuple?: []; params?: {} }
+    'cgu': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'new_account.store': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
@@ -56,10 +57,12 @@ export type ScannedRoutes = {
     'admin.playlists': { paramsTuple?: []; params?: {} }
     'admin.playlists.import': { paramsTuple?: []; params?: {} }
     'admin.playlists.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.playlists.tracks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'trackId': ParamValue} }
   }
   GET: {
     'home': { paramsTuple?: []; params?: {} }
     'privacy_policy': { paramsTuple?: []; params?: {} }
+    'cgu': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
     'spotify.redirect': { paramsTuple?: []; params?: {} }
@@ -88,6 +91,7 @@ export type ScannedRoutes = {
   HEAD: {
     'home': { paramsTuple?: []; params?: {} }
     'privacy_policy': { paramsTuple?: []; params?: {} }
+    'cgu': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
     'spotify.redirect': { paramsTuple?: []; params?: {} }
@@ -140,6 +144,7 @@ export type ScannedRoutes = {
     'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.playlists.import': { paramsTuple?: []; params?: {} }
     'admin.playlists.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.playlists.tracks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'trackId': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

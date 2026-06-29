@@ -18,6 +18,12 @@ const routes = {
     tokens: [{"old":"/politique-confidentialite","type":0,"val":"politique-confidentialite","end":""}],
     types: placeholder as Registry['privacy_policy']['types'],
   },
+  'cgu': {
+    methods: ["GET","HEAD"],
+    pattern: '/conditions-generales-utilisation',
+    tokens: [{"old":"/conditions-generales-utilisation","type":0,"val":"conditions-generales-utilisation","end":""}],
+    types: placeholder as Registry['cgu']['types'],
+  },
   'new_account.create': {
     methods: ["GET","HEAD"],
     pattern: '/signup',
@@ -317,6 +323,12 @@ const routes = {
     pattern: '/admin/playlists/:id/toggle',
     tokens: [{"old":"/admin/playlists/:id/toggle","type":0,"val":"admin","end":""},{"old":"/admin/playlists/:id/toggle","type":0,"val":"playlists","end":""},{"old":"/admin/playlists/:id/toggle","type":1,"val":"id","end":""},{"old":"/admin/playlists/:id/toggle","type":0,"val":"toggle","end":""}],
     types: placeholder as Registry['admin.playlists.toggle']['types'],
+  },
+  'admin.playlists.tracks.update': {
+    methods: ["POST"],
+    pattern: '/admin/playlists/:id/tracks/:trackId',
+    tokens: [{"old":"/admin/playlists/:id/tracks/:trackId","type":0,"val":"admin","end":""},{"old":"/admin/playlists/:id/tracks/:trackId","type":0,"val":"playlists","end":""},{"old":"/admin/playlists/:id/tracks/:trackId","type":1,"val":"id","end":""},{"old":"/admin/playlists/:id/tracks/:trackId","type":0,"val":"tracks","end":""},{"old":"/admin/playlists/:id/tracks/:trackId","type":1,"val":"trackId","end":""}],
+    types: placeholder as Registry['admin.playlists.tracks.update']['types'],
   },
 } as const satisfies Record<string, AdonisEndpoint>
 

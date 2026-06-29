@@ -22,6 +22,7 @@ export type ProcessAnswerParams = {
   serverReceivedAt: number;
   allowRetry?: boolean;
   answerTarget?: AnswerTarget;
+  roundDurationMs?: number;
 };
 
 export type ProcessSeparateAnswerParams = {
@@ -30,4 +31,5 @@ export type ProcessSeparateAnswerParams = {
   existing: Answer | null;
   answerText: string;
   responseMs: number;
+  roundDurationMs?: number;
 };

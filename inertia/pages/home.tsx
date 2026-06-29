@@ -80,7 +80,7 @@ export default function Home({ user }: InertiaProps) {
             <span className="step-num">3</span>
             <div>
               <strong>Monte le classement</strong>
-              <p>Enchaîne les bonnes réponses pour activer le mode combo ×2.5.</p>
+              <p>Enchaîne les bonnes réponses pour gagner un bonus de série progressif.</p>
             </div>
           </div>
         </div>

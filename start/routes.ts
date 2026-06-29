@@ -126,6 +126,9 @@ router
     router
       .post("/admin/playlists/:id/toggle", [AdminController, "togglePlaylist"])
       .as("admin.playlists.toggle");
+    router
+      .post("/admin/playlists/:id/tracks/:trackId", [AdminController, "updatePlaylistTrack"])
+      .as("admin.playlists.tracks.update");
   })
   .use([middleware.auth(), middleware.admin()]);
 

@@ -2,9 +2,9 @@ import type { HttpContext } from "@adonisjs/core/http";
 import User from "#models/user";
 import Game from "#models/game";
 import Playlist from "#models/playlist";
+import TrackCache from "#models/track_cache";
 import { PlaylistImportService } from "#services/playlist_import_service";
 import GameTransformer from "#transformers/game_transformer";
-import PlaylistTransformer from "#transformers/playlist_transformer";
 import UserTransformer from "#transformers/user_transformer";
 import { DateTime } from "luxon";
 import {
@@ -12,6 +12,7 @@ import {
   banUserValidator,
   importPlaylistValidator,
   suspendUserValidator,
+  updatePlaylistTrackValidator,
 } from "#validators/admin_validators";
 import { inject } from "@adonisjs/core";
 
@@ -112,9 +113,38 @@ export default class AdminController {
   }
 
   async playlists({ inertia }: HttpContext) {
-    const playlists = await Playlist.query().orderBy("created_at", "desc");
+    const playlists = await Playlist.query()
+      .orderBy("created_at", "desc")
+      .preload("tracks", (query) => {
+        query.orderBy("playlist_tracks.position", "asc").orderBy("tracks_cache.title", "asc");
+      });
+
     return inertia.render("admin/playlists", {
-      playlists: PlaylistTransformer.transform(playlists),
+      playlists: playlists.map((playlist) => ({
+        id: playlist.id,
+        spotifyId: playlist.spotifyId,
+        name: playlist.name,
+        description: playlist.description,
+        coverUrl: playlist.coverUrl,
+        genre: playlist.genre,
+        decade: playlist.decade,
+        trackCount: playlist.trackCount,
+        isActive: playlist.isActive,
+        isCurated: playlist.isCurated,
+        visibility: playlist.visibility,
+        createdBy: playlist.createdBy,
+        lastSyncedAt: playlist.lastSyncedAt,
+        createdAt: playlist.createdAt,
+        updatedAt: playlist.updatedAt,
+        tracks: playlist.tracks.map((track) => ({
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          album: track.album,
+          coverUrl: track.coverUrl,
+          hasPreview: track.hasPreview,
+        })),
+      })),
     });
   }
 
@@ -145,6 +175,23 @@ export default class AdminController {
     const playlist = await Playlist.findOrFail(params.id);
     await playlist.merge({ isActive: !playlist.isActive }).save();
     session.flash("success", `Playlist ${playlist.isActive ? "activée" : "désactivée"}`);
+    return response.redirect().back();
+  }
+
+  async updatePlaylistTrack({ params, request, response, session }: HttpContext) {
+    const { title, artist } = await request.validateUsing(updatePlaylistTrackValidator);
+
+    await Playlist.findOrFail(params.id);
+    const track = await TrackCache.query()
+      .where("id", params.trackId)
+      .whereHas("playlists", (query) => {
+        query.where("playlists.id", params.id);
+      })
+      .firstOrFail();
+
+    await track.merge({ title, artist }).save();
+
+    session.flash("success", "Morceau modifié avec succès");
     return response.redirect().back();
   }
 }
