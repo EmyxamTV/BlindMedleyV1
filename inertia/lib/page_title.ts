@@ -24,6 +24,8 @@ export function pageTitle(component: string, props: PageProps) {
       return "Créer une playlist";
     case "playlists/edit":
       return props.playlist?.name ?? "Playlist";
+    case "playlists/party":
+      return "Mode soirée";
     case "game/index":
       return "Jouer";
     case "game/wizard":

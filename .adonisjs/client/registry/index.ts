@@ -120,6 +120,12 @@ const routes = {
     tokens: [{"old":"/bandle","type":0,"val":"bandle","end":""}],
     types: placeholder as Registry['bandle.index']['types'],
   },
+  'party.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/party',
+    tokens: [{"old":"/party","type":0,"val":"party","end":""}],
+    types: placeholder as Registry['party.index']['types'],
+  },
   'practice.question': {
     methods: ["GET","HEAD"],
     pattern: '/practice/question',
@@ -155,6 +161,12 @@ const routes = {
     pattern: '/playlists/:id/play',
     tokens: [{"old":"/playlists/:id/play","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/play","type":1,"val":"id","end":""},{"old":"/playlists/:id/play","type":0,"val":"play","end":""}],
     types: placeholder as Registry['playlists.play']['types'],
+  },
+  'playlists.party': {
+    methods: ["GET","HEAD"],
+    pattern: '/playlists/:id/party',
+    tokens: [{"old":"/playlists/:id/party","type":0,"val":"playlists","end":""},{"old":"/playlists/:id/party","type":1,"val":"id","end":""},{"old":"/playlists/:id/party","type":0,"val":"party","end":""}],
+    types: placeholder as Registry['playlists.party']['types'],
   },
   'playlists.edit': {
     methods: ["GET","HEAD"],

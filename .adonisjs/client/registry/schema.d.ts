@@ -235,6 +235,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['bandle']>>>
     }
   }
+  'party.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/party'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['party']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['party']>>>
+    }
+  }
   'practice.question': {
     methods: ["GET","HEAD"]
     pattern: '/practice/question'
@@ -242,9 +254,9 @@ export interface Registry {
       body: {}
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/practice_validators').practiceQuestionQueryValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['question']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['question']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/practice_controller').default['question']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'practice.preview': {
@@ -305,6 +317,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['play']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['play']>>>
+    }
+  }
+  'playlists.party': {
+    methods: ["GET","HEAD"]
+    pattern: '/playlists/:id/party'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['party']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['party']>>>
     }
   }
   'playlists.edit': {

@@ -1,0 +1,35 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Icône BlindMedley</title>
+  <desc id="desc">Icône minimaliste BlindMedley avec un casque et une onde sonore.</desc>
+  <defs>
+    <linearGradient id="bg" x1="74" y1="58" x2="438" y2="454" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#151225"/>
+      <stop offset="1" stop-color="#07070D"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="114" y1="96" x2="398" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="0.5" stop-color="#D946EF"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <filter id="glow" x="62" y="54" width="388" height="404" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.69 0 0 0 0 0.28 0 0 0 0 1 0 0 0 0.42 0"/>
+      <feBlend in="SourceGraphic" mode="normal"/>
+    </filter>
+  </defs>
+
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#bg)"/>
+  <rect x="39" y="39" width="434" height="434" rx="105" stroke="url(#brand)" stroke-width="14"/>
+
+  <g filter="url(#glow)" transform="translate(0 8)">
+    <path d="M128 270V229C128 158.86 184.86 102 255 102C325.14 102 382 158.86 382 229V270" stroke="url(#brand)" stroke-width="34" stroke-linecap="round"/>
+    <rect x="91" y="248" width="70" height="113" rx="35" fill="url(#brand)"/>
+    <rect x="351" y="248" width="70" height="113" rx="35" fill="url(#brand)"/>
+
+    <rect x="172" y="236" width="20" height="54" rx="10" fill="#A78BFA"/>
+    <rect x="209" y="210" width="20" height="106" rx="10" fill="#C084FC"/>
+    <rect x="246" y="181" width="20" height="162" rx="10" fill="#D946EF"/>
+    <rect x="283" y="210" width="20" height="106" rx="10" fill="#F472B6"/>
+    <rect x="320" y="236" width="20" height="54" rx="10" fill="#22D3EE"/>
+  </g>
+</svg>

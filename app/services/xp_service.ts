@@ -33,19 +33,28 @@ export class XpService {
     return xp;
   }
 
-  async awardXp(userId: string, amount: number, player: GamePlayer): Promise<void> {
+  async awardXp(
+    userId: string,
+    amount: number,
+    player: GamePlayer,
+    options: { awardXp?: boolean; leaderboard?: boolean; achievements?: boolean } = {},
+  ): Promise<void> {
+    const shouldAwardXp = options.awardXp ?? true;
+    const shouldUpdateLeaderboard = options.leaderboard ?? true;
+    const shouldCheckAchievements = options.achievements ?? true;
+
     let profile = await Profile.query().where("user_id", userId).first();
     if (!profile) {
       // Filet de sécurité : créer le profil s'il n'existe pas encore
       profile = await Profile.create({ userId });
     }
 
-    let newXp = profile.xp + amount;
+    let newXp = shouldAwardXp ? profile.xp + amount : profile.xp;
     let newLevel = profile.level;
     let newXpToNext = profile.xpToNextLevel;
 
     // Level up
-    while (newXp >= newXpToNext) {
+    while (shouldAwardXp && newXp >= newXpToNext) {
       newXp -= newXpToNext;
       newLevel++;
       newXpToNext = xpForLevel(newLevel + 1);
@@ -74,10 +83,14 @@ export class XpService {
       })
       .save();
 
-    await this.leaderboardService.addScore(userId, player.score, profile.country);
+    if (shouldUpdateLeaderboard) {
+      await this.leaderboardService.addScore(userId, player.score, profile.country);
+    }
 
     // Vérifier les achievements
-    await this.checkAchievements(userId, profile, player);
+    if (shouldCheckAchievements) {
+      await this.checkAchievements(userId, profile, player);
+    }
   }
 
   private async checkAchievements(

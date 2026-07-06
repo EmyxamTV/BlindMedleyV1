@@ -99,6 +99,40 @@ export default class PlaylistController {
     });
   }
 
+  async party({ inertia, params, auth }: HttpContext) {
+    const user = auth.user!;
+    const playlists = await this.access
+      .forUser(Playlist.query().where("is_active", true), user)
+      .orderBy("created_at", "desc")
+      .preload("tracks", (query) => {
+        query
+          .where("has_preview", true)
+          .whereNotNull("preview_url")
+          .orderBy("playlist_tracks.position", "asc");
+      });
+
+    return inertia.render("playlists/party", {
+      preselectedPlaylistId: params.id ?? null,
+      playlists: playlists.map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        description: playlist.description,
+        coverUrl: playlist.coverUrl,
+        trackCount: playlist.trackCount,
+        tracks: playlist.tracks.map((track) => ({
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          album: track.album,
+          coverUrl: track.coverUrl,
+          previewUrl: `/audio/preview?trackId=${track.id}`,
+          playlistId: playlist.id,
+          playlistName: playlist.name,
+        })),
+      })),
+    });
+  }
+
   async store({ request, auth, response, session }: HttpContext) {
     const { url } = await request.validateUsing(createPlaylistValidator);
     const user = auth.user!;
@@ -144,7 +178,23 @@ export default class PlaylistController {
 
     return inertia.render("playlists/edit", {
       playlist: PlaylistTransformer.transform(playlist),
-      tracks: TrackCacheTransformer.transform(tracks.all()),
+      tracks: tracks.all().map((track) => ({
+        id: track.id,
+        spotifyId: track.spotifyId,
+        title: track.title,
+        artist: track.artist,
+        album: track.album,
+        previewUrl: track.previewUrl ? `/audio/preview?trackId=${track.id}` : null,
+        coverUrl: track.coverUrl,
+        durationMs: track.durationMs,
+        releaseYear: track.releaseYear,
+        genre: track.genre,
+        popularity: track.popularity,
+        hasPreview: track.hasPreview,
+        metadata: track.metadata,
+        cachedAt: track.cachedAt,
+        expiresAt: track.expiresAt,
+      })),
       tracksMeta: tracks.getMeta(),
       shares: playlist.shares.map((share) => ({
         id: share.id,

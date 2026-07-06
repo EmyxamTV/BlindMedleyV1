@@ -54,6 +54,9 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
               >
                 Progressif
               </Link>
+              <Link route="party.index" className={cn("nav-link", isActivePath("/party") && "active")}>
+                Soirée
+              </Link>
               <Link
                 route="leaderboard.index"
                 className={cn("nav-link", isActivePath("/leaderboard") && "active")}
@@ -168,6 +171,23 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
               <polyline points="17 6 23 6 23 12" />
             </svg>
             Classement
+          </Link>
+          <Link
+            route="party.index"
+            className={cn("mobile-nav-link", isActivePath("/party") && "active")}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+            </svg>
+            Soirée
           </Link>
         </nav>
       )}

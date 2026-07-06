@@ -142,6 +142,7 @@ export default class AdminController {
           artist: track.artist,
           album: track.album,
           coverUrl: track.coverUrl,
+          previewUrl: track.previewUrl ? `/audio/preview?trackId=${track.id}` : null,
           hasPreview: track.hasPreview,
         })),
       })),

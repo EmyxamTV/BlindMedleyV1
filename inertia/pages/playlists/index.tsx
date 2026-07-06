@@ -164,8 +164,15 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
                     </div>
                   </div>
                 </Link>
-                {playlist.canEdit && (
-                  <div className="playlist-card-actions">
+                <div className="playlist-card-actions">
+                  <Link
+                    route="playlists.party"
+                    routeParams={{ id: playlist.id }}
+                    className={buttonClassName({ variant: "secondary", size: "sm" })}
+                  >
+                    Mode soirée
+                  </Link>
+                  {playlist.canEdit && (
                     <Link
                       route="playlists.edit"
                       routeParams={{ id: playlist.id }}
@@ -173,8 +180,8 @@ export default function PlaylistIndex({ playlists, meta, search, filter }: Props
                     >
                       Éditer
                     </Link>
-                  </div>
-                )}
+                  )}
+                </div>
               </Card>
             ))}
           </div>

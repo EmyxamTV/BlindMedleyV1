@@ -7,10 +7,18 @@ import type { InertiaProps } from "~/types";
 
 type Choice = { id: string; title: string; artist: string };
 type Question = { correctTrackId: string; previewUrl: string; choices: Choice[] };
-const MAX_ATTEMPTS = 5;
+type PlaylistOption = { id: string; name: string; trackCount: number };
 
-export default function Bandle(_: InertiaProps) {
+type Props = InertiaProps<{
+  playlists: PlaylistOption[];
+}>;
+
+const PROGRESSIVE_DURATIONS_MS = [100, 200, 300, 400, 500];
+const MAX_ATTEMPTS = PROGRESSIVE_DURATIONS_MS.length;
+
+export default function Bandle({ playlists }: Props) {
   const [question, setQuestion] = useState<Question | null>(null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
   const [attempt, setAttempt] = useState(1);
   const [result, setResult] = useState<"correct" | "lost" | null>(null);
   const [score, setScore] = useState(0);
@@ -26,18 +34,27 @@ export default function Bandle(_: InertiaProps) {
     setError(null);
     setAudioError(null);
     try {
-      const res = await fetch("/practice/question", { headers: { Accept: "application/json" } });
+      const url = new URL("/practice/question", window.location.origin);
+      if (selectedPlaylistId) url.searchParams.set("playlistId", selectedPlaylistId);
+
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? "Impossible de charger un morceau.");
       setQuestion(data as Question);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Impossible de charger un morceau.");
     }
-  }, []);
+  }, [selectedPlaylistId]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  function changePlaylist(playlistId: string) {
+    setScore(0);
+    setPlayKey((value) => value + 1);
+    setSelectedPlaylistId(playlistId);
+  }
 
   function listen() {
     setAudioError(null);
@@ -56,13 +73,18 @@ export default function Bandle(_: InertiaProps) {
   }
 
   const solution = question?.choices.find((choice) => choice.id === question.correctTrackId);
+  const currentDurationMs = PROGRESSIVE_DURATIONS_MS[attempt - 1] ?? PROGRESSIVE_DURATIONS_MS[0];
+  const currentDurationLabel = `${(currentDurationMs / 1_000).toLocaleString("fr-FR", {
+    maximumFractionDigits: 1,
+  })} seconde`;
+
   return (
     <div className="bandle-page">
       <header className="bandle-head">
         <div>
           <span className="eyebrow">MODE PROGRESSIF</span>
-          <h1>Devine avant d'en entendre trop.</h1>
-          <p>Chaque erreur révèle une seconde supplémentaire.</p>
+          <h1>Devine avant d’en entendre trop.</h1>
+          <p>Le premier extrait dure 0,1 seconde, puis chaque erreur révèle plus de musique.</p>
         </div>
         <b>{score.toLocaleString("fr-FR")} pts</b>
         <Link route="practice.index" className={buttonClassName({ variant: "ghost" })}>
@@ -70,6 +92,22 @@ export default function Bandle(_: InertiaProps) {
         </Link>
       </header>
       <main className="bandle-card">
+        <label className="mb-5 grid gap-2 text-sm font-black uppercase tracking-[0.12em] text-slate-400">
+          Playlist
+          <select
+            value={selectedPlaylistId}
+            onChange={(event) => changePlaylist(event.target.value)}
+            className="rounded-xl border border-white/10 bg-[#151525] px-3 py-2 text-sm font-bold normal-case tracking-normal text-white outline-none transition focus:border-violet-300/50"
+          >
+            <option value="">Toutes les playlists</option>
+            {playlists.map((playlist) => (
+              <option key={playlist.id} value={playlist.id}>
+                {playlist.name} ({playlist.trackCount})
+              </option>
+            ))}
+          </select>
+        </label>
+
         {error ? (
           <div className="practice-empty">
             <p>{error}</p>
@@ -89,15 +127,13 @@ export default function Bandle(_: InertiaProps) {
               onVolumeChange={setVolume}
               autoPlay={false}
               playKey={playKey}
-              maxPlayMs={attempt * 1000}
+              maxPlayMs={currentDurationMs}
               disabled={Boolean(result)}
               onPlayError={() => setAudioError("Impossible de lancer cet extrait.")}
             />
             <div className="bandle-stage">
               <span>EXTRAIT {attempt}</span>
-              <strong>
-                {attempt} seconde{attempt > 1 ? "s" : ""}
-              </strong>
+              <strong>{currentDurationLabel}</strong>
               <div>
                 {Array.from({ length: MAX_ATTEMPTS }, (_, index) => (
                   <i className={index < attempt ? "on" : ""} key={index} />
@@ -109,7 +145,7 @@ export default function Bandle(_: InertiaProps) {
               disabled={Boolean(result)}
               onClick={listen}
             >
-              ▶ Écouter l'extrait
+              ▶ Écouter l’extrait
             </button>
             {audioError && (
               <p className="bandle-audio-error">

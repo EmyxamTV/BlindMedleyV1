@@ -31,6 +31,7 @@ declare module '@adonisjs/inertia/types' {
     'playlists/create': ExtractProps<(typeof import('../../inertia/pages/playlists/create.tsx'))['default']>
     'playlists/edit': ExtractProps<(typeof import('../../inertia/pages/playlists/edit.tsx'))['default']>
     'playlists/index': ExtractProps<(typeof import('../../inertia/pages/playlists/index.tsx'))['default']>
+    'playlists/party': ExtractProps<(typeof import('../../inertia/pages/playlists/party.tsx'))['default']>
     'practice': ExtractProps<(typeof import('../../inertia/pages/practice.tsx'))['default']>
     'privacy_policy': ExtractProps<(typeof import('../../inertia/pages/privacy_policy.tsx'))['default']>
     'profile': ExtractProps<(typeof import('../../inertia/pages/profile.tsx'))['default']>

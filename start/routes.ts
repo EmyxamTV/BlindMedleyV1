@@ -66,6 +66,7 @@ router
   .group(() => {
     router.get("/practice", [PracticeController, "index"]).as("practice.index");
     router.get("/bandle", [PracticeController, "bandle"]).as("bandle.index");
+    router.get("/party", [PlaylistController, "party"]).as("party.index");
     router.get("/practice/question", [PracticeController, "question"]).as("practice.question");
     router.get("/audio/preview", [PracticeController, "preview"]).as("practice.preview");
   })
@@ -78,6 +79,7 @@ router
     router.get("/playlists/create", [PlaylistController, "create"]).as("playlists.create");
     router.post("/playlists", [PlaylistController, "store"]).as("playlists.store");
     router.get("/playlists/:id/play", [PlaylistController, "play"]).as("playlists.play");
+    router.get("/playlists/:id/party", [PlaylistController, "party"]).as("playlists.party");
     router.get("/playlists/:id/edit", [PlaylistController, "edit"]).as("playlists.edit");
     router.post("/playlists/:id", [PlaylistController, "update"]).as("playlists.update");
     router.post("/playlists/:id/delete", [PlaylistController, "destroy"]).as("playlists.destroy");

@@ -34,6 +34,9 @@ interface TrackRow extends Record<string, JSONDataTypes> {
   title: string;
   artist: string;
   album: string | null;
+  coverUrl: string | null;
+  previewUrl: string | null;
+  hasPreview: boolean;
 }
 
 interface TrackSearchResult extends Record<string, JSONDataTypes> {
@@ -83,8 +86,10 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
   const [trackSearchStatus, setTrackSearchStatus] = useState<"idle" | "loading" | "error">("idle");
   const [addingTrackId, setAddingTrackId] = useState<string | null>(null);
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
+  const [playingId, setPlayingId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const lastAddAt = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const importFlash = flash?.playlistImport as PlaylistImportFlash | undefined;
   const canDeletePlaylist =
     playlist.isOwner || (user as { role?: string } | undefined)?.role === "admin";
@@ -160,6 +165,26 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
     } finally {
       setAddingTrackId(null);
     }
+  }
+
+  function togglePreview(id: string, previewUrl: string | null) {
+    if (!previewUrl) return;
+
+    if (playingId === id && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setPlayingId(null);
+      return;
+    }
+
+    audioRef.current?.pause();
+    const audio = new Audio(previewUrl);
+    audio.volume = 0.75;
+    audio.onended = () => setPlayingId(null);
+    audio.onerror = () => setPlayingId(null);
+    audioRef.current = audio;
+    setPlayingId(id);
+    void audio.play().catch(() => setPlayingId(null));
   }
 
   function removeSelectedTracks() {
@@ -466,7 +491,16 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                         <td>{track.album ?? "-"}</td>
                         <td>{track.source === "deezer" ? "Deezer" : "Spotify"}</td>
                         <td>
-                          <Button
+                          <div className="flex flex-wrap gap-2">
+                            <PreviewButton
+                              id={rowId}
+                              title={track.title}
+                              previewUrl={track.previewUrl}
+                              playingId={playingId}
+                              togglePreview={togglePreview}
+                              stopPropagation
+                            />
+                            <Button
                             type="button"
                             size="sm"
                             variant={track.alreadyAdded ? "success" : "secondary"}
@@ -483,7 +517,8 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                                 : addingTrackId === rowId
                                   ? "Ajout..."
                                   : "Ajouter"}
-                          </Button>
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -541,6 +576,7 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
               <thead>
                 <tr>
                   <th>Sélection</th>
+                  <th>Écouter</th>
                   <th>Titre</th>
                   <th>Artiste</th>
                   <th>Album</th>
@@ -555,6 +591,15 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                         aria-label={`Sélectionner ${track.title}`}
                         checked={selectedTrackIds.includes(track.id)}
                         onChange={() => toggleTrack(track.id)}
+                      />
+                    </td>
+                    <td>
+                      <PreviewButton
+                        id={`track:${track.id}`}
+                        title={track.title}
+                        previewUrl={track.previewUrl}
+                        playingId={playingId}
+                        togglePreview={togglePreview}
                       />
                     </td>
                     <td>
@@ -603,5 +648,54 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
         )}
       </section>
     </div>
+  );
+}
+
+function PreviewButton({
+  id,
+  title,
+  previewUrl,
+  playingId,
+  togglePreview,
+  stopPropagation = false,
+}: {
+  id: string;
+  title: string;
+  previewUrl: string | null;
+  playingId: string | null;
+  togglePreview: (id: string, previewUrl: string | null) => void;
+  stopPropagation?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className={buttonClassName({ variant: "secondary", size: "sm" })}
+      disabled={!previewUrl}
+      aria-label={`Écouter ${title}`}
+      title={previewUrl ? "Écouter" : "Extrait indisponible"}
+      onClick={(event) => {
+        if (stopPropagation) event.stopPropagation();
+        togglePreview(id, previewUrl);
+      }}
+    >
+      {playingId === id ? <PauseIcon /> : <PlayIcon />}
+    </button>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
+    </svg>
   );
 }

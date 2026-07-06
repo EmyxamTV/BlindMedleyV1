@@ -1,34 +1,67 @@
 import type { HttpContext } from "@adonisjs/core/http";
+import { inject } from "@adonisjs/core";
+import Playlist from "#models/playlist";
 import TrackCache from "#models/track_cache";
+import type User from "#models/user";
 import { Readable } from "node:stream";
 import { DeezerService } from "#services/deezer_service";
+import { PlaylistAccessService } from "#services/playlist_access_service";
 import TrackCacheTransformer from "#transformers/track_cache_transformer";
-import { previewQueryValidator } from "#validators/practice_validators";
-import { inject } from "@adonisjs/core";
+import {
+  practiceQuestionQueryValidator,
+  previewQueryValidator,
+} from "#validators/practice_validators";
 
 /** A short, no-lobby training mode inspired by the quick games in Blinest. */
 @inject()
 export default class PracticeController {
-  constructor(private readonly deezerService: DeezerService) {}
+  constructor(
+    private readonly deezerService: DeezerService,
+    private readonly access: PlaylistAccessService,
+  ) {}
 
-  async index({ inertia }: HttpContext) {
-    return inertia.render("practice", {});
+  async index({ inertia, auth }: HttpContext) {
+    return inertia.render("practice", {
+      playlists: await this.practicePlaylists(auth.user!),
+    });
   }
 
-  async bandle({ inertia }: HttpContext) {
-    return inertia.render("bandle", {});
+  async bandle({ inertia, auth }: HttpContext) {
+    return inertia.render("bandle", {
+      playlists: await this.practicePlaylists(auth.user!),
+    });
   }
 
-  async question({ response, serialize }: HttpContext) {
-    const tracks = await TrackCache.query()
+  async question({ request, response, serialize, auth }: HttpContext) {
+    const { playlistId } = await request.validateUsing(practiceQuestionQueryValidator, {
+      data: request.qs(),
+    });
+
+    if (playlistId && !(await this.access.canUse(playlistId, auth.user!))) {
+      return response.forbidden({
+        message: "Cette playlist n’est pas disponible.",
+      });
+    }
+
+    const query = TrackCache.query()
       .where("has_preview", true)
       .whereNotNull("preview_url")
       .orderByRaw("RANDOM()")
       .limit(4);
 
+    if (playlistId) {
+      query.whereHas("playlists", (playlistQuery) => {
+        playlistQuery.where("playlists.id", playlistId);
+      });
+    }
+
+    const tracks = await query;
+
     if (tracks.length < 4) {
       return response.status(422).json({
-        message: "Il faut au moins 4 titres avec un extrait audio pour lancer l’entraînement.",
+        message: playlistId
+          ? "Cette playlist doit contenir au moins 4 titres avec un extrait audio."
+          : "Il faut au moins 4 titres avec un extrait audio pour lancer l’entraînement.",
       });
     }
 
@@ -77,5 +110,22 @@ export default class PracticeController {
     return response.stream(
       Readable.fromWeb(upstream.body as unknown as Parameters<typeof Readable.fromWeb>[0]),
     );
+  }
+
+  private async practicePlaylists(user: User) {
+    const playlists = await this.access
+      .forUser(Playlist.query().where("is_active", true), user)
+      .orderBy("name", "asc")
+      .preload("tracks", (query) => {
+        query.where("has_preview", true).whereNotNull("preview_url");
+      });
+
+    return playlists
+      .map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        trackCount: playlist.tracks.length,
+      }))
+      .filter((playlist) => playlist.trackCount >= 4);
   }
 }

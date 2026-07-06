@@ -189,15 +189,19 @@ export class GameService {
   }
 
   async finishGame(gameId: string): Promise<Game> {
-    const game = await Game.findOrFail(gameId);
+    const game = await Game.query().where("id", gameId).preload("playlist").firstOrFail();
+    const isOfficialPlaylist = !game.playlist?.createdBy;
 
     const players = await GamePlayer.query().where("game_id", gameId).orderBy("score", "desc");
 
-    // Assigner les rangs et XP earned (sans awardXp pour ne pas bloquer)
+    // Assigner les rangs. Les playlists créées par les joueurs restent dans l'historique,
+    // mais ne donnent pas d'XP et n'alimentent pas le classement.
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       const rank = i + 1;
-      const xpEarned = this.xpService.calculateGameXp(player, rank, players.length);
+      const xpEarned = isOfficialPlaylist
+        ? this.xpService.calculateGameXp(player, rank, players.length)
+        : 0;
       await player.merge({ rank, xpEarned }).save();
     }
 
@@ -213,9 +217,16 @@ export class GameService {
     // Broadcaster en premier — la partie est terminée quoi qu'il arrive
     transmit.broadcast(`game/${game.publicId}`, { event: "game_finished" });
 
-    // Mettre à jour les profils XP (non bloquant)
+    // Mettre à jour l'historique/statistiques joueur (non bloquant).
+    // Sur playlist joueur : pas d'XP, pas d'achievements, pas de leaderboard.
     for (const player of players) {
-      this.xpService.awardXp(player.userId, player.xpEarned, player).catch(console.error);
+      this.xpService
+        .awardXp(player.userId, player.xpEarned, player, {
+          awardXp: isOfficialPlaylist,
+          achievements: isOfficialPlaylist,
+          leaderboard: isOfficialPlaylist,
+        })
+        .catch(console.error);
     }
 
     return finishedGame;

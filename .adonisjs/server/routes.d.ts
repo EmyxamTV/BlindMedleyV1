@@ -23,12 +23,14 @@ export type ScannedRoutes = {
     'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'practice.index': { paramsTuple?: []; params?: {} }
     'bandle.index': { paramsTuple?: []; params?: {} }
+    'party.index': { paramsTuple?: []; params?: {} }
     'practice.question': { paramsTuple?: []; params?: {} }
     'practice.preview': { paramsTuple?: []; params?: {} }
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.store': { paramsTuple?: []; params?: {} }
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.party': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -72,11 +74,13 @@ export type ScannedRoutes = {
     'leaderboard.index': { paramsTuple?: []; params?: {} }
     'practice.index': { paramsTuple?: []; params?: {} }
     'bandle.index': { paramsTuple?: []; params?: {} }
+    'party.index': { paramsTuple?: []; params?: {} }
     'practice.question': { paramsTuple?: []; params?: {} }
     'practice.preview': { paramsTuple?: []; params?: {} }
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.party': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
@@ -101,11 +105,13 @@ export type ScannedRoutes = {
     'leaderboard.index': { paramsTuple?: []; params?: {} }
     'practice.index': { paramsTuple?: []; params?: {} }
     'bandle.index': { paramsTuple?: []; params?: {} }
+    'party.index': { paramsTuple?: []; params?: {} }
     'practice.question': { paramsTuple?: []; params?: {} }
     'practice.preview': { paramsTuple?: []; params?: {} }
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'playlists.party': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }

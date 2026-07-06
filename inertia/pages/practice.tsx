@@ -7,9 +7,15 @@ import type { InertiaProps } from "~/types";
 
 type Choice = { id: string; title: string; artist: string };
 type Question = { correctTrackId: string; previewUrl: string; choices: Choice[] };
+type PlaylistOption = { id: string; name: string; trackCount: number };
 
-export default function Practice(_: InertiaProps) {
+type Props = InertiaProps<{
+  playlists: PlaylistOption[];
+}>;
+
+export default function Practice({ playlists }: Props) {
   const [question, setQuestion] = useState<Question | null>(null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [answered, setAnswered] = useState<string | null>(null);
@@ -26,7 +32,10 @@ export default function Practice(_: InertiaProps) {
     setFeedback(null);
     setError(null);
     try {
-      const response = await fetch("/practice/question", {
+      const url = new URL("/practice/question", window.location.origin);
+      if (selectedPlaylistId) url.searchParams.set("playlistId", selectedPlaylistId);
+
+      const response = await fetch(url, {
         headers: { Accept: "application/json" },
       });
       const data = await response.json();
@@ -36,7 +45,7 @@ export default function Practice(_: InertiaProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de charger un titre.");
     }
-  }, []);
+  }, [selectedPlaylistId]);
 
   useEffect(() => {
     void loadQuestion();
@@ -48,6 +57,15 @@ export default function Practice(_: InertiaProps) {
     },
     [],
   );
+
+  function changePlaylist(playlistId: string) {
+    if (nextQuestionTimer.current !== null) window.clearTimeout(nextQuestionTimer.current);
+    nextQuestionTimer.current = null;
+    setScore(0);
+    setStreak(0);
+    setPlayKey((value) => value + 1);
+    setSelectedPlaylistId(playlistId);
+  }
 
   function listen() {
     setError(null);
@@ -66,7 +84,7 @@ export default function Practice(_: InertiaProps) {
     } else {
       const solution = question.choices.find((item) => item.id === question.correctTrackId);
       setStreak(0);
-      setFeedback(`Pas cette fois - c'était ${solution?.title} · ${solution?.artist}`);
+      setFeedback(`Pas cette fois — c’était ${solution?.title} · ${solution?.artist}`);
     }
     nextQuestionTimer.current = window.setTimeout(() => void loadQuestion(), 1_800);
   }
@@ -86,6 +104,21 @@ export default function Practice(_: InertiaProps) {
 
       <section className="practice-board">
         <aside className="practice-stats">
+          <label className="grid gap-2">
+            <span>Playlist</span>
+            <select
+              value={selectedPlaylistId}
+              onChange={(event) => changePlaylist(event.target.value)}
+              className="rounded-xl border border-white/10 bg-[#151525] px-3 py-2 text-sm font-bold text-white outline-none transition focus:border-violet-300/50"
+            >
+              <option value="">Toutes les playlists</option>
+              {playlists.map((playlist) => (
+                <option key={playlist.id} value={playlist.id}>
+                  {playlist.name} ({playlist.trackCount})
+                </option>
+              ))}
+            </select>
+          </label>
           <div>
             <span>Score</span>
             <strong>{score.toLocaleString("fr-FR")}</strong>
@@ -107,7 +140,7 @@ export default function Practice(_: InertiaProps) {
           ) : !question ? (
             <div className="practice-empty">
               <div className="spinner-large" />
-              <p>Préparation de l'extrait...</p>
+              <p>Préparation de l’extrait...</p>
             </div>
           ) : (
             <>
@@ -121,7 +154,7 @@ export default function Practice(_: InertiaProps) {
               />
               <div className="mt-4 mb-6 flex justify-center">
                 <button className={buttonClassName()} disabled={answered !== null} onClick={listen}>
-                  ▶ Écouter l'extrait
+                  ▶ Écouter l’extrait
                 </button>
               </div>
               <div className="choices-grid practice-choices">
