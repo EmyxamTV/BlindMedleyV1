@@ -16,6 +16,8 @@ export default class GameTransformer extends BaseTransformer<Game> {
     return {
       ...this.pick(this.resource, [
         "code",
+        "name",
+        "pausedAt",
         "mode",
         "answerMode",
         "answerTarget",

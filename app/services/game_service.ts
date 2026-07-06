@@ -28,6 +28,7 @@ export class GameService {
 
   async createGame(options: CreateGameOptions): Promise<Game> {
     const game = await Game.create({
+      name: options.name || null,
       mode: options.mode,
       answerMode: options.answerMode ?? "choices",
       answerTarget: options.answerTarget ?? "both",
@@ -109,15 +110,13 @@ export class GameService {
     });
   }
 
-  async startGame(gameId: string, hostId: string): Promise<Game> {
-    const game = await Game.query()
-      .where("id", gameId)
-      .where("host_id", hostId)
-      .where("status", "waiting")
-      .firstOrFail();
+  async startGame(gameId: string, hostId: string, options: { force?: boolean } = {}): Promise<Game> {
+    const query = Game.query().where("id", gameId).where("status", "waiting");
+    if (!options.force) query.where("host_id", hostId);
+    const game = await query.firstOrFail();
 
     const playerCount = await GamePlayer.query().where("game_id", gameId).count("* as total");
-    if (game.mode !== "solo" && Number(playerCount[0].$extras.total) < 2) {
+    if (!options.force && game.mode !== "solo" && Number(playerCount[0].$extras.total) < 2) {
       throw new Error("NOT_ENOUGH_PLAYERS");
     }
 
@@ -134,7 +133,7 @@ export class GameService {
 
   async startRound(gameId: string, roundNumber: number): Promise<void> {
     const game = await Game.findOrFail(gameId);
-    if (game.status === "finished" || game.status === "cancelled") return;
+    if (game.status === "finished" || game.status === "cancelled" || game.status === "paused") return;
 
     const round = await Round.query()
       .where("game_id", gameId)
@@ -162,7 +161,7 @@ export class GameService {
 
   async endRound(gameId: string, roundNumber: number): Promise<void> {
     const game = await Game.findOrFail(gameId);
-    if (game.status === "finished") return;
+    if (game.status === "finished" || game.status === "cancelled" || game.status === "paused") return;
 
     const round = await Round.query()
       .where("game_id", gameId)
@@ -230,6 +229,79 @@ export class GameService {
     }
 
     return finishedGame;
+  }
+
+  async pauseGame(gameId: string): Promise<Game> {
+    const game = await Game.query()
+      .where("id", gameId)
+      .where("status", "active")
+      .firstOrFail();
+
+    const pausedGame = await game.merge({ status: "paused", pausedAt: DateTime.now() }).save();
+    transmit.broadcast(`game/${game.publicId}`, { event: "game_paused" });
+    return pausedGame;
+  }
+
+  async resumeGame(gameId: string): Promise<Game> {
+    const game = await Game.query().where("id", gameId).where("status", "paused").firstOrFail();
+    const now = DateTime.now();
+    const pausedAt = game.pausedAt ?? now;
+    const pauseMs = Math.max(0, now.toMillis() - pausedAt.toMillis());
+
+    let currentRound: Round | null = null;
+    if (game.currentRound > 0) {
+      currentRound = await Round.query()
+        .where("game_id", gameId)
+        .where("round_number", game.currentRound)
+        .preload("track")
+        .first();
+
+      if (currentRound?.endsAt) {
+        await currentRound
+          .merge({
+            startsAt: currentRound.startsAt?.plus({ milliseconds: pauseMs }) ?? currentRound.startsAt,
+            endsAt: currentRound.endsAt.plus({ milliseconds: pauseMs }),
+          })
+          .save();
+      }
+    }
+
+    const resumedGame = await game.merge({ status: "active", pausedAt: null }).save();
+
+    if (currentRound?.endsAt) {
+      const remainingMs = Math.max(0, currentRound.endsAt.toMillis() - now.toMillis());
+      setTimeout(
+        () => this.endRound(game.id, currentRound!.roundNumber).catch(console.error),
+        remainingMs,
+      );
+
+      const roundPayload = await this.roundService.buildClientPayload(currentRound, Date.now(), game.answerMode);
+      transmit.broadcast(`game/${game.publicId}`, { event: "game_resumed", ...roundPayload });
+    } else {
+      transmit.broadcast(`game/${game.publicId}`, { event: "game_resumed" });
+    }
+
+    return resumedGame;
+  }
+
+  async stopGame(gameId: string): Promise<Game> {
+    const game = await Game.query()
+      .where("id", gameId)
+      .whereNotIn("status", ["finished", "cancelled"])
+      .firstOrFail();
+
+    const stoppedGame = await game
+      .merge({ status: "cancelled", finishedAt: DateTime.now(), pausedAt: null })
+      .save();
+    transmit.broadcast(`game/${game.publicId}`, { event: "game_stopped" });
+    return stoppedGame;
+  }
+
+  async deleteGame(gameId: string): Promise<void> {
+    const game = await Game.findOrFail(gameId);
+    const publicId = game.publicId;
+    await game.delete();
+    if (publicId) transmit.broadcast(`game/${publicId}`, { event: "game_deleted" });
   }
 
   async getGameState(gameId: string) {

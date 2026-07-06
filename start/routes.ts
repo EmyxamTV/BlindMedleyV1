@@ -78,6 +78,9 @@ router
     router.get("/playlists", [PlaylistController, "index"]).as("playlists.index");
     router.get("/playlists/create", [PlaylistController, "create"]).as("playlists.create");
     router.post("/playlists", [PlaylistController, "store"]).as("playlists.store");
+    router
+      .post("/playlists/manual", [PlaylistController, "storeManual"])
+      .as("playlists.manual.store");
     router.get("/playlists/:id/play", [PlaylistController, "play"]).as("playlists.play");
     router.get("/playlists/:id/party", [PlaylistController, "party"]).as("playlists.party");
     router.get("/playlists/:id/edit", [PlaylistController, "edit"]).as("playlists.edit");
@@ -100,10 +103,15 @@ router
     router
       .post("/game/starter-playlist", [GameController, "createStarterPlaylist"])
       .as("game.starter_playlist");
+    router.get("/game/tracks/search", [GameController, "searchTracks"]).as("game.tracks.search");
     router.post("/game", [GameController, "create"]).as("game.create");
     router.get("/game/:id", [GameController, "lobby"]).as("game.lobby");
     router.post("/game/:id/join", [GameController, "join"]).as("game.join");
     router.post("/game/:id/start", [GameController, "start"]).as("game.start");
+    router.post("/game/:id/pause", [GameController, "pause"]).as("game.pause");
+    router.post("/game/:id/resume", [GameController, "resume"]).as("game.resume");
+    router.post("/game/:id/stop", [GameController, "stop"]).as("game.stop");
+    router.post("/game/:id/delete", [GameController, "destroy"]).as("game.destroy");
     router.get("/game/:id/play", [GameController, "play"]).as("game.play");
     router.post("/game/:id/answer", [GameController, "answer"]).as("game.answer");
     router.post("/game/:id/leave", [GameController, "leave"]).as("game.leave");
@@ -128,6 +136,9 @@ router
     router
       .post("/admin/playlists/:id/toggle", [AdminController, "togglePlaylist"])
       .as("admin.playlists.toggle");
+    router
+      .post("/admin/playlists/:id", [AdminController, "updatePlaylist"])
+      .as("admin.playlists.update");
     router
       .post("/admin/playlists/:id/tracks/:trackId", [AdminController, "updatePlaylistTrack"])
       .as("admin.playlists.tracks.update");

@@ -29,6 +29,7 @@ export type ScannedRoutes = {
     'playlists.index': { paramsTuple?: []; params?: {} }
     'playlists.create': { paramsTuple?: []; params?: {} }
     'playlists.store': { paramsTuple?: []; params?: {} }
+    'playlists.manual.store': { paramsTuple?: []; params?: {} }
     'playlists.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.party': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -41,10 +42,15 @@ export type ScannedRoutes = {
     'playlists.unshare': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'shareId': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.starter_playlist': { paramsTuple?: []; params?: {} }
+    'game.tracks.search': { paramsTuple?: []; params?: {} }
     'game.create': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.pause': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.resume': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.stop': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -59,6 +65,7 @@ export type ScannedRoutes = {
     'admin.playlists': { paramsTuple?: []; params?: {} }
     'admin.playlists.import': { paramsTuple?: []; params?: {} }
     'admin.playlists.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.playlists.tracks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'trackId': ParamValue} }
   }
   GET: {
@@ -84,6 +91,7 @@ export type ScannedRoutes = {
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
+    'game.tracks.search': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -115,6 +123,7 @@ export type ScannedRoutes = {
     'playlists.edit': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
+    'game.tracks.search': { paramsTuple?: []; params?: {} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -132,6 +141,7 @@ export type ScannedRoutes = {
     'friends.accept': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.store': { paramsTuple?: []; params?: {} }
+    'playlists.manual.store': { paramsTuple?: []; params?: {} }
     'playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'playlists.tracks.add': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -142,6 +152,10 @@ export type ScannedRoutes = {
     'game.create': { paramsTuple?: []; params?: {} }
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.pause': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.resume': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.stop': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -150,6 +164,7 @@ export type ScannedRoutes = {
     'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.playlists.import': { paramsTuple?: []; params?: {} }
     'admin.playlists.toggle': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.playlists.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.playlists.tracks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'trackId': ParamValue} }
   }
 }

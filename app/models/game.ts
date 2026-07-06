@@ -7,7 +7,7 @@ import GamePlayer from "#models/game_player";
 import Round from "#models/round";
 
 export type GameMode = "solo" | "public" | "private" | "matchmaking";
-export type GameStatus = "waiting" | "starting" | "active" | "finished" | "cancelled";
+export type GameStatus = "waiting" | "starting" | "active" | "paused" | "finished" | "cancelled";
 export type AnswerMode = "choices" | "text";
 export type AnswerTarget = "title" | "artist" | "both" | "separate";
 

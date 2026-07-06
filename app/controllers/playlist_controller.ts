@@ -14,6 +14,7 @@ import { SpotifyService } from "#services/spotify_service";
 import { sanitizeTrackText } from "#services/track_sanitizer";
 import {
   addPlaylistTrackValidator,
+  createManualPlaylistValidator,
   createPlaylistValidator,
   playlistsQueryValidator,
   removePlaylistTracksValidator,
@@ -134,7 +135,7 @@ export default class PlaylistController {
   }
 
   async store({ request, auth, response, session }: HttpContext) {
-    const { url } = await request.validateUsing(createPlaylistValidator);
+    const { url, name } = await request.validateUsing(createPlaylistValidator);
     const user = auth.user!;
 
     try {
@@ -142,6 +143,7 @@ export default class PlaylistController {
         userId: user.id,
         visibility: user.isAdmin ? "public" : "private",
       });
+      if (name) await result.playlist.merge({ name }).save();
       session.flash("success", "Playlist importée");
       session.flash("playlistImport", {
         importedCount: result.playlist.trackCount,
@@ -155,6 +157,26 @@ export default class PlaylistController {
       }
       throw error;
     }
+  }
+
+  async storeManual({ request, auth, response, session }: HttpContext) {
+    const { name } = await request.validateUsing(createManualPlaylistValidator);
+    const user = auth.user!;
+
+    const playlist = await Playlist.create({
+      name,
+      description: null,
+      coverUrl: null,
+      trackCount: 0,
+      isActive: false,
+      isCurated: false,
+      createdBy: user.id,
+      visibility: user.isAdmin ? "public" : "private",
+      lastSyncedAt: DateTime.now(),
+    });
+
+    session.flash("success", "Playlist créée. Ajoute maintenant tes musiques.");
+    return response.redirect().toRoute("playlists.edit", { id: playlist.id });
   }
 
   async edit({ inertia, params, request, auth }: HttpContext) {

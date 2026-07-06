@@ -8,6 +8,11 @@ export const playlistsQueryValidator = vine.create({
 
 export const createPlaylistValidator = vine.create({
   url: vine.string().trim().minLength(1).maxLength(500),
+  name: vine.string().trim().maxLength(255).optional(),
+});
+
+export const createManualPlaylistValidator = vine.create({
+  name: vine.string().trim().minLength(1).maxLength(255),
 });
 
 export const updatePlaylistValidator = vine.create({

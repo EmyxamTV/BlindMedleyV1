@@ -12,6 +12,7 @@ import {
   banUserValidator,
   importPlaylistValidator,
   suspendUserValidator,
+  updatePlaylistValidator,
   updatePlaylistTrackValidator,
 } from "#validators/admin_validators";
 import { inject } from "@adonisjs/core";
@@ -150,12 +151,13 @@ export default class AdminController {
   }
 
   async importPlaylist({ request, response, session }: HttpContext) {
-    const { spotify_url: url } = await request.validateUsing(importPlaylistValidator);
+    const { spotify_url: url, name } = await request.validateUsing(importPlaylistValidator);
 
     // Deezer : https://www.deezer.com/fr/playlist/1234567890
     const deezerMatch = url.match(/deezer\.com\/(?:[a-z]+\/)?playlist\/(\d+)/);
     if (deezerMatch) {
-      await this.playlistImportService.importFromUrl(url, { visibility: "public" });
+      const result = await this.playlistImportService.importFromUrl(url, { visibility: "public" });
+      if (name) await result.playlist.merge({ name }).save();
       session.flash("success", "Playlist Deezer importée avec succès");
       return response.redirect().back();
     }
@@ -163,7 +165,8 @@ export default class AdminController {
     // Spotify : https://open.spotify.com/playlist/xxxxx
     const spotifyMatch = url.match(/playlist\/([a-zA-Z0-9]+)/);
     if (spotifyMatch) {
-      await this.playlistImportService.importFromUrl(url, { visibility: "public" });
+      const result = await this.playlistImportService.importFromUrl(url, { visibility: "public" });
+      if (name) await result.playlist.merge({ name }).save();
       session.flash("success", "Playlist Spotify importée avec succès (previews Deezer)");
       return response.redirect().back();
     }
@@ -176,6 +179,21 @@ export default class AdminController {
     const playlist = await Playlist.findOrFail(params.id);
     await playlist.merge({ isActive: !playlist.isActive }).save();
     session.flash("success", `Playlist ${playlist.isActive ? "activée" : "désactivée"}`);
+    return response.redirect().back();
+  }
+
+  async updatePlaylist({ params, request, response, session }: HttpContext) {
+    const { name, genre } = await request.validateUsing(updatePlaylistValidator);
+    const playlist = await Playlist.findOrFail(params.id);
+
+    await playlist
+      .merge({
+        name,
+        genre: genre || null,
+      })
+      .save();
+
+    session.flash("success", "Playlist modifiée avec succès");
     return response.redirect().back();
   }
 

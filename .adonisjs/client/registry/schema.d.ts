@@ -307,6 +307,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'playlists.manual.store': {
+    methods: ["POST"]
+    pattern: '/playlists/manual'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/playlist_validators').createManualPlaylistValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/playlist_validators').createManualPlaylistValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['storeManual']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playlist_controller').default['storeManual']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'playlists.play': {
     methods: ["GET","HEAD"]
     pattern: '/playlists/:id/play'
@@ -451,6 +463,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['createStarterPlaylist']>>>
     }
   }
+  'game.tracks.search': {
+    methods: ["GET","HEAD"]
+    pattern: '/game/tracks/search'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/game_validators').gameTrackSearchValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['searchTracks']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['searchTracks']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'game.create': {
     methods: ["POST"]
     pattern: '/game'
@@ -497,6 +521,54 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['start']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['start']>>>
+    }
+  }
+  'game.pause': {
+    methods: ["POST"]
+    pattern: '/game/:id/pause'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['pause']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['pause']>>>
+    }
+  }
+  'game.resume': {
+    methods: ["POST"]
+    pattern: '/game/:id/resume'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['resume']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['resume']>>>
+    }
+  }
+  'game.stop': {
+    methods: ["POST"]
+    pattern: '/game/:id/stop'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['stop']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['stop']>>>
+    }
+  }
+  'game.destroy': {
+    methods: ["POST"]
+    pattern: '/game/:id/delete'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['destroy']>>>
     }
   }
   'game.play': {
@@ -665,6 +737,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['togglePlaylist']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['togglePlaylist']>>>
+    }
+  }
+  'admin.playlists.update': {
+    methods: ["POST"]
+    pattern: '/admin/playlists/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').updatePlaylistValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').updatePlaylistValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['updatePlaylist']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['updatePlaylist']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'admin.playlists.tracks.update': {

@@ -156,6 +156,12 @@ const routes = {
     tokens: [{"old":"/playlists","type":0,"val":"playlists","end":""}],
     types: placeholder as Registry['playlists.store']['types'],
   },
+  'playlists.manual.store': {
+    methods: ["POST"],
+    pattern: '/playlists/manual',
+    tokens: [{"old":"/playlists/manual","type":0,"val":"playlists","end":""},{"old":"/playlists/manual","type":0,"val":"manual","end":""}],
+    types: placeholder as Registry['playlists.manual.store']['types'],
+  },
   'playlists.play': {
     methods: ["GET","HEAD"],
     pattern: '/playlists/:id/play',
@@ -228,6 +234,12 @@ const routes = {
     tokens: [{"old":"/game/starter-playlist","type":0,"val":"game","end":""},{"old":"/game/starter-playlist","type":0,"val":"starter-playlist","end":""}],
     types: placeholder as Registry['game.starter_playlist']['types'],
   },
+  'game.tracks.search': {
+    methods: ["GET","HEAD"],
+    pattern: '/game/tracks/search',
+    tokens: [{"old":"/game/tracks/search","type":0,"val":"game","end":""},{"old":"/game/tracks/search","type":0,"val":"tracks","end":""},{"old":"/game/tracks/search","type":0,"val":"search","end":""}],
+    types: placeholder as Registry['game.tracks.search']['types'],
+  },
   'game.create': {
     methods: ["POST"],
     pattern: '/game',
@@ -251,6 +263,30 @@ const routes = {
     pattern: '/game/:id/start',
     tokens: [{"old":"/game/:id/start","type":0,"val":"game","end":""},{"old":"/game/:id/start","type":1,"val":"id","end":""},{"old":"/game/:id/start","type":0,"val":"start","end":""}],
     types: placeholder as Registry['game.start']['types'],
+  },
+  'game.pause': {
+    methods: ["POST"],
+    pattern: '/game/:id/pause',
+    tokens: [{"old":"/game/:id/pause","type":0,"val":"game","end":""},{"old":"/game/:id/pause","type":1,"val":"id","end":""},{"old":"/game/:id/pause","type":0,"val":"pause","end":""}],
+    types: placeholder as Registry['game.pause']['types'],
+  },
+  'game.resume': {
+    methods: ["POST"],
+    pattern: '/game/:id/resume',
+    tokens: [{"old":"/game/:id/resume","type":0,"val":"game","end":""},{"old":"/game/:id/resume","type":1,"val":"id","end":""},{"old":"/game/:id/resume","type":0,"val":"resume","end":""}],
+    types: placeholder as Registry['game.resume']['types'],
+  },
+  'game.stop': {
+    methods: ["POST"],
+    pattern: '/game/:id/stop',
+    tokens: [{"old":"/game/:id/stop","type":0,"val":"game","end":""},{"old":"/game/:id/stop","type":1,"val":"id","end":""},{"old":"/game/:id/stop","type":0,"val":"stop","end":""}],
+    types: placeholder as Registry['game.stop']['types'],
+  },
+  'game.destroy': {
+    methods: ["POST"],
+    pattern: '/game/:id/delete',
+    tokens: [{"old":"/game/:id/delete","type":0,"val":"game","end":""},{"old":"/game/:id/delete","type":1,"val":"id","end":""},{"old":"/game/:id/delete","type":0,"val":"delete","end":""}],
+    types: placeholder as Registry['game.destroy']['types'],
   },
   'game.play': {
     methods: ["GET","HEAD"],
@@ -335,6 +371,12 @@ const routes = {
     pattern: '/admin/playlists/:id/toggle',
     tokens: [{"old":"/admin/playlists/:id/toggle","type":0,"val":"admin","end":""},{"old":"/admin/playlists/:id/toggle","type":0,"val":"playlists","end":""},{"old":"/admin/playlists/:id/toggle","type":1,"val":"id","end":""},{"old":"/admin/playlists/:id/toggle","type":0,"val":"toggle","end":""}],
     types: placeholder as Registry['admin.playlists.toggle']['types'],
+  },
+  'admin.playlists.update': {
+    methods: ["POST"],
+    pattern: '/admin/playlists/:id',
+    tokens: [{"old":"/admin/playlists/:id","type":0,"val":"admin","end":""},{"old":"/admin/playlists/:id","type":0,"val":"playlists","end":""},{"old":"/admin/playlists/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['admin.playlists.update']['types'],
   },
   'admin.playlists.tracks.update': {
     methods: ["POST"],

@@ -17,6 +17,12 @@ export const suspendUserValidator = vine.create({
 
 export const importPlaylistValidator = vine.create({
   spotify_url: vine.string().trim().minLength(1).maxLength(500),
+  name: vine.string().trim().maxLength(255).optional(),
+});
+
+export const updatePlaylistValidator = vine.create({
+  name: vine.string().trim().minLength(1).maxLength(255),
+  genre: vine.string().trim().maxLength(100).optional(),
 });
 
 export const updatePlaylistTrackValidator = vine.create({

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Form } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
 import { AudioPlayer } from "~/components/game/audio_player";
@@ -25,6 +26,7 @@ interface Props extends InertiaProps {
   round: ClientRound | null;
   history: TrackHistory[];
   serverNow: number;
+  canModerate: boolean;
 }
 
 type LastResult = {
@@ -57,6 +59,7 @@ export default function Play({
   round,
   history: initialHistory,
   serverNow,
+  canModerate,
 }: Props) {
   const [answered, setAnswered] = useState(round?.alreadyAnswered ?? false);
   const [lastResult, setLastResult] = useState<LastResult | null>(null);
@@ -71,6 +74,7 @@ export default function Play({
   const [answerProgress, setAnswerProgress] = useState<Record<number, AnswerProgress>>({});
   const [textAnswer, setTextAnswer] = useState("");
   const textInputRef = useRef<HTMLInputElement>(null);
+  const isPaused = gameStatus === "paused";
 
   useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
 
@@ -106,6 +110,11 @@ export default function Play({
         router.visit(routeUrl("game.results", { params: { id: game.id } }));
         return;
       }
+      if (data.status === "cancelled") {
+        router.visit(routeUrl("game.index"));
+        return;
+      }
+      if (data.status === "paused") setGameStatus("paused");
       if (data.round) {
         if (!currentRound || data.round.roundNumber > currentRound.roundNumber) {
           setCurrentRound(data.round);
@@ -114,7 +123,7 @@ export default function Play({
           setRevealed(null);
           setAnswerPings([]);
           setAnswerProgress({});
-          setGameStatus("active");
+          setGameStatus(data.status === "paused" ? "paused" : "active");
         } else if (data.round.roundNumber === currentRound.roundNumber) {
           setCurrentRound((round) => (round ? { ...round, serverNow: data.serverNow } : round));
         }
@@ -187,6 +196,14 @@ export default function Play({
         } else if (message.event === "game_finished") {
           setGameStatus("finished");
           router.visit(routeUrl("game.results", { params: { id: game.id } }));
+        } else if (message.event === "game_paused") {
+          setGameStatus("paused");
+        } else if (message.event === "game_resumed") {
+          const { event: _, ...roundData } = message;
+          if (roundData.roundNumber) setCurrentRound(roundData as ClientRound);
+          setGameStatus("active");
+        } else if (message.event === "game_stopped" || message.event === "game_deleted") {
+          router.visit(routeUrl("game.index"));
         }
       });
     });
@@ -198,7 +215,7 @@ export default function Play({
 
   const handleAnswer = useCallback(
     async (choice: RoundChoice | string) => {
-      if (answered || !currentRound) return;
+      if (answered || !currentRound || isPaused) return;
       setAnswered(true);
 
       try {
@@ -289,6 +306,7 @@ export default function Play({
       game.id,
       game.roundDurationMs,
       initialMyPlayer.userId,
+      isPaused,
     ],
   );
 
@@ -322,6 +340,7 @@ export default function Play({
             durationMs={game.roundDurationMs}
             pings={answerPings}
             players={scores}
+            paused={isPaused}
           />
           <div className="my-score-mini">
             {myPlayer.score} pts
@@ -335,7 +354,7 @@ export default function Play({
             value={textAnswer}
             onChange={setTextAnswer}
             onSubmit={() => void handleAnswer(textAnswer.trim())}
-            disabled={answered}
+            disabled={answered || isPaused}
             placeholder={answerPlaceholder(game.answerTarget)}
             inputRef={textInputRef}
           />
@@ -347,6 +366,7 @@ export default function Play({
             previewUrl={currentRound.previewUrl}
             volume={volume}
             onVolumeChange={setVolume}
+            disabled={isPaused}
           />
         ) : (
           <div className="audio-card">
@@ -390,12 +410,54 @@ export default function Play({
           </div>
         )}
 
+        {isPaused && (
+          <div className="rounded-2xl border border-amber-300/30 bg-amber-500/15 p-4 text-center text-sm font-black text-amber-100">
+            Partie en pause par un administrateur.
+          </div>
+        )}
+
+        {canModerate && (
+          <div className="flex flex-wrap justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+            {isPaused ? (
+              <Form route="game.resume" routeParams={{ id: game.id }}>
+                {() => (
+                  <button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-black text-white">
+                    Reprendre
+                  </button>
+                )}
+              </Form>
+            ) : (
+              <Form route="game.pause" routeParams={{ id: game.id }}>
+                {() => (
+                  <button type="submit" className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white">
+                    Pause
+                  </button>
+                )}
+              </Form>
+            )}
+            <Form route="game.stop" routeParams={{ id: game.id }}>
+              {() => (
+                <button type="submit" className="rounded-xl bg-red-500 px-4 py-2 text-sm font-black text-white">
+                  Stopper
+                </button>
+              )}
+            </Form>
+            <Form route="game.destroy" routeParams={{ id: game.id }}>
+              {() => (
+                <button type="submit" className="rounded-xl bg-red-700 px-4 py-2 text-sm font-black text-white">
+                  Supprimer
+                </button>
+              )}
+            </Form>
+          </div>
+        )}
+
         {game.answerMode === "text" ? (
           <TextAnswerForm
             value={textAnswer}
             onChange={setTextAnswer}
             onSubmit={() => void handleAnswer(textAnswer.trim())}
-            disabled={answered}
+            disabled={answered || isPaused}
             placeholder="Ecris ta reponse..."
           />
         ) : (
@@ -403,9 +465,9 @@ export default function Play({
             {currentRound.choices.map((choice) => (
               <button
                 key={choice.choiceToken}
-                className={`choice-btn ${answered ? "disabled" : ""}`}
+                className={`choice-btn ${answered || isPaused ? "disabled" : ""}`}
                 onClick={() => handleAnswer(choice)}
-                disabled={answered}
+                disabled={answered || isPaused}
               >
                 <span className="choice-title">{choice.title}</span>
                 <span className="choice-artist">{choice.artist}</span>

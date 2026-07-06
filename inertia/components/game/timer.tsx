@@ -13,16 +13,23 @@ export function Timer({
   durationMs,
   pings,
   players,
+  paused = false,
 }: {
   endsAt: number;
   serverNow: number;
   durationMs: number;
   pings: AnswerPing[];
   players: GamePlayerData[];
+  paused?: boolean;
 }) {
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
+    if (paused) {
+      setRemaining(Math.max(0, endsAt - serverNow));
+      return;
+    }
+
     const clockOffset = serverNow - Date.now();
     const update = () => {
       const nextRemaining = Math.max(0, endsAt - (Date.now() + clockOffset));
@@ -32,7 +39,7 @@ export function Timer({
     const interval = setInterval(update, 100);
     update();
     return () => clearInterval(interval);
-  }, [endsAt, serverNow]);
+  }, [endsAt, paused, serverNow]);
 
   const pct = Math.min(100, (remaining / durationMs) * 100);
   const secs = Math.ceil(remaining / 1000);
@@ -57,7 +64,7 @@ export function Timer({
           </span>
         ))}
       </div>
-      <span className="timer-secs">{secs}s</span>
+      <span className="timer-secs">{paused ? "Pause" : `${secs}s`}</span>
     </div>
   );
 }

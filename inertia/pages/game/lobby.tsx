@@ -11,20 +11,22 @@ import { createRealtimeUid } from "~/lib/realtime";
 interface Props extends InertiaProps {
   game: GameWithPlayers;
   isHost: boolean;
+  canModerate: boolean;
 }
 
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
 function unlockAudio() {
-  const s = new Audio(SILENT_WAV);
-  s.play().catch(() => {});
+  const audio = new Audio(SILENT_WAV);
+  audio.play().catch(() => {});
 }
 
-export default function Lobby({ game, isHost, user }: Props) {
+export default function Lobby({ game, isHost, canModerate, user }: Props) {
   const [players, setPlayers] = useState<GamePlayerData[]>(game.players);
+  const canStart = isHost || canModerate;
+  const needsMorePlayers = game.mode !== "solo" && players.length < 2;
 
-  // Signaler le départ quand le joueur ferme/quitte la page
   useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
 
   useEffect(() => {
@@ -40,21 +42,22 @@ export default function Lobby({ game, isHost, user }: Props) {
           unlockAudio();
           router.visit(routeUrl("game.play", { params: { id: game.id } }));
         }
+        if (message.event === "game_stopped" || message.event === "game_deleted") {
+          router.visit(routeUrl("game.index"));
+        }
       });
     });
 
-    // Fallback polling pour synchroniser la liste des joueurs (nouveaux arrivants)
-    const interval = setInterval(() => {
+    const interval = window.setInterval(() => {
       router.reload({ only: ["game"] });
     }, 2000);
 
     return () => {
       subscription.delete();
-      clearInterval(interval);
+      window.clearInterval(interval);
     };
   }, [game.id]);
 
-  // Sync players + détecter démarrage si SSE raté
   useEffect(() => {
     setPlayers(game.players);
     if (game.status !== "waiting") {
@@ -64,75 +67,152 @@ export default function Lobby({ game, isHost, user }: Props) {
   }, [game.id, game.players, game.status]);
 
   return (
-    <div className="lobby-page">
-      <div className="lobby-header">
+    <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-slate-100">
+      <header className="flex flex-wrap items-start justify-between gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <div>
-          <h1>{game.playlistName}</h1>
-          <div className="lobby-meta">
-            <span className={`mode-badge mode-${game.mode}`}>{game.mode}</span>
-            <span>{game.roundCount} rounds</span>
-            <span>{game.roundDurationMs / 1000}s par round</span>
+          <p className="text-xs font-black uppercase tracking-[0.28em] text-violet-300">Lobby</p>
+          <h1 className="mt-2 text-4xl font-black text-white">
+            {(game as GameWithPlayers & { name?: string | null }).name || game.playlistName}
+          </h1>
+          <div className="mt-4 flex flex-wrap gap-2 text-sm font-bold text-slate-300">
+            <span className="rounded-full border border-violet-300/20 bg-violet-500/15 px-3 py-1 uppercase">
+              {game.mode}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
+              {game.roundCount} rounds
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
+              {game.roundDurationMs / 1000}s par round
+            </span>
           </div>
         </div>
+
         {game.code && (
-          <div className="lobby-code">
-            <span className="code-label">Code d'invitation</span>
-            <span className="code-value">{game.code}</span>
+          <div className="rounded-2xl border border-violet-300/30 bg-violet-500/15 px-5 py-4 text-center">
+            <span className="block text-xs font-black uppercase tracking-[0.2em] text-violet-200">
+              Code d’invitation
+            </span>
+            <span className="mt-1 block text-3xl font-black tracking-[0.18em] text-white">
+              {game.code}
+            </span>
           </div>
         )}
-      </div>
+      </header>
 
-      <div className="lobby-body">
-        <div className="players-list">
-          <h3>
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+          <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">
             Joueurs ({players.length}/{game.maxPlayers})
-          </h3>
-          {players.map((p) => (
-            <div key={p.id} className={`player-row ${!p.isConnected ? "disconnected" : ""}`}>
-              <div className="player-avatar-sm">
-                {p.avatarUrl ? (
-                  <img src={p.avatarUrl} alt="" />
-                ) : (
-                  <span>{p.username[0].toUpperCase()}</span>
-                )}
-              </div>
-              <span className="player-name">{p.username}</span>
-              {p.userId === game.hostId && <span className="host-badge">Hôte</span>}
-              {user && p.userId === user.id && <span className="you-badge">Vous</span>}
-            </div>
-          ))}
-          {Array.from({ length: game.maxPlayers - players.length }, (_, i) => (
-            <div key={`empty-${i}`} className="player-row empty">
-              <div className="player-avatar-sm empty" />
-              <span className="player-name muted">En attente...</span>
-            </div>
-          ))}
-        </div>
+          </h2>
 
-        <div className="lobby-actions">
-          {isHost ? (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {players.map((player) => (
+              <div
+                key={player.id}
+                className={`flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 ${
+                  !player.isConnected ? "opacity-50" : ""
+                }`}
+              >
+                <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/25 font-black text-white">
+                  {player.avatarUrl ? (
+                    <img src={player.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    player.username[0]?.toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-black text-white">{player.username}</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {player.userId === game.hostId && (
+                      <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-200">
+                        Hôte
+                      </span>
+                    )}
+                    {user && player.userId === user.id && (
+                      <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-violet-200">
+                        Vous
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {Array.from({ length: Math.max(0, game.maxPlayers - players.length) }, (_, index) => (
+              <div
+                key={`empty-${index}`}
+                className="flex items-center gap-3 rounded-2xl border border-dashed border-white/10 bg-black/10 p-3 text-slate-600"
+              >
+                <div className="h-11 w-11 rounded-full bg-white/[0.04]" />
+                <span className="font-bold">En attente...</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside className="grid content-start gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+          {canStart ? (
             <Form route="game.start" routeParams={{ id: game.id }}>
               {() => (
                 <button
                   type="submit"
-                  className={buttonClassName({ size: "xl" })}
-                  disabled={game.mode !== "solo" && players.length < 2}
+                  className={buttonClassName({ size: "xl", className: "w-full" })}
+                  disabled={!canModerate && needsMorePlayers}
                   onClick={unlockAudio}
                 >
-                  Démarrer la partie
+                  {isHost ? "Démarrer la partie" : "Forcer le lancement"}
                 </button>
               )}
             </Form>
           ) : (
-            <div className="waiting-message">
-              <div className="spinner" />
-              <p>En attente que l'hôte démarre...</p>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-300/30 border-t-violet-300" />
+              <p className="mt-3 text-sm font-bold text-slate-400">
+                En attente que l’hôte démarre...
+              </p>
             </div>
           )}
-          <Link route="playlists.index" className={buttonClassName({ variant: "ghost" })}>
+
+          {needsMorePlayers && !canModerate && (
+            <p className="text-center text-xs font-bold text-slate-500">
+              Il faut au moins 2 joueurs pour lancer cette partie.
+            </p>
+          )}
+
+          <Link route="playlists.index" className={buttonClassName({ variant: "ghost", className: "w-full" })}>
             Quitter
           </Link>
-        </div>
+
+          {canModerate && (
+            <div className="grid gap-3 rounded-2xl border border-red-400/20 bg-red-500/10 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                Actions admin
+              </p>
+              <div className="grid gap-2">
+                <Form route="game.stop" routeParams={{ id: game.id }}>
+                  {() => (
+                    <button
+                      type="submit"
+                      className="w-full rounded-xl border border-red-300/30 bg-red-500/15 px-4 py-2 text-sm font-black text-red-100 transition hover:bg-red-500/25"
+                    >
+                      Stopper la partie
+                    </button>
+                  )}
+                </Form>
+                <Form route="game.destroy" routeParams={{ id: game.id }}>
+                  {() => (
+                    <button
+                      type="submit"
+                      className="w-full rounded-xl border border-red-300/30 bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-500"
+                    >
+                      Supprimer la partie
+                    </button>
+                  )}
+                </Form>
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );

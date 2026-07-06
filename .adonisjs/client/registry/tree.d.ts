@@ -46,6 +46,9 @@ export interface ApiDefinition {
     index: typeof routes['playlists.index']
     create: typeof routes['playlists.create']
     store: typeof routes['playlists.store']
+    manual: {
+      store: typeof routes['playlists.manual.store']
+    }
     play: typeof routes['playlists.play']
     party: typeof routes['playlists.party']
     edit: typeof routes['playlists.edit']
@@ -62,10 +65,17 @@ export interface ApiDefinition {
   game: {
     index: typeof routes['game.index']
     starterPlaylist: typeof routes['game.starter_playlist']
+    tracks: {
+      search: typeof routes['game.tracks.search']
+    }
     create: typeof routes['game.create']
     lobby: typeof routes['game.lobby']
     join: typeof routes['game.join']
     start: typeof routes['game.start']
+    pause: typeof routes['game.pause']
+    resume: typeof routes['game.resume']
+    stop: typeof routes['game.stop']
+    destroy: typeof routes['game.destroy']
     play: typeof routes['game.play']
     answer: typeof routes['game.answer']
     leave: typeof routes['game.leave']
@@ -82,6 +92,7 @@ export interface ApiDefinition {
     playlists: typeof routes['admin.playlists'] & {
       import: typeof routes['admin.playlists.import']
       toggle: typeof routes['admin.playlists.toggle']
+      update: typeof routes['admin.playlists.update']
       tracks: {
         update: typeof routes['admin.playlists.tracks.update']
       }

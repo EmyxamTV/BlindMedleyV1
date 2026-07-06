@@ -256,6 +256,15 @@ export default function AdminPlaylists({ playlists }: Props) {
           {({ errors }) => (
             <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 md:flex-row md:items-end">
               <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+                <Label>Nom de la playlist</Label>
+                <Input
+                  type="text"
+                  name="name"
+                  placeholder="Nom personnalisé"
+                />
+                {errors.name && <FieldError>{errors.name}</FieldError>}
+              </Field>
+              <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
                 <Label>URL de la playlist Spotify</Label>
                 <Input
                   type="text"
@@ -375,6 +384,40 @@ export default function AdminPlaylists({ playlists }: Props) {
                         <tr>
                           <td colSpan={6} className="px-4 py-4">
                             <div className="grid gap-5 rounded-xl border border-violet-300/20 bg-black/25 p-4">
+                              <Form route="admin.playlists.update" routeParams={{ id: playlist.id }}>
+                                {({ errors, processing }) => (
+                                  <div className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4 md:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_auto] md:items-end">
+                                    <Field style={{ marginBottom: 0 }}>
+                                      <Label htmlFor={`playlist-${playlist.id}-name`}>
+                                        Nom de la playlist
+                                      </Label>
+                                      <Input
+                                        id={`playlist-${playlist.id}-name`}
+                                        name="name"
+                                        defaultValue={playlist.name}
+                                        className="text-white"
+                                      />
+                                      {errors.name && <FieldError>{errors.name}</FieldError>}
+                                    </Field>
+                                    <Field style={{ marginBottom: 0 }}>
+                                      <Label htmlFor={`playlist-${playlist.id}-genre`}>
+                                        Genre
+                                      </Label>
+                                      <Input
+                                        id={`playlist-${playlist.id}-genre`}
+                                        name="genre"
+                                        defaultValue={playlist.genre ?? ""}
+                                        className="text-white"
+                                      />
+                                      {errors.genre && <FieldError>{errors.genre}</FieldError>}
+                                    </Field>
+                                    <Button type="submit" disabled={processing}>
+                                      Enregistrer
+                                    </Button>
+                                  </div>
+                                )}
+                              </Form>
+
                               <AddTrackPanel
                                 playlistId={playlist.id}
                                 query={trackQueries[playlist.id] ?? ""}

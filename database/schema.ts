@@ -106,7 +106,7 @@ export class GamePlayerSchema extends BaseModel {
 }
 
 export class GameSchema extends BaseModel {
-  static $columns = ['answerMode', 'answerTarget', 'code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
+  static $columns = ['answerMode', 'answerTarget', 'code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'name', 'pausedAt', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
   $columns = GameSchema.$columns
   @column()
   declare answerMode: string
@@ -134,6 +134,10 @@ export class GameSchema extends BaseModel {
   declare maxPlayers: number
   @column()
   declare mode: string
+  @column()
+  declare name: string | null
+  @column.dateTime()
+  declare pausedAt: DateTime | null
   @column()
   declare playlistId: string | null
   @column()
