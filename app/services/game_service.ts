@@ -9,7 +9,7 @@ import crypto from "node:crypto";
 import transmit from "@adonisjs/transmit/services/main";
 import { inject } from "@adonisjs/core";
 import type { CreateGameOptions, SubmitAnswerParams } from "#types/game";
-import { displayUsername } from "#services/display_name";
+import { displayUsernameForUser } from "#services/display_name";
 
 @inject()
 export class GameService {
@@ -385,7 +385,11 @@ export class GameService {
       event: "scores_updated",
       players: updatedPlayers.map((p) => ({
         userId: p.userId,
-        username: displayUsername(p.user?.profile?.username, `User${p.userId}`),
+        username: displayUsernameForUser({
+          username: p.user?.profile?.username,
+          fullName: p.user?.fullName,
+          fallback: `User${p.userId}`,
+        }),
         score: p.score,
         streak: p.streak,
         correct: p.correct,

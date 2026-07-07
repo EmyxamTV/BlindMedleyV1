@@ -12,7 +12,7 @@ import { PlaylistAccessService } from "#services/playlist_access_service";
 import { PlaylistImportService } from "#services/playlist_import_service";
 import { SpotifyService } from "#services/spotify_service";
 import { sanitizeTrackText } from "#services/track_sanitizer";
-import { displayUsername } from "#services/display_name";
+import { displayUsernameForUser } from "#services/display_name";
 import {
   addPlaylistTrackValidator,
   createManualPlaylistValidator,
@@ -223,9 +223,11 @@ export default class PlaylistController {
         id: share.id,
         userId: share.userId,
         canEdit: share.canEdit,
-        username: displayUsername(
-          share.user?.profile?.username ?? share.user?.fullName ?? share.user?.email,
-        ),
+        username: displayUsernameForUser({
+          username: share.user?.profile?.username,
+          fullName: share.user?.fullName,
+          fallback: share.user?.email ?? "Joueur",
+        }),
         email: share.user?.email,
       })),
     });

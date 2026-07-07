@@ -2,6 +2,7 @@ import User from "#models/user";
 import Profile from "#models/profile";
 import { signupValidator } from "#validators/user";
 import type { HttpContext } from "@adonisjs/core/http";
+import { usernameFromName } from "#services/display_name";
 
 export default class NewAccountController {
   async create({ inertia }: HttpContext) {
@@ -13,10 +14,7 @@ export default class NewAccountController {
     const user = await User.create({ ...payload });
 
     // Créer le profil dès l'inscription pour que les stats soient bien enregistrées
-    const defaultUsername = (payload.fullName ?? "")
-      .split(" ")[0]
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+    const defaultUsername = usernameFromName(payload.fullName, "");
     await Profile.create({
       userId: user.id,
       username: defaultUsername || `joueur${user.id}`,

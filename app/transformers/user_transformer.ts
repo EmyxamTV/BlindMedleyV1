@@ -2,7 +2,7 @@ import type User from "#models/user";
 import { BaseTransformer } from "@adonisjs/core/transformers";
 import AchievementTransformer from "#transformers/achievement_transformer";
 import ProfileTransformer from "#transformers/profile_transformer";
-import { displayUsername } from "#services/display_name";
+import { displayUsernameForUser } from "#services/display_name";
 
 export default class UserTransformer extends BaseTransformer<User> {
   toObject() {
@@ -18,7 +18,10 @@ export default class UserTransformer extends BaseTransformer<User> {
         "updatedAt",
         "initials",
       ]),
-      username: displayUsername(this.resource.profile?.username),
+      username: displayUsernameForUser({
+        username: this.resource.profile?.username,
+        fullName: this.resource.fullName,
+      }),
       avatarUrl: this.resource.profile?.avatarUrl ?? null,
       profile: ProfileTransformer.transform(this.whenLoaded(this.resource.profile)),
       achievements: AchievementTransformer.transform(this.whenLoaded(this.resource.achievements)),

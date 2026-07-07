@@ -1,7 +1,7 @@
 import LeaderboardSnapshot from "#models/leaderboard_snapshot";
 import { DateTime } from "luxon";
 import type { LeaderboardEntry } from "#types/leaderboard";
-import { displayUsername } from "#services/display_name";
+import { displayUsernameForUser } from "#services/display_name";
 
 export class LeaderboardService {
   async addScore(userId: string, score: number, country?: string | null): Promise<void> {
@@ -51,7 +51,11 @@ export class LeaderboardService {
     return snapshots.map((s, i) => ({
       rank: offset + i + 1,
       userId: s.userId,
-      username: displayUsername(s.user?.profile?.username ?? s.user?.fullName, `User${s.userId}`),
+      username: displayUsernameForUser({
+        username: s.user?.profile?.username,
+        fullName: s.user?.fullName,
+        fallback: `User${s.userId}`,
+      }),
       avatarUrl: s.user?.profile?.avatarUrl ?? null,
       level: s.user?.profile?.level ?? 1,
       score: Number(s.score),
@@ -96,7 +100,11 @@ export class LeaderboardService {
     return snapshots.map((s, i) => ({
       rank: i + 1,
       userId: s.userId,
-      username: displayUsername(s.user?.profile?.username, `User${s.userId}`),
+      username: displayUsernameForUser({
+        username: s.user?.profile?.username,
+        fullName: s.user?.fullName,
+        fallback: `User${s.userId}`,
+      }),
       avatarUrl: s.user?.profile?.avatarUrl ?? null,
       level: s.user?.profile?.level ?? 1,
       score: Number(s.score),

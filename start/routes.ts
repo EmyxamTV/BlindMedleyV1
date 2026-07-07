@@ -43,6 +43,7 @@ router
     router.get("/profile", [ProfileController, "show"]).as("profile.show");
     router.get("/profile/:id", [ProfileController, "show"]).as("profile.view");
     router.post("/profile", [ProfileController, "update"]).as("profile.update");
+    router.post("/profile/password", [ProfileController, "updatePassword"]).as("profile.password");
   })
   .use(middleware.auth());
 

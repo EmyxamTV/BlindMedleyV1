@@ -68,8 +68,7 @@ export default class SpotifyOAuthController {
     await Profile.updateOrCreate(
       { userId: user.id },
       {
-        username:
-          spotifyProfile.display_name?.replace(/\s+/g, "_").toLowerCase() ?? `user_${user.id}`,
+        username: spotifyProfile.display_name?.replace(/\s+/g, "_") ?? `user_${user.id}`,
         avatarUrl,
       },
     );
