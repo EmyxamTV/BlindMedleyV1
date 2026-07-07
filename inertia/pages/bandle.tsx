@@ -15,6 +15,7 @@ type Props = InertiaProps<{
 
 const PROGRESSIVE_DURATIONS_MS = [100, 200, 300, 400, 500];
 const MAX_ATTEMPTS = PROGRESSIVE_DURATIONS_MS.length;
+const PREVIEW_DURATION_MS = 30_000;
 
 export default function Bandle({ playlists }: Props) {
   const [question, setQuestion] = useState<Question | null>(null);
@@ -26,6 +27,7 @@ export default function Bandle({ playlists }: Props) {
   const [audioError, setAudioError] = useState<string | null>(null);
   const [volume, setVolume] = useAudioVolume();
   const [playKey, setPlayKey] = useState(0);
+  const [startAtMs, setStartAtMs] = useState(0);
 
   const load = useCallback(async () => {
     setQuestion(null);
@@ -33,6 +35,7 @@ export default function Bandle({ playlists }: Props) {
     setResult(null);
     setError(null);
     setAudioError(null);
+    setStartAtMs(0);
     try {
       const url = new URL("/practice/question", window.location.origin);
       if (selectedPlaylistId) url.searchParams.set("playlistId", selectedPlaylistId);
@@ -41,6 +44,7 @@ export default function Bandle({ playlists }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? "Impossible de charger un morceau.");
       setQuestion(data as Question);
+      setStartAtMs(randomPreviewStartMs());
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Impossible de charger un morceau.");
     }
@@ -128,6 +132,7 @@ export default function Bandle({ playlists }: Props) {
               autoPlay={false}
               playKey={playKey}
               maxPlayMs={currentDurationMs}
+              startAtMs={startAtMs}
               disabled={Boolean(result)}
               onPlayError={() => setAudioError("Impossible de lancer cet extrait.")}
             />
@@ -181,4 +186,10 @@ export default function Bandle({ playlists }: Props) {
       </main>
     </div>
   );
+}
+
+function randomPreviewStartMs() {
+  const longestExtractMs = PROGRESSIVE_DURATIONS_MS[PROGRESSIVE_DURATIONS_MS.length - 1] ?? 500;
+  const maxStartMs = Math.max(0, PREVIEW_DURATION_MS - longestExtractMs - 1_000);
+  return Math.floor(Math.random() * maxStartMs);
 }

@@ -7,6 +7,7 @@ export function AudioPlayer({
   autoPlay = true,
   playKey,
   maxPlayMs,
+  startAtMs = 0,
   onPlayError,
   disabled = false,
 }: {
@@ -16,6 +17,7 @@ export function AudioPlayer({
   autoPlay?: boolean;
   playKey?: number;
   maxPlayMs?: number;
+  startAtMs?: number;
   onPlayError?: () => void;
   disabled?: boolean;
 }) {
@@ -23,6 +25,7 @@ export function AudioPlayer({
   const stopTimer = useRef<number | null>(null);
   const disabledRef = useRef(disabled);
   const maxPlayMsRef = useRef(maxPlayMs);
+  const startAtMsRef = useRef(startAtMs);
   const onPlayErrorRef = useRef(onPlayError);
   const volumeRef = useRef(volume);
   const [playing, setPlaying] = useState(false);
@@ -37,7 +40,13 @@ export function AudioPlayer({
     const audio = audioRef.current;
     if (!audio || disabledRef.current) return;
     clearStopTimer();
-    if (fromStart) audio.currentTime = 0;
+    if (fromStart) {
+      const startSeconds = startAtMsRef.current / 1000;
+      audio.currentTime =
+        Number.isFinite(audio.duration) && audio.duration > 0
+          ? Math.min(Math.max(0, startSeconds), Math.max(0, audio.duration - 0.2))
+          : Math.max(0, startSeconds);
+    }
     audio.play().catch(() => {
       setBlocked(true);
       onPlayErrorRef.current?.();
@@ -50,9 +59,10 @@ export function AudioPlayer({
   useEffect(() => {
     disabledRef.current = disabled;
     maxPlayMsRef.current = maxPlayMs;
+    startAtMsRef.current = startAtMs;
     onPlayErrorRef.current = onPlayError;
     volumeRef.current = volume;
-  }, [disabled, maxPlayMs, onPlayError, volume]);
+  }, [disabled, maxPlayMs, onPlayError, startAtMs, volume]);
 
   useEffect(() => {
     const audio = audioRef.current;
