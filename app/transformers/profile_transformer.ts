@@ -1,5 +1,6 @@
 import { BaseTransformer } from "@adonisjs/core/transformers";
 import type Profile from "#models/profile";
+import { displayUsername } from "#services/display_name";
 
 export default class ProfileTransformer extends BaseTransformer<Profile> {
   toObject() {
@@ -7,7 +8,6 @@ export default class ProfileTransformer extends BaseTransformer<Profile> {
       ...this.pick(this.resource, [
         "id",
         "userId",
-        "username",
         "avatarUrl",
         "country",
         "bio",
@@ -25,6 +25,7 @@ export default class ProfileTransformer extends BaseTransformer<Profile> {
         "createdAt",
         "updatedAt",
       ]),
+      username: displayUsername(this.resource.username),
       accuracyRate: this.resource.accuracyRate,
     };
   }

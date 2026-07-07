@@ -1,6 +1,7 @@
 import { BaseTransformer } from "@adonisjs/core/transformers";
 import type GamePlayer from "#models/game_player";
 import UserTransformer from "#transformers/user_transformer";
+import { displayUsername } from "#services/display_name";
 
 export default class GamePlayerTransformer extends BaseTransformer<GamePlayer> {
   constructor(
@@ -27,10 +28,10 @@ export default class GamePlayerTransformer extends BaseTransformer<GamePlayer> {
         "joinedAt",
         "leftAt",
       ]),
-      username:
-        this.resource.user?.profile?.username ??
-        this.resource.user?.fullName ??
+      username: displayUsername(
+        this.resource.user?.profile?.username ?? this.resource.user?.fullName,
         `User${this.resource.userId}`,
+      ),
       avatarUrl: this.resource.user?.profile?.avatarUrl ?? null,
       playlistName: this.resource.game?.playlist?.name ?? null,
       mode: this.resource.game?.mode,

@@ -52,15 +52,15 @@ export function Timer({
         {pings.map((ping) => (
           <span
             key={ping.userId}
-            className={`answer-ping ${ping.isCorrect === false ? "wrong" : ""}`}
+            className={`answer-ping group !pointer-events-auto hover:!z-50 ${ping.isCorrect === false ? "wrong" : ""}`}
             style={{
               left: `${Math.min(98, Math.max(2, 100 - (ping.responseMs / durationMs) * 100))}%`,
             }}
           >
-            <span className="answer-ping-name">
+            <span className="answer-ping-name transition group-hover:-translate-y-1 group-hover:scale-105 group-hover:shadow-2xl">
               {players.find((player) => player.userId === ping.userId)?.username ?? "Joueur"}
             </span>
-            <i />
+            <i className="!absolute !left-1/2 !top-[-8px] !block !h-0 !w-0 !-translate-x-1/2 !border-x-[6px] !border-t-[7px] !border-x-transparent !border-t-teal-600 group-[.wrong]:!border-t-rose-600" />
           </span>
         ))}
       </div>

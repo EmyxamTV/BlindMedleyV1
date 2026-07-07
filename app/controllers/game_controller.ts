@@ -12,6 +12,7 @@ import { DeezerService } from "#services/deezer_service";
 import { PlaylistAccessService } from "#services/playlist_access_service";
 import { SpotifyService } from "#services/spotify_service";
 import { sanitizeTrackText } from "#services/track_sanitizer";
+import { displayUsername } from "#services/display_name";
 import AnswerTransformer from "#transformers/answer_transformer";
 import GamePlayerTransformer from "#transformers/game_player_transformer";
 import GameTransformer from "#transformers/game_transformer";
@@ -471,8 +472,10 @@ export default class GameController {
 
         return {
           userId: player.userId,
-          username:
-            player.user?.profile?.username ?? player.user?.fullName ?? `User${player.userId}`,
+          username: displayUsername(
+            player.user?.profile?.username ?? player.user?.fullName,
+            `User${player.userId}`,
+          ),
           avatarUrl: player.user?.profile?.avatarUrl ?? null,
           won: answers.some(
             (answer) =>

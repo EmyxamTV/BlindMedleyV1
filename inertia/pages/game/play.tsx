@@ -330,6 +330,61 @@ export default function Play({
       />
 
       <main className="play-main">
+        {canModerate && (
+          <div className="flex justify-end">
+            <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[11px] font-black uppercase tracking-wide text-slate-500">
+              <span className="px-2">Admin</span>
+              {isPaused ? (
+                <Form route="game.resume" routeParams={{ id: game.id }}>
+                  {() => (
+                    <button
+                      type="submit"
+                      className="rounded-full px-2.5 py-1 text-emerald-300 transition hover:bg-emerald-400/10 hover:text-emerald-100"
+                      title="Reprendre la partie"
+                    >
+                      Reprendre
+                    </button>
+                  )}
+                </Form>
+              ) : (
+                <Form route="game.pause" routeParams={{ id: game.id }}>
+                  {() => (
+                    <button
+                      type="submit"
+                      className="rounded-full px-2.5 py-1 text-amber-300 transition hover:bg-amber-400/10 hover:text-amber-100"
+                      title="Mettre la partie en pause"
+                    >
+                      Pause
+                    </button>
+                  )}
+                </Form>
+              )}
+              <Form route="game.stop" routeParams={{ id: game.id }}>
+                {() => (
+                  <button
+                    type="submit"
+                    className="rounded-full px-2.5 py-1 text-slate-400 transition hover:bg-red-400/10 hover:text-red-200"
+                    title="Stopper la partie"
+                  >
+                    Stop
+                  </button>
+                )}
+              </Form>
+              <Form route="game.destroy" routeParams={{ id: game.id }}>
+                {() => (
+                  <button
+                    type="submit"
+                    className="rounded-full px-2.5 py-1 text-slate-500 transition hover:bg-red-500/10 hover:text-red-300"
+                    title="Supprimer la partie"
+                  >
+                    Suppr.
+                  </button>
+                )}
+              </Form>
+            </div>
+          </div>
+        )}
+
         <div className="round-header">
           <span className="round-num">
             Round {currentRound.roundNumber}/{game.roundCount}
@@ -413,42 +468,6 @@ export default function Play({
         {isPaused && (
           <div className="rounded-2xl border border-amber-300/30 bg-amber-500/15 p-4 text-center text-sm font-black text-amber-100">
             Partie en pause par un administrateur.
-          </div>
-        )}
-
-        {canModerate && (
-          <div className="flex flex-wrap justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-            {isPaused ? (
-              <Form route="game.resume" routeParams={{ id: game.id }}>
-                {() => (
-                  <button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-black text-white">
-                    Reprendre
-                  </button>
-                )}
-              </Form>
-            ) : (
-              <Form route="game.pause" routeParams={{ id: game.id }}>
-                {() => (
-                  <button type="submit" className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white">
-                    Pause
-                  </button>
-                )}
-              </Form>
-            )}
-            <Form route="game.stop" routeParams={{ id: game.id }}>
-              {() => (
-                <button type="submit" className="rounded-xl bg-red-500 px-4 py-2 text-sm font-black text-white">
-                  Stopper
-                </button>
-              )}
-            </Form>
-            <Form route="game.destroy" routeParams={{ id: game.id }}>
-              {() => (
-                <button type="submit" className="rounded-xl bg-red-700 px-4 py-2 text-sm font-black text-white">
-                  Supprimer
-                </button>
-              )}
-            </Form>
           </div>
         )}
 
