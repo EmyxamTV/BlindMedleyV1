@@ -79,14 +79,9 @@ export class GameService {
 
     if (Number(connected[0].$extras.total) === 0) {
       // Plus personne → annuler la partie
-      await game
-        .merge({
-          status: game.status === "active" ? "finished" : "cancelled",
-          finishedAt: DateTime.now(),
-        })
-        .save();
-
-      transmit.broadcast(`game/${game.publicId}`, { event: "game_finished" });
+      const publicId = game.publicId;
+      await game.delete();
+      if (publicId) transmit.broadcast(`game/${publicId}`, { event: "game_deleted" });
     }
   }
 
@@ -109,6 +104,20 @@ export class GameService {
       userId,
       joinedAt: DateTime.now(),
     });
+  }
+
+  async deleteEmptyPlayerGames(): Promise<void> {
+    const games = await Game.query()
+      .whereIn("status", ["waiting", "starting", "active", "paused"])
+      .whereIn("mode", ["solo", "public", "private"])
+      .preload("players", (query) => query.where("is_connected", true));
+
+    for (const game of games) {
+      if (game.players.length > 0) continue;
+      const publicId = game.publicId;
+      await game.delete();
+      if (publicId) transmit.broadcast(`game/${publicId}`, { event: "game_deleted" });
+    }
   }
 
   async startGame(gameId: string, hostId: string, options: { force?: boolean } = {}): Promise<Game> {

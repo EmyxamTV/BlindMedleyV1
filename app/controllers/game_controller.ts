@@ -43,6 +43,7 @@ export default class GameController {
   // Page de création / liste des parties publiques
   async index({ inertia, auth }: HttpContext) {
     const user = auth.user!;
+    await this.gameService.deleteEmptyPlayerGames();
 
     const [playlists, publicGames, activePlayer] = await Promise.all([
       this.playlistAccess
