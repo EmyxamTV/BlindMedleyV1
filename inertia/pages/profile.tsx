@@ -262,7 +262,7 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
               <h3 className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-400">
                 Mot de passe
               </h3>
-              <Form route="profile.password">
+              <Form action="/profile/password" method="post">
                 {({ errors }) => (
                   <>
                     <div className="form-group">
