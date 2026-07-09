@@ -40,6 +40,8 @@ type GameStateResponse = {
   status: string;
   round: ClientRound | null;
   serverNow: number;
+  nextGameId?: string | null;
+  nextAutoStartsAt?: number | null;
   scores?: GamePlayerData[];
   answerPings?: AnswerPing[];
   answerProgress?: AnswerProgress[];
@@ -47,8 +49,8 @@ type GameStateResponse = {
 };
 
 function answerPlaceholder(target: string) {
-  if (target === "title") return "Ecris le titre...";
-  if (target === "artist") return "Ecris l'artiste...";
+  if (target === "title") return "Écris le titre...";
+  if (target === "artist") return "Écris l’artiste...";
   if (target === "separate") return "Titre ou artiste...";
   return "Titre et artiste...";
 }
@@ -73,21 +75,32 @@ export default function Play({
   const [answerPings, setAnswerPings] = useState<AnswerPing[]>([]);
   const [answerProgress, setAnswerProgress] = useState<Record<number, AnswerProgress>>({});
   const [textAnswer, setTextAnswer] = useState("");
+  const [officialRestartAt, setOfficialRestartAt] = useState<number | null>(
+    game.autoStartsAt ? new Date(String(game.autoStartsAt)).getTime() : null,
+  );
+  const [now, setNow] = useState(Date.now());
   const textInputRef = useRef<HTMLInputElement>(null);
   const isPaused = gameStatus === "paused";
+  const currentRoundNumber = currentRound?.roundNumber ?? null;
+  const currentRoundNumberRef = useRef<number | null>(currentRoundNumber);
+  const isOfficialGame = Boolean((game as GameWithPlayers & { isOfficial?: boolean }).isOfficial);
 
   useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
 
   useEffect(() => {
-    if (game.answerMode !== "text" || !currentRound) return;
+    currentRoundNumberRef.current = currentRoundNumber;
+  }, [currentRoundNumber]);
+
+  useEffect(() => {
+    if (game.answerMode !== "text" || currentRoundNumber === null) return;
     setTextAnswer("");
     const focusInput = () => textInputRef.current?.focus({ preventScroll: true });
     const timers = [50, 250, 600].map((delay) => window.setTimeout(focusInput, delay));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [currentRound, game.answerMode, gameStatus]);
+  }, [currentRoundNumber, game.answerMode]);
 
-  useEffect(() => {
-    const interval = window.setInterval(async () => {
+  const syncGameState = useCallback(async () => {
+    try {
       const res = await fetch(routeUrl("game.state", { params: { id: game.id } }), {
         headers: { Accept: "application/json" },
       });
@@ -107,16 +120,28 @@ export default function Play({
       }
       if (data.history) setHistory(data.history);
       if (data.status === "finished") {
-        router.visit(routeUrl("game.results", { params: { id: game.id } }));
+        if (isOfficialGame) {
+          setGameStatus("finished");
+          setCurrentRound(null);
+          setOfficialRestartAt(data.nextAutoStartsAt ?? null);
+        } else {
+          router.visit(routeUrl("game.results", { params: { id: game.id } }));
+        }
         return;
       }
       if (data.status === "cancelled") {
         router.visit(routeUrl("game.index"));
         return;
       }
+      if (data.status === "waiting" || data.status === "starting") {
+        setGameStatus(data.status);
+        if (data.status === "waiting") setCurrentRound(null);
+      }
       if (data.status === "paused") setGameStatus("paused");
+      if (data.status === "active") setGameStatus("active");
       if (data.round) {
-        if (!currentRound || data.round.roundNumber > currentRound.roundNumber) {
+        const activeRoundNumber = currentRoundNumberRef.current;
+        if (!activeRoundNumber || data.round.roundNumber > activeRoundNumber) {
           setCurrentRound(data.round);
           setAnswered(false);
           setLastResult(null);
@@ -124,13 +149,63 @@ export default function Play({
           setAnswerPings([]);
           setAnswerProgress({});
           setGameStatus(data.status === "paused" ? "paused" : "active");
-        } else if (data.round.roundNumber === currentRound.roundNumber) {
-          setCurrentRound((round) => (round ? { ...round, serverNow: data.serverNow } : round));
+        } else if (data.round.roundNumber === activeRoundNumber) {
+          setCurrentRound((round) =>
+            round ? { ...round, ...data.round, serverNow: data.serverNow } : data.round,
+          );
         }
       }
-    }, 2000);
+    } catch {
+      // Les events temps réel ou le prochain resync discret reprennent le relais.
+    }
+  }, [game.id, initialMyPlayer.userId, isOfficialGame]);
+
+  const handleTimerExpire = useCallback(() => {
+    void syncGameState();
+  }, [syncGameState]);
+
+  useEffect(() => {
+    void syncGameState();
+
+    const interval = window.setInterval(() => {
+      void syncGameState();
+    }, 30_000);
+
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") void syncGameState();
+    };
+
+    document.addEventListener("visibilitychange", syncWhenVisible);
+    window.addEventListener("focus", syncWhenVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+      window.removeEventListener("focus", syncWhenVisible);
+      window.clearInterval(interval);
+    };
+  }, [syncGameState]);
+
+  useEffect(() => {
+    if (currentRound !== null && gameStatus !== "starting" && gameStatus !== "waiting") return;
+
+    const interval = window.setInterval(() => {
+      void syncGameState();
+    }, isOfficialGame ? 2_500 : 1_500);
+
     return () => window.clearInterval(interval);
-  }, [game.id, currentRound, initialMyPlayer.userId]);
+  }, [currentRound, gameStatus, isOfficialGame, syncGameState]);
+
+  useEffect(() => {
+    if (!isOfficialGame || gameStatus !== "finished") return;
+    const clock = window.setInterval(() => setNow(Date.now()), 250);
+    const resync = window.setInterval(() => {
+      void syncGameState();
+    }, 2_000);
+    return () => {
+      window.clearInterval(clock);
+      window.clearInterval(resync);
+    };
+  }, [gameStatus, isOfficialGame, syncGameState]);
 
   useEffect(() => {
     const transmit = new Transmit({
@@ -141,18 +216,32 @@ export default function Play({
 
     subscription.create().then(() => {
       subscription.onMessage<{ event: string } & Record<string, unknown>>((message) => {
+        const activeRoundNumber = currentRoundNumberRef.current;
         if (message.event === "round_started") {
           const { event: _, ...roundData } = message;
           setCurrentRound(roundData as ClientRound);
+          setOfficialRestartAt(null);
           setAnswered(false);
           setLastResult(null);
           setRevealed(null);
           setAnswerPings([]);
           setAnswerProgress({});
           setGameStatus("active");
+        } else if (message.event === "game_starting") {
+          setGameStatus("starting");
+          setCurrentRound(null);
+          setOfficialRestartAt(null);
+        } else if (message.event === "official_game_reset") {
+          setGameStatus("waiting");
+          setCurrentRound(null);
+          setAnswered(false);
+          setLastResult(null);
+          setRevealed(null);
+          setAnswerPings([]);
+          setAnswerProgress({});
         } else if (
           message.event === "answer_submitted" &&
-          message.roundNumber === currentRound?.roundNumber
+          message.roundNumber === activeRoundNumber
         ) {
           setAnswerPings((current) =>
             current.some((ping) => ping.userId === message.userId)
@@ -167,6 +256,15 @@ export default function Play({
                 ],
           );
         } else if (message.event === "round_revealed") {
+          setCurrentRound((round) =>
+            round
+              ? {
+                  ...round,
+                  endsAt: Date.now(),
+                  serverNow: Date.now(),
+                }
+              : round,
+          );
           const revealedTrack = {
             roundNumber: message.roundNumber as number,
             title: message.title as string,
@@ -180,7 +278,7 @@ export default function Play({
           ]);
         } else if (
           message.event === "answer_progress" &&
-          message.roundNumber === currentRound?.roundNumber
+          message.roundNumber === activeRoundNumber
         ) {
           const progress = {
             userId: message.userId as string,
@@ -195,9 +293,15 @@ export default function Play({
           if (me) setMyPlayer((previous) => ({ ...previous, ...me }));
         } else if (message.event === "game_finished") {
           setGameStatus("finished");
-          router.visit(routeUrl("game.results", { params: { id: game.id } }));
+          if (isOfficialGame) {
+            setCurrentRound(null);
+            setOfficialRestartAt((message.nextAutoStartsAt as number | null | undefined) ?? null);
+          } else {
+            router.visit(routeUrl("game.results", { params: { id: game.id } }));
+          }
         } else if (message.event === "game_paused") {
           setGameStatus("paused");
+          void syncGameState();
         } else if (message.event === "game_resumed") {
           const { event: _, ...roundData } = message;
           if (roundData.roundNumber) setCurrentRound(roundData as ClientRound);
@@ -211,7 +315,7 @@ export default function Play({
     return () => {
       subscription.delete();
     };
-  }, [game.id, currentRound?.roundNumber, initialMyPlayer.userId]);
+  }, [game.id, initialMyPlayer.userId, isOfficialGame, syncGameState]);
 
   const handleAnswer = useCallback(
     async (choice: RoundChoice | string) => {
@@ -229,7 +333,7 @@ export default function Play({
           },
           body: JSON.stringify({
             roundNumber: currentRound.roundNumber,
-            answerTrackId: typeof choice === "string" ? undefined : choice.trackId,
+            choiceToken: typeof choice === "string" ? undefined : choice.choiceToken,
             answerText: typeof choice === "string" ? choice : undefined,
           }),
         });
@@ -310,11 +414,43 @@ export default function Play({
     ],
   );
 
+  if (isOfficialGame && gameStatus === "finished") {
+    const seconds = officialRestartAt ? Math.max(0, Math.ceil((officialRestartAt - now) / 1000)) : null;
+    return (
+      <div className="grid min-h-[70vh] place-items-center px-4 text-slate-100">
+        <div className="w-full max-w-xl rounded-3xl border border-amber-300/20 bg-amber-500/10 p-8 text-center shadow-2xl shadow-amber-950/20">
+          <p className="text-xs font-black uppercase tracking-[0.28em] text-amber-200">
+            Partie officielle
+          </p>
+          <h1 className="mt-3 text-3xl font-black text-white">La partie est terminée</h1>
+          <p className="mt-3 text-sm font-bold text-slate-400">
+            Reste ici, la prochaine manche va se relancer automatiquement.
+          </p>
+          <div className="mx-auto mt-6 grid h-28 w-28 place-items-center rounded-full border border-amber-200/30 bg-black/25 text-4xl font-black text-white">
+            {seconds === null ? "—" : `${seconds}s`}
+          </div>
+          <button
+            type="button"
+            onClick={() => void syncGameState()}
+            className="mt-6 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-sm font-black text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          >
+            Synchroniser
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentRound || gameStatus === "waiting" || gameStatus === "starting") {
     return (
-      <div className="play-waiting">
-        <div className="spinner-large" />
-        <p>Preparation du round...</p>
+      <div className="grid min-h-[60vh] place-items-center px-4 text-slate-100">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-violet-300/30 border-t-violet-300" />
+          <p className="mt-4 font-black text-white">Préparation du round...</p>
+          <p className="mt-2 text-sm font-semibold text-slate-500">
+            La musique est en cours de préparation côté serveur.
+          </p>
+        </div>
       </div>
     );
   }
@@ -390,12 +526,14 @@ export default function Play({
             Round {currentRound.roundNumber}/{game.roundCount}
           </span>
           <Timer
+            startsAt={currentRound.startsAt}
             endsAt={currentRound.endsAt}
             serverNow={currentRound.serverNow ?? serverNow}
             durationMs={game.roundDurationMs}
             pings={answerPings}
             players={scores}
             paused={isPaused}
+            onExpire={handleTimerExpire}
           />
           <div className="my-score-mini">
             {myPlayer.score} pts
@@ -422,17 +560,20 @@ export default function Play({
             volume={volume}
             onVolumeChange={setVolume}
             disabled={isPaused}
+            scheduledStartAt={currentRound.startsAt}
+            scheduledEndAt={currentRound.endsAt}
+            serverNow={currentRound.serverNow ?? serverNow}
           />
         ) : (
           <div className="audio-card">
             <span style={{ fontSize: "2rem" }}>♪</span>
-            <span className="audio-hint">Pas d'extrait disponible - devine au titre</span>
+            <span className="audio-hint">Pas d’extrait disponible — devine au titre</span>
           </div>
         )}
 
         {revealed && (
           <div className="round-reveal">
-            <span className="reveal-label">C'etait :</span>
+            <span className="reveal-label">C’était :</span>
             <span className="reveal-title">{revealed.title}</span>
             <span className="reveal-artist">{revealed.artist}</span>
             <TrackLinks title={revealed.title} artist={revealed.artist} />
@@ -446,20 +587,20 @@ export default function Play({
             {lastResult.correct ? (
               <>
                 <span className="result-icon">OK</span>
-                <span>Bonne reponse ! +{lastResult.scoreEarned} pts</span>
+                <span>Bonne réponse ! +{lastResult.scoreEarned} pts</span>
               </>
             ) : lastResult.partial ? (
               <>
                 <span className="result-icon">OK</span>
                 <span>
-                  {lastResult.partialFound === "title" ? "Titre trouve" : "Artiste trouve"} ! +
+                  {lastResult.partialFound === "title" ? "Titre trouvé" : "Artiste trouvé"} ! +
                   {lastResult.scoreEarned} pts
                 </span>
               </>
             ) : (
               <>
                 <span className="result-icon">X</span>
-                <span>Mauvaise reponse</span>
+                <span>Mauvaise réponse</span>
               </>
             )}
           </div>
@@ -471,15 +612,7 @@ export default function Play({
           </div>
         )}
 
-        {game.answerMode === "text" ? (
-          <TextAnswerForm
-            value={textAnswer}
-            onChange={setTextAnswer}
-            onSubmit={() => void handleAnswer(textAnswer.trim())}
-            disabled={answered || isPaused}
-            placeholder="Ecris ta reponse..."
-          />
-        ) : (
+        {game.answerMode !== "text" && (
           <div className="choices-grid">
             {currentRound.choices.map((choice) => (
               <button
@@ -496,7 +629,7 @@ export default function Play({
         )}
 
         {answered && !lastResult && (
-          <p className="answered-waiting">Reponse enregistree. En attente du resultat...</p>
+          <p className="answered-waiting">Réponse enregistrée. En attente du résultat...</p>
         )}
       </main>
     </div>

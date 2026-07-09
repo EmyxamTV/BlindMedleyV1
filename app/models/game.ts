@@ -10,6 +10,7 @@ export type GameMode = "solo" | "public" | "private" | "matchmaking";
 export type GameStatus = "waiting" | "starting" | "active" | "paused" | "finished" | "cancelled";
 export type AnswerMode = "choices" | "text";
 export type AnswerTarget = "title" | "artist" | "both" | "separate";
+export type GameSource = "player" | "blindmedley";
 
 export default class Game extends GameSchema {
   declare mode: GameMode;
@@ -19,6 +20,8 @@ export default class Game extends GameSchema {
   declare answerTarget: AnswerTarget;
 
   declare status: GameStatus;
+
+  declare source: GameSource;
 
   @belongsTo(() => User, { foreignKey: "hostId" })
   declare host: BelongsTo<typeof User>;

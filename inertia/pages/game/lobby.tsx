@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
@@ -22,10 +22,24 @@ function unlockAudio() {
   audio.play().catch(() => {});
 }
 
+function timestampFromDate(value: unknown) {
+  if (!value) return null;
+  const timestamp = new Date(String(value)).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 export default function Lobby({ game, isHost, canModerate, user }: Props) {
+  const gameAutoStartsAt = (game as GameWithPlayers & { autoStartsAt?: string | null })
+    .autoStartsAt;
   const [players, setPlayers] = useState<GamePlayerData[]>(game.players);
+  const [autoStartsAt, setAutoStartsAt] = useState<number | null>(timestampFromDate(gameAutoStartsAt));
+  const [now, setNow] = useState(Date.now());
+  const countdownSyncTriggered = useRef(false);
   const canStart = isHost || canModerate;
   const needsMorePlayers = game.mode !== "solo" && players.length < 2;
+  const isOfficial = Boolean((game as GameWithPlayers & { isOfficial?: boolean }).isOfficial);
+  const countdownSeconds =
+    autoStartsAt === null ? null : Math.max(0, Math.ceil((autoStartsAt - now) / 1000));
 
   useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
 
@@ -37,34 +51,53 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
     const subscription = transmit.subscription(`game/${game.id}`);
 
     subscription.create().then(() => {
-      subscription.onMessage<{ event: string }>((message) => {
+      subscription.onMessage<{ event: string; autoStartsAt?: number }>((message) => {
         if (message.event === "game_starting") {
           unlockAudio();
           router.visit(routeUrl("game.play", { params: { id: game.id } }));
         }
+        if (message.event === "official_countdown_started") {
+          setAutoStartsAt(Number(message.autoStartsAt));
+        }
+        if (message.event === "official_countdown_cancelled") {
+          setAutoStartsAt(null);
+        }
         if (message.event === "game_stopped" || message.event === "game_deleted") {
           router.visit(routeUrl("game.index"));
+        }
+        if (message.event === "players_updated" || message.event === "game_updated") {
+          router.reload({ only: ["game"] });
         }
       });
     });
 
-    const interval = window.setInterval(() => {
-      router.reload({ only: ["game"] });
-    }, 2000);
-
     return () => {
       subscription.delete();
-      window.clearInterval(interval);
     };
   }, [game.id]);
 
   useEffect(() => {
     setPlayers(game.players);
+    setAutoStartsAt(timestampFromDate(gameAutoStartsAt));
+    countdownSyncTriggered.current = false;
     if (game.status !== "waiting") {
       unlockAudio();
       router.visit(routeUrl("game.play", { params: { id: game.id } }));
     }
-  }, [game.id, game.players, game.status]);
+  }, [game.id, game.players, game.status, gameAutoStartsAt]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (autoStartsAt === null || countdownSyncTriggered.current || game.status !== "waiting") return;
+    if (autoStartsAt > now) return;
+
+    countdownSyncTriggered.current = true;
+    router.reload({ only: ["game"] });
+  }, [autoStartsAt, game.status, now]);
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-slate-100">
@@ -151,6 +184,26 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
         </section>
 
         <aside className="grid content-start gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+          {isOfficial && (
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 p-4 text-center">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">
+                Partie officielle
+              </p>
+              {countdownSeconds !== null ? (
+                <>
+                  <p className="mt-2 text-sm font-bold text-slate-300">
+                    Lancement automatique dans
+                  </p>
+                  <p className="mt-1 text-4xl font-black text-white">{countdownSeconds}s</p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm font-bold text-slate-400">
+                  En attente du premier joueur.
+                </p>
+              )}
+            </div>
+          )}
+
           {canStart ? (
             <Form route="game.start" routeParams={{ id: game.id }}>
               {() => (

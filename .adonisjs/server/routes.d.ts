@@ -17,6 +17,7 @@ export type ScannedRoutes = {
     'profile.show': { paramsTuple?: []; params?: {} }
     'profile.view': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'profile.update': { paramsTuple?: []; params?: {} }
+    'profile.password': { paramsTuple?: []; params?: {} }
     'leaderboard.index': { paramsTuple?: []; params?: {} }
     'friends.request': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
     'friends.accept': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -44,6 +45,7 @@ export type ScannedRoutes = {
     'game.starter_playlist': { paramsTuple?: []; params?: {} }
     'game.tracks.search': { paramsTuple?: []; params?: {} }
     'game.create': { paramsTuple?: []; params?: {} }
+    'game.round_preview': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.join': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.start': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -58,6 +60,11 @@ export type ScannedRoutes = {
     'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.dashboard': { paramsTuple?: []; params?: {} }
+    'admin.games.official.create': { paramsTuple?: []; params?: {} }
+    'admin.games.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.delete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.users': { paramsTuple?: []; params?: {} }
     'admin.ban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -92,6 +99,7 @@ export type ScannedRoutes = {
     'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.tracks.search': { paramsTuple?: []; params?: {} }
+    'game.round_preview': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -124,6 +132,7 @@ export type ScannedRoutes = {
     'playlists.tracks.search': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.index': { paramsTuple?: []; params?: {} }
     'game.tracks.search': { paramsTuple?: []; params?: {} }
+    'game.round_preview': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.lobby': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -137,6 +146,7 @@ export type ScannedRoutes = {
     'session.store': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
     'profile.update': { paramsTuple?: []; params?: {} }
+    'profile.password': { paramsTuple?: []; params?: {} }
     'friends.request': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
     'friends.accept': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'friends.decline': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -159,6 +169,11 @@ export type ScannedRoutes = {
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.official.create': { paramsTuple?: []; params?: {} }
+    'admin.games.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.games.delete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.ban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.unban': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

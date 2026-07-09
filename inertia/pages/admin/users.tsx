@@ -144,7 +144,7 @@ export default function AdminUsers({ users, meta, search, statusFilter }: Props)
               <tr>
                 <td
                   colSpan={5}
-                  style={{ textAlign: "center", color: "var(--text-3)", padding: "2rem" }}
+                  className="p-8 text-center text-slate-500"
                 >
                   Aucun utilisateur trouvé
                 </td>

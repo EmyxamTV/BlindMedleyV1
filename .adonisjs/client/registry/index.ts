@@ -84,6 +84,12 @@ const routes = {
     tokens: [{"old":"/profile","type":0,"val":"profile","end":""}],
     types: placeholder as Registry['profile.update']['types'],
   },
+  'profile.password': {
+    methods: ["POST"],
+    pattern: '/profile/password',
+    tokens: [{"old":"/profile/password","type":0,"val":"profile","end":""},{"old":"/profile/password","type":0,"val":"password","end":""}],
+    types: placeholder as Registry['profile.password']['types'],
+  },
   'leaderboard.index': {
     methods: ["GET","HEAD"],
     pattern: '/leaderboard',
@@ -246,6 +252,12 @@ const routes = {
     tokens: [{"old":"/game","type":0,"val":"game","end":""}],
     types: placeholder as Registry['game.create']['types'],
   },
+  'game.round_preview': {
+    methods: ["GET","HEAD"],
+    pattern: '/game/:id/round-preview',
+    tokens: [{"old":"/game/:id/round-preview","type":0,"val":"game","end":""},{"old":"/game/:id/round-preview","type":1,"val":"id","end":""},{"old":"/game/:id/round-preview","type":0,"val":"round-preview","end":""}],
+    types: placeholder as Registry['game.round_preview']['types'],
+  },
   'game.lobby': {
     methods: ["GET","HEAD"],
     pattern: '/game/:id',
@@ -329,6 +341,36 @@ const routes = {
     pattern: '/admin',
     tokens: [{"old":"/admin","type":0,"val":"admin","end":""}],
     types: placeholder as Registry['admin.dashboard']['types'],
+  },
+  'admin.games.official.create': {
+    methods: ["POST"],
+    pattern: '/admin/games/official',
+    tokens: [{"old":"/admin/games/official","type":0,"val":"admin","end":""},{"old":"/admin/games/official","type":0,"val":"games","end":""},{"old":"/admin/games/official","type":0,"val":"official","end":""}],
+    types: placeholder as Registry['admin.games.official.create']['types'],
+  },
+  'admin.games.update': {
+    methods: ["POST"],
+    pattern: '/admin/games/:id',
+    tokens: [{"old":"/admin/games/:id","type":0,"val":"admin","end":""},{"old":"/admin/games/:id","type":0,"val":"games","end":""},{"old":"/admin/games/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['admin.games.update']['types'],
+  },
+  'admin.games.disable': {
+    methods: ["POST"],
+    pattern: '/admin/games/:id/disable',
+    tokens: [{"old":"/admin/games/:id/disable","type":0,"val":"admin","end":""},{"old":"/admin/games/:id/disable","type":0,"val":"games","end":""},{"old":"/admin/games/:id/disable","type":1,"val":"id","end":""},{"old":"/admin/games/:id/disable","type":0,"val":"disable","end":""}],
+    types: placeholder as Registry['admin.games.disable']['types'],
+  },
+  'admin.games.reactivate': {
+    methods: ["POST"],
+    pattern: '/admin/games/:id/reactivate',
+    tokens: [{"old":"/admin/games/:id/reactivate","type":0,"val":"admin","end":""},{"old":"/admin/games/:id/reactivate","type":0,"val":"games","end":""},{"old":"/admin/games/:id/reactivate","type":1,"val":"id","end":""},{"old":"/admin/games/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['admin.games.reactivate']['types'],
+  },
+  'admin.games.delete': {
+    methods: ["POST"],
+    pattern: '/admin/games/:id/delete',
+    tokens: [{"old":"/admin/games/:id/delete","type":0,"val":"admin","end":""},{"old":"/admin/games/:id/delete","type":0,"val":"games","end":""},{"old":"/admin/games/:id/delete","type":1,"val":"id","end":""},{"old":"/admin/games/:id/delete","type":0,"val":"delete","end":""}],
+    types: placeholder as Registry['admin.games.delete']['types'],
   },
   'admin.users': {
     methods: ["GET","HEAD"],

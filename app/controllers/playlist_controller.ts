@@ -13,6 +13,7 @@ import { PlaylistImportService } from "#services/playlist_import_service";
 import { SpotifyService } from "#services/spotify_service";
 import { sanitizeTrackText } from "#services/track_sanitizer";
 import { displayUsernameForUser } from "#services/display_name";
+import { createAudioPreviewToken } from "#services/audio_preview_token_service";
 import {
   addPlaylistTrackValidator,
   createManualPlaylistValidator,
@@ -127,7 +128,7 @@ export default class PlaylistController {
           artist: track.artist,
           album: track.album,
           coverUrl: track.coverUrl,
-          previewUrl: `/audio/preview?trackId=${track.id}`,
+          previewUrl: `/audio/preview?token=${createAudioPreviewToken(track.id)}`,
           playlistId: playlist.id,
           playlistName: playlist.name,
         })),
@@ -207,7 +208,7 @@ export default class PlaylistController {
         title: track.title,
         artist: track.artist,
         album: track.album,
-        previewUrl: track.previewUrl ? `/audio/preview?trackId=${track.id}` : null,
+        previewUrl: track.previewUrl ? `/audio/preview?token=${createAudioPreviewToken(track.id)}` : null,
         coverUrl: track.coverUrl,
         durationMs: track.durationMs,
         releaseYear: track.releaseYear,

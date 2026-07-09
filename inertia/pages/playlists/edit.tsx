@@ -223,35 +223,18 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
     <AlertDialog.Root open={Boolean(confirm)} onOpenChange={(open) => !open && setConfirm(null)}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 50,
-            background: "rgba(0, 0, 0, 0.68)",
-          }}
+          className="fixed inset-0 z-50 bg-black/70"
         />
         <AlertDialog.Content
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            zIndex: 51,
-            width: "min(420px, calc(100vw - 2rem))",
-            transform: "translate(-50%, -50%)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-lg)",
-            background: "var(--surface)",
-            padding: "1.25rem",
-            boxShadow: "0 24px 80px rgba(0, 0, 0, 0.45)",
-          }}
+          className="fixed left-1/2 top-1/2 z-[51] w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0f0f1a] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
         >
-          <AlertDialog.Title style={{ margin: 0, fontSize: "1.05rem" }}>
+          <AlertDialog.Title className="m-0 text-[1.05rem]">
             {confirm?.title}
           </AlertDialog.Title>
-          <AlertDialog.Description className="admin-sub" style={{ marginTop: "0.5rem" }}>
+          <AlertDialog.Description className="admin-sub mt-2">
             {confirm?.description}
           </AlertDialog.Description>
-          <div className="table-actions" style={{ justifyContent: "flex-end", marginTop: "1rem" }}>
+          <div className="table-actions mt-4 justify-end">
             <AlertDialog.Cancel className={buttonClassName({ variant: "ghost" })}>
               Annuler
             </AlertDialog.Cancel>
@@ -285,7 +268,7 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
         >
           {({ errors }) => (
             <div className="import-row">
-              <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+              <Field className="mb-0 min-w-[220px] flex-1">
                 <Label htmlFor="playlist-share-user">Emails ou pseudos</Label>
                 <Input
                   id="playlist-share-user"
@@ -296,7 +279,7 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                 />
                 {errors.user && <FieldError>{errors.user}</FieldError>}
               </Field>
-              <Field style={{ flex: "0 0 auto", marginBottom: 0 }}>
+              <Field className="mb-0 flex-none">
                 <Label htmlFor="playlist-share-can-edit">Peut éditer</Label>
                 <Switch
                   id="playlist-share-can-edit"
@@ -315,7 +298,7 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
         </Form>
 
         {shares.length > 0 && (
-          <div className="table-wrap" style={{ marginTop: "1rem" }}>
+          <div className="table-wrap mt-4">
             <table className="data-table">
               <thead>
                 <tr>
@@ -425,8 +408,8 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
 
       <section className="admin-section">
         <h2>Musiques ({tracksMeta.total})</h2>
-        <div className="import-row" style={{ alignItems: "stretch", flexDirection: "column" }}>
-          <Field style={{ flex: 1, minWidth: 220, marginBottom: 0 }}>
+        <div className="import-row flex-col !items-stretch">
+          <Field className="mb-0 min-w-[220px] flex-1">
             <Label htmlFor="track-search">Ajouter une musique</Label>
             <Input
               id="track-search"
@@ -437,10 +420,7 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
             />
           </Field>
           {trackQuery.trim().length >= 2 && (
-            <div
-              className="table-wrap"
-              style={{ maxHeight: 360, overflowY: "auto", marginBottom: 0 }}
-            >
+            <div className="table-wrap mb-0 max-h-[360px] overflow-y-auto">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -471,14 +451,14 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
                             addFromRow();
                           }
                         }}
-                        style={{ cursor: canAdd ? "pointer" : undefined }}
+                        className={canAdd ? "cursor-pointer" : undefined}
                       >
                         <td>
                           {track.coverUrl ? (
                             <img
                               src={track.coverUrl}
                               alt=""
-                              style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }}
+                              className="h-10 w-10 rounded-md object-cover"
                             />
                           ) : (
                             "-"
@@ -540,13 +520,13 @@ export default function PlaylistEdit({ playlist, tracks, tracksMeta, shares, fla
           )}
         </div>
         {importFlash && (
-          <p className="admin-sub" style={{ marginBottom: "1rem" }}>
+          <p className="admin-sub mb-4">
             {importFlash.importedCount} titres ajoutés, {importFlash.skippedCount} non ajoutés.
           </p>
         )}
         {tracks.length > 0 ? (
           <div className="table-wrap">
-            <div className="table-actions" style={{ padding: "0.75rem 1rem" }}>
+            <div className="table-actions px-4 py-3">
               <Button
                 type="button"
                 variant="danger"

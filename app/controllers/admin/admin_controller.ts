@@ -4,14 +4,18 @@ import Game from "#models/game";
 import Playlist from "#models/playlist";
 import TrackCache from "#models/track_cache";
 import { PlaylistImportService } from "#services/playlist_import_service";
+import { GameService } from "#services/game_service";
+import { createAudioPreviewToken } from "#services/audio_preview_token_service";
 import GameTransformer from "#transformers/game_transformer";
 import UserTransformer from "#transformers/user_transformer";
 import { DateTime } from "luxon";
 import {
   adminUsersQueryValidator,
   banUserValidator,
+  createOfficialGameValidator,
   importPlaylistValidator,
   suspendUserValidator,
+  updateAdminGameValidator,
   updatePlaylistValidator,
   updatePlaylistTrackValidator,
 } from "#validators/admin_validators";
@@ -19,13 +23,23 @@ import { inject } from "@adonisjs/core";
 
 @inject()
 export default class AdminController {
-  constructor(private readonly playlistImportService: PlaylistImportService) {}
+  constructor(
+    private readonly playlistImportService: PlaylistImportService,
+    private readonly gameService: GameService,
+  ) {}
 
   async dashboard({ inertia }: HttpContext) {
-    const [totalUsers, totalGames, activePlaylists] = await Promise.all([
+    await this.gameService.syncOfficialGames();
+
+    const [totalUsers, totalGames, activePlaylists, allGames] = await Promise.all([
       User.query().count("* as total"),
       Game.query().count("* as total"),
       Playlist.query().where("is_active", true).count("* as total"),
+      Game.query()
+        .orderBy("created_at", "desc")
+        .preload("playlist")
+        .preload("host", (query) => query.preload("profile"))
+        .preload("players", (query) => query.where("is_connected", true)),
     ]);
 
     const recentGames = await Game.query()
@@ -34,6 +48,16 @@ export default class AdminController {
       .preload("playlist")
       .limit(5);
 
+    const officialPlaylists = await Playlist.query()
+      .where("is_active", true)
+      .orderBy("name", "asc")
+      .preload("tracks", (query) => {
+        query
+          .where("has_preview", true)
+          .whereNotNull("preview_url")
+          .orderBy("playlist_tracks.position", "asc");
+      });
+
     return inertia.render("admin/dashboard", {
       stats: {
         totalUsers: Number(totalUsers[0].$extras.total),
@@ -41,7 +65,100 @@ export default class AdminController {
         activePlaylists: Number(activePlaylists[0].$extras.total),
       },
       recentGames: GameTransformer.transform(recentGames),
+      allGames: GameTransformer.transform(allGames),
+      officialPlaylists: officialPlaylists.map((playlist) => ({
+        id: playlist.id,
+        name: playlist.name,
+        trackCount: playlist.tracks.length,
+      })),
     });
+  }
+
+  async createOfficialGame({ request, auth, response, session }: HttpContext) {
+    const payload = await request.validateUsing(createOfficialGameValidator);
+    const playlist = await Playlist.query()
+      .where("id", payload.playlistId)
+      .where("is_active", true)
+      .preload("tracks", (query) => {
+        query.where("has_preview", true).whereNotNull("preview_url");
+      })
+      .firstOrFail();
+
+    const roundCount = Number(payload.roundCount ?? 10);
+    if (playlist.tracks.length < roundCount) {
+      session.flash(
+        "error",
+        `Cette playlist n’a que ${playlist.tracks.length} extrait(s) jouable(s) pour ${roundCount} rounds.`,
+      );
+      return response.redirect().back();
+    }
+
+    await this.gameService.createGame({
+      name: payload.name,
+      mode: "public",
+      source: "blindmedley",
+      answerMode: payload.answerMode ?? "choices",
+      answerTarget: payload.answerMode === "text" ? (payload.answerTarget ?? "both") : "both",
+      playlistId: playlist.id,
+      difficulty: Number(payload.difficulty ?? 2),
+      maxPlayers: Number(payload.maxPlayers ?? 8),
+      roundCount,
+      hostId: auth.user!.id,
+      addHost: false,
+    });
+
+    session.flash("success", "Partie officielle BlindMedley créée.");
+    return response.redirect().toRoute("game.index");
+  }
+
+  async disableGame({ params, response, session }: HttpContext) {
+    const game = await Game.findOrFail(params.id);
+
+    if (game.status === "finished" || game.status === "cancelled") {
+      session.flash("error", "Cette partie est déjà terminée ou désactivée.");
+      return response.redirect().back();
+    }
+
+    await this.gameService.stopGame(game.id);
+    session.flash("success", "Partie désactivée.");
+    return response.redirect().back();
+  }
+
+  async updateGame({ params, request, response, session }: HttpContext) {
+    const payload = await request.validateUsing(updateAdminGameValidator);
+
+    try {
+      await this.gameService.updateAdminGame(params.id, {
+        name: payload.name,
+        answerMode: payload.answerMode,
+        answerTarget: payload.answerMode === "choices" ? "both" : payload.answerTarget,
+        difficulty: Number(payload.difficulty),
+        maxPlayers: Number(payload.maxPlayers),
+        roundCount: Number(payload.roundCount),
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === "GAME_ALREADY_STARTED"
+          ? "Cette partie a déjà démarré : seuls les réglages non structurels peuvent être modifiés."
+          : "Impossible de modifier cette partie.";
+      session.flash("error", message);
+      return response.redirect().back();
+    }
+
+    session.flash("success", "Partie modifiée.");
+    return response.redirect().back();
+  }
+
+  async reactivateGame({ params, response, session }: HttpContext) {
+    await this.gameService.reactivateGame(params.id);
+    session.flash("success", "Partie réactivée.");
+    return response.redirect().back();
+  }
+
+  async deleteGame({ params, response, session }: HttpContext) {
+    await this.gameService.deleteGame(params.id);
+    session.flash("success", "Partie supprimée.");
+    return response.redirect().back();
   }
 
   async users({ inertia, request }: HttpContext) {
@@ -143,7 +260,7 @@ export default class AdminController {
           artist: track.artist,
           album: track.album,
           coverUrl: track.coverUrl,
-          previewUrl: track.previewUrl ? `/audio/preview?trackId=${track.id}` : null,
+          previewUrl: track.previewUrl ? `/audio/preview?token=${createAudioPreviewToken(track.id)}` : null,
           hasPreview: track.hasPreview,
         })),
       })),

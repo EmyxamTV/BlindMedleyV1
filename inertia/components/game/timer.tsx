@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GamePlayerData } from "~/types";
 
 export type AnswerPing = {
@@ -8,38 +8,51 @@ export type AnswerPing = {
 };
 
 export function Timer({
+  startsAt,
   endsAt,
   serverNow,
   durationMs,
   pings,
   players,
   paused = false,
+  onExpire,
 }: {
+  startsAt?: number;
   endsAt: number;
   serverNow: number;
   durationMs: number;
   pings: AnswerPing[];
   players: GamePlayerData[];
   paused?: boolean;
+  onExpire?: () => void;
 }) {
   const [remaining, setRemaining] = useState(0);
+  const expiredEndsAtRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const effectiveStartsAt = startsAt ?? endsAt - durationMs;
     if (paused) {
-      setRemaining(Math.max(0, endsAt - serverNow));
+      setRemaining(serverNow < effectiveStartsAt ? durationMs : Math.max(0, endsAt - serverNow));
       return;
     }
 
     const clockOffset = serverNow - Date.now();
     const update = () => {
-      const nextRemaining = Math.max(0, endsAt - (Date.now() + clockOffset));
+      const now = Date.now() + clockOffset;
+      const nextRemaining = now < effectiveStartsAt ? durationMs : Math.max(0, endsAt - now);
       setRemaining(nextRemaining);
-      if (nextRemaining <= 0) clearInterval(interval);
+      if (now >= endsAt) {
+        clearInterval(interval);
+        if (expiredEndsAtRef.current !== endsAt) {
+          expiredEndsAtRef.current = endsAt;
+          onExpire?.();
+        }
+      }
     };
     const interval = setInterval(update, 100);
     update();
     return () => clearInterval(interval);
-  }, [endsAt, paused, serverNow]);
+  }, [durationMs, endsAt, onExpire, paused, serverNow, startsAt]);
 
   const pct = Math.min(100, (remaining / durationMs) * 100);
   const secs = Math.ceil(remaining / 1000);

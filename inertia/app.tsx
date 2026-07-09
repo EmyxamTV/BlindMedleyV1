@@ -16,7 +16,7 @@ createInertiaApp({
     return resolvePageComponent(
       `./pages/${name}.tsx`,
       import.meta.glob("./pages/**/*.tsx"),
-      (page: ReactElement<Data.SharedProps>) => <Layout children={page} />,
+      (page: ReactElement<Data.SharedProps>) => <Layout>{page}</Layout>,
     );
   },
   setup({ el, App, props }) {

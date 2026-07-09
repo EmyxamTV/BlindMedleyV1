@@ -5,9 +5,9 @@ import { Input } from "~/components/ui/input";
 
 export default function Login() {
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-logo">
+    <div className="relative flex min-h-[calc(100vh-var(--nav-h))] items-center justify-center px-4 py-8 before:pointer-events-none before:absolute before:left-1/2 before:top-[10%] before:h-[300px] before:w-[500px] before:-translate-x-1/2 before:bg-[radial-gradient(ellipse,rgba(124,58,237,0.13)_0%,transparent_70%)]">
+      <div className="relative z-[1] w-full max-w-[420px] rounded-[22px] border border-white/10 bg-[#0f0f1a] px-9 py-10 shadow-[0_8px_40px_rgba(0,0,0,0.45)]">
+        <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-500/25 bg-linear-135 from-violet-500/20 to-fuchsia-500/10">
           <svg
             width="32"
             height="32"
@@ -33,8 +33,12 @@ export default function Login() {
           </svg>
         </div>
 
-        <h1>Bon retour !</h1>
-        <p className="auth-subtitle">Connecte-toi pour reprendre la partie.</p>
+        <h1 className="mb-1 text-2xl font-extrabold tracking-[-0.3px] text-white">
+          Bon retour !
+        </h1>
+        <p className="mb-8 text-sm leading-6 text-slate-400">
+          Connecte-toi pour reprendre la partie.
+        </p>
 
         <Form route="session.store">
           {({ errors }) => (
@@ -65,15 +69,18 @@ export default function Login() {
                 {errors.password && <FieldError>{errors.password}</FieldError>}
               </Field>
 
-              <Button type="submit" full style={{ marginTop: "0.5rem" }}>
+              <Button type="submit" full className="mt-2">
                 Se connecter
               </Button>
             </>
           )}
         </Form>
 
-        <p className="auth-footer">
-          Pas encore de compte ? <Link route="new_account.create">S'inscrire gratuitement</Link>
+        <p className="mt-6 text-center text-[0.84rem] text-slate-600">
+          Pas encore de compte ?{" "}
+          <Link route="new_account.create" className="font-semibold text-violet-300 hover:text-white">
+            S’inscrire gratuitement
+          </Link>
         </p>
       </div>
     </div>

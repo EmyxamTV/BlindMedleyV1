@@ -3,6 +3,7 @@ import GamePlayer from "#models/game_player";
 import Answer from "#models/answer";
 import { DateTime } from "luxon";
 import type { AnswerTarget } from "#models/game";
+import crypto from "node:crypto";
 import type {
   AnswerResult,
   ProcessAnswerParams,
@@ -34,6 +35,9 @@ export class ScoreService {
       .where("round_id", round.id)
       .where("game_player_id", gamePlayer.id)
       .first();
+    if (existing && !params.allowRetry) {
+      throw new Error("ALREADY_ANSWERED");
+    }
     if (existing?.isCorrect) {
       throw new Error("ALREADY_ANSWERED");
     }
@@ -53,9 +57,13 @@ export class ScoreService {
     }
 
     // Validation de la réponse
+    const resolvedAnswerTrackId = params.choiceToken
+      ? await this.resolveChoiceTrackId(round, params.choiceToken)
+      : params.answerTrackId;
+
     const isCorrect = await this.validateAnswer(
       round,
-      params.answerTrackId,
+      resolvedAnswerTrackId,
       params.answerText,
       params.answerTarget,
     );
@@ -90,7 +98,7 @@ export class ScoreService {
       roundId: round.id,
       gamePlayerId: gamePlayer.id,
       userId: gamePlayer.userId,
-      answerTrackId: params.answerTrackId,
+      answerTrackId: resolvedAnswerTrackId,
       answerText: params.answerText,
       isCorrect,
       scoreEarned,
@@ -228,6 +236,23 @@ export class ScoreService {
     }
 
     return false;
+  }
+
+  private async resolveChoiceTrackId(round: Round, choiceToken: string): Promise<string | null> {
+    const distractors = JSON.parse(round.distractors) as string[];
+    const allIds = [...distractors, round.trackId];
+
+    return (
+      allIds.find((trackId) => this.choiceToken(round.roundToken, trackId) === choiceToken) ?? null
+    );
+  }
+
+  private choiceToken(roundToken: string, trackId: string): string {
+    return crypto
+      .createHash("sha256")
+      .update(`${roundToken}:${trackId}`)
+      .digest("hex")
+      .substring(0, 32);
   }
 
   private async getTextMatches(

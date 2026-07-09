@@ -18,6 +18,7 @@ export type ProcessAnswerParams = {
   round: Round;
   gamePlayer: GamePlayer;
   answerTrackId: string | null;
+  choiceToken: string | null;
   answerText: string | null;
   serverReceivedAt: number;
   allowRetry?: boolean;

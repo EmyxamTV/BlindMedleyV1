@@ -24,6 +24,7 @@ import {
 } from "#validators/game_validators";
 import { inject } from "@adonisjs/core";
 import { DateTime } from "luxon";
+import { Readable } from "node:stream";
 
 @inject()
 export default class GameController {
@@ -43,6 +44,7 @@ export default class GameController {
   // Page de création / liste des parties publiques
   async index({ inertia, auth }: HttpContext) {
     const user = auth.user!;
+    await this.gameService.syncOfficialGames();
     await this.gameService.deleteEmptyPlayerGames();
 
     const [playlists, publicGames, activePlayer] = await Promise.all([
@@ -57,7 +59,8 @@ export default class GameController {
         }),
       Game.query()
         .where("mode", "public")
-        .where("status", "waiting")
+        .whereIn("status", ["waiting", "starting", "active", "paused"])
+        .orderBy("source", "asc")
         .orderBy("created_at", "desc")
         .preload("playlist")
         .preload("host", (query) => query.preload("profile"))
@@ -65,7 +68,7 @@ export default class GameController {
       GamePlayer.query()
         .where("user_id", user.id)
         .where("is_connected", true)
-        .whereHas("game", (query) => query.whereIn("status", ["waiting", "starting", "active"]))
+        .whereHas("game", (query) => query.whereIn("status", ["waiting", "starting", "active", "paused"]))
         .preload("game")
         .first(),
     ]);
@@ -96,6 +99,7 @@ export default class GameController {
   async create({ request, auth, response, session }: HttpContext) {
     const payload = await request.validateUsing(createGameValidator);
     const user = auth.user!;
+    const source = payload.source === "blindmedley" && user.isAdmin ? "blindmedley" : "player";
     const playlistIds = [
       ...new Set([...(payload.playlistIds ?? []), payload.playlistId].filter(Boolean)),
     ] as string[];
@@ -114,7 +118,7 @@ export default class GameController {
       return response.redirect().back();
     }
 
-    const game = await this.gameService.createGame({ ...payload, playlistId, hostId: user.id });
+    const game = await this.gameService.createGame({ ...payload, source, playlistId, hostId: user.id });
 
     return response.redirect().toRoute("game.lobby", { id: game.publicId! });
   }
@@ -211,6 +215,7 @@ export default class GameController {
 
   // Page lobby d'une partie
   async lobby({ inertia, params, auth }: HttpContext) {
+    await this.gameService.syncOfficialGames();
     const resolved = await this.resolveGame(params.id);
     const { game } = await this.gameService.getGameState(resolved.id);
 
@@ -218,6 +223,7 @@ export default class GameController {
     if (!isPlayer && game.mode !== "public") {
       return inertia.render("errors/not_found", {});
     }
+    if (isPlayer) await this.gameService.markPlayerConnected(resolved.id, auth.user!.id);
 
     return inertia.render("game/lobby", {
       game: GameTransformer.transform(game, auth.user!.id),
@@ -232,9 +238,12 @@ export default class GameController {
     let game: Game;
 
     if (code) {
-      const found = await Game.query().where("code", code).where("status", "waiting").first();
+      const found = await Game.query()
+        .where("code", code)
+        .whereIn("status", ["waiting", "starting", "active", "paused"])
+        .first();
       if (!found) {
-        session.flash("error", "Code de partie invalide ou partie démarrée");
+        session.flash("error", "Code de partie invalide ou partie indisponible.");
         return response.redirect().back();
       }
       game = found;
@@ -242,29 +251,90 @@ export default class GameController {
       game = await this.resolveGame(params.id);
     }
 
-    await this.gameService.joinGame(game.id, auth.user!.id);
+    try {
+      await this.gameService.joinGame(game.id, auth.user!.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "GAME_FULL") {
+        session.flash("error", "Cette partie est pleine.");
+        return response.redirect().back();
+      }
+      throw error;
+    }
+
     return response.redirect().toRoute("game.lobby", { id: game.publicId! });
   }
 
   // Démarrer la partie (hôte seulement)
-  async start({ params, auth, response }: HttpContext) {
+  async start({ params, auth, response, session }: HttpContext) {
     const game = await this.resolveGame(params.id);
     const user = auth.user!;
     const isHost = game.hostId === user.id;
     if (!isHost && !user.isModerator) return response.forbidden();
-    await this.gameService.startGame(game.id, user.id, { force: !isHost && user.isModerator });
+    const force = !isHost && user.isModerator;
+
+    let canEnterGame = Boolean(
+      await GamePlayer.query()
+        .where("game_id", game.id)
+        .where("user_id", user.id)
+        .where("is_connected", true)
+        .first(),
+    );
+
+    if (force && !canEnterGame) {
+      const connected = await GamePlayer.query()
+        .where("game_id", game.id)
+        .where("is_connected", true)
+        .count("* as total");
+
+      if (Number(connected[0].$extras.total) < game.maxPlayers) {
+        await this.gameService.joinGame(game.id, user.id);
+        canEnterGame = true;
+      }
+    }
+
+    try {
+      await this.gameService.startGame(game.id, user.id, { force });
+    } catch (error) {
+      if (error instanceof Error && error.message === "NOT_ENOUGH_PLAYERS") {
+        session.flash("error", "Impossible de lancer la partie : aucun joueur n'est connecté.");
+        return response.redirect().back();
+      }
+      throw error;
+    }
+
+    if (!canEnterGame) {
+      session.flash("success", "Partie lancée.");
+      return response.redirect().toRoute("game.index");
+    }
+
     return response.redirect().toRoute("game.play", { id: params.id });
   }
 
-  async pause({ params, auth, response }: HttpContext) {
+  async pause({ params, auth, response, session }: HttpContext) {
     if (!auth.user!.isModerator) return response.forbidden();
-    await this.gameService.pauseGame((await this.resolveGame(params.id)).id);
+    try {
+      await this.gameService.pauseGame((await this.resolveGame(params.id)).id);
+    } catch (error) {
+      if (error instanceof Error && error.name === "E_ROW_NOT_FOUND") {
+        session.flash("error", "Impossible de mettre en pause : la partie n’est plus en cours.");
+        return response.redirect().back();
+      }
+      throw error;
+    }
     return response.redirect().back();
   }
 
-  async resume({ params, auth, response }: HttpContext) {
+  async resume({ params, auth, response, session }: HttpContext) {
     if (!auth.user!.isModerator) return response.forbidden();
-    await this.gameService.resumeGame((await this.resolveGame(params.id)).id);
+    try {
+      await this.gameService.resumeGame((await this.resolveGame(params.id)).id);
+    } catch (error) {
+      if (error instanceof Error && error.name === "E_ROW_NOT_FOUND") {
+        session.flash("error", "Impossible de reprendre : la partie n’est pas en pause.");
+        return response.redirect().back();
+      }
+      throw error;
+    }
     return response.redirect().back();
   }
 
@@ -289,8 +359,9 @@ export default class GameController {
     if (!isPlayer) {
       return inertia.render("errors/not_found", {});
     }
+    await this.gameService.markPlayerConnected(resolved.id, auth.user!.id);
 
-    if (game.status === "finished") {
+    if (game.status === "finished" && game.source !== "blindmedley") {
       return inertia.location(`/game/${params.id}/results`);
     }
     if (game.status === "cancelled") {
@@ -306,6 +377,7 @@ export default class GameController {
         currentRound,
         serverNow,
         game.answerMode,
+        game.publicId,
       );
 
       const answered = await GamePlayer.query()
@@ -341,6 +413,58 @@ export default class GameController {
     }
 
     return response.redirect().toRoute("game.play", { id: params.id });
+  }
+
+  async roundPreview({ request, params, auth, response }: HttpContext) {
+    const resolved = await this.resolveGame(params.id);
+    const roundNumber = Number(request.input("roundNumber"));
+    const token = String(request.input("token") ?? "");
+
+    if (!Number.isInteger(roundNumber) || roundNumber <= 0 || token.length < 16) {
+      return response.badRequest("Preview invalide");
+    }
+
+    const player = await GamePlayer.query()
+      .where("game_id", resolved.id)
+      .where("user_id", auth.user!.id)
+      .first();
+    if (!player) return response.notFound("Preview introuvable");
+
+    const round = await Round.query()
+      .where("game_id", resolved.id)
+      .where("round_number", roundNumber)
+      .where("round_token", token)
+      .preload("track")
+      .first();
+    if (!round?.track?.previewUrl) return response.notFound("Preview introuvable");
+
+    let rawUrl = round.track.previewUrl;
+    let url = new URL(rawUrl);
+    const allowed = ["dzcdn.net", "scdn.co", "spotifycdn.com"];
+    if (url.protocol !== "https:" || !allowed.some((domain) => url.hostname.endsWith(domain))) {
+      return response.forbidden("Hôte audio non autorisé");
+    }
+
+    let upstream = await fetch(url, { headers: { "User-Agent": "BlindMedley/1.0" } });
+    if (!upstream.ok) {
+      const refreshed = await this.deezerService.getPreview(round.track.title, round.track.artist);
+      if (refreshed) {
+        rawUrl = refreshed;
+        url = new URL(rawUrl);
+        if (url.protocol !== "https:" || !allowed.some((domain) => url.hostname.endsWith(domain))) {
+          return response.forbidden("Hôte audio non autorisé");
+        }
+        await round.track.merge({ previewUrl: rawUrl, hasPreview: true }).save();
+        upstream = await fetch(url, { headers: { "User-Agent": "BlindMedley/1.0" } });
+      }
+    }
+    if (!upstream.ok || !upstream.body) return response.status(502).send("Preview indisponible");
+
+    response.header("Content-Type", upstream.headers.get("content-type") ?? "audio/mpeg");
+    response.header("Cache-Control", "private, max-age=300");
+    return response.stream(
+      Readable.fromWeb(upstream.body as unknown as Parameters<typeof Readable.fromWeb>[0]),
+    );
   }
 
   // Quitter une partie
@@ -397,8 +521,9 @@ export default class GameController {
     return response.redirect().toRoute("game.lobby", { id: game.publicId! });
   }
 
-  async state({ params, response, serialize }: HttpContext) {
+  async state({ params, auth, response, serialize }: HttpContext) {
     const resolved = await this.resolveGame(params.id);
+    await this.gameService.markPlayerConnected(resolved.id, auth.user!.id);
     const { game, currentRound } = await this.gameService.getGameState(resolved.id);
     const serverNow = Date.now();
 
@@ -408,6 +533,7 @@ export default class GameController {
         currentRound,
         serverNow,
         game.answerMode,
+        game.publicId,
       );
     }
 
@@ -435,12 +561,13 @@ export default class GameController {
               }));
             })
         : [];
-
     return response.json({
       status: game.status,
       currentRound: game.currentRound,
       round: roundPayload,
       serverNow,
+      nextGameId: game.source === "blindmedley" ? game.publicId : null,
+      nextAutoStartsAt: game.source === "blindmedley" ? game.autoStartsAt?.toMillis() ?? null : null,
       scores: await serialize.withoutWrapping(GamePlayerTransformer.transform(game.players)),
       answerPings,
       answerProgress,

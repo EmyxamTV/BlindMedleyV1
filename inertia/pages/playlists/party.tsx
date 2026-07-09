@@ -113,7 +113,23 @@ export default function PartyMode({ playlists, preselectedPlaylistId }: Props) {
     timerRef.current = window.setInterval(() => {
       setTimeLeft((current) => {
         if (current <= 1) {
-          revealAnswer();
+          if (currentTrack) {
+            clearIntervalTimer();
+            audioRef.current?.pause();
+            setPhase("revealed");
+            setHistory((historyEntries) =>
+              historyEntries.map((entry) =>
+                entry.id === currentTrack.id && entry.startedAt === currentIndex
+                  ? { ...entry, revealed: true }
+                  : entry,
+              ),
+            );
+
+            if (autoAdvance) {
+              clearRevealTimer();
+              revealTimerRef.current = window.setTimeout(() => nextTrack(), revealSeconds * 1000);
+            }
+          }
           return 0;
         }
         return current - 1;
@@ -121,7 +137,8 @@ export default function PartyMode({ playlists, preselectedPlaylistId }: Props) {
     }, 1000);
 
     return clearIntervalTimer;
-  }, [phase]);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAdvance, currentIndex, currentTrack, phase, revealSeconds]);
 
   function clearIntervalTimer() {
     if (timerRef.current !== null) window.clearInterval(timerRef.current);
@@ -219,23 +236,6 @@ export default function PartyMode({ playlists, preselectedPlaylistId }: Props) {
   function pauseSession() {
     audioRef.current?.pause();
     setPhase("paused");
-  }
-
-  function revealAnswer() {
-    if (!currentTrack) return;
-    clearIntervalTimer();
-    audioRef.current?.pause();
-    setPhase("revealed");
-    setHistory((current) =>
-      current.map((entry) =>
-        entry.id === currentTrack.id && entry.startedAt === currentIndex ? { ...entry, revealed: true } : entry,
-      ),
-    );
-
-    if (autoAdvance) {
-      clearRevealTimer();
-      revealTimerRef.current = window.setTimeout(() => nextTrack(), revealSeconds * 1000);
-    }
   }
 
   function nextTrack() {
@@ -408,6 +408,7 @@ function SetupScreen({
                 <button
                   key={playlist.id}
                   type="button"
+                  aria-label={`${selected ? "Retirer" : "Ajouter"} la playlist ${playlist.name}`}
                   onClick={() => onTogglePlaylist(playlist.id)}
                   className={`group overflow-hidden rounded-2xl border p-3 text-left transition ${
                     selected

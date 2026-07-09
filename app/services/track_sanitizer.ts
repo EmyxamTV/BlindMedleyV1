@@ -23,8 +23,8 @@ export function sanitizeTrackText(value: string | null): string | null {
   }
 
   sanitized = sanitized
-    .replace(/\s+[\[(][^[\]()]+[\])]\s*$/g, "")
-    .replace(/\s*[\[(]\s*[\])]\s*/g, " ")
+    .replace(/\s+(?:\(|\[)[^[\]()]+(?:\)|\])\s*$/g, "")
+    .replace(/\s*(?:\(|\[)\s*(?:\)|\])\s*/g, " ")
     .replace(/\s+([,.;!?])/g, "$1")
     .replace(/\s+/g, " ")
     .replace(/\s*[-:/]\s*$/g, "")

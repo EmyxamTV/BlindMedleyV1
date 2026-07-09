@@ -5,8 +5,8 @@ import { buttonClassName } from "~/components/ui/button";
 import { useAudioVolume } from "~/hooks/use_audio_volume";
 import type { InertiaProps } from "~/types";
 
-type Choice = { id: string; title: string; artist: string };
-type Question = { correctTrackId: string; previewUrl: string; choices: Choice[] };
+type Choice = { choiceToken: string; title: string; artist: string };
+type Question = { correctChoiceToken: string; previewUrl: string; choices: Choice[] };
 type PlaylistOption = { id: string; name: string; trackCount: number };
 
 type Props = InertiaProps<{
@@ -67,7 +67,7 @@ export default function Bandle({ playlists }: Props) {
 
   function answer(choice: Choice) {
     if (!question || result) return;
-    if (choice.id === question.correctTrackId) {
+    if (choice.choiceToken === question.correctChoiceToken) {
       setScore((value) => value + 1_500 - (attempt - 1) * 250);
       setResult("correct");
       return;
@@ -76,7 +76,7 @@ export default function Bandle({ playlists }: Props) {
     else setAttempt((value) => value + 1);
   }
 
-  const solution = question?.choices.find((choice) => choice.id === question.correctTrackId);
+  const solution = question?.choices.find((choice) => choice.choiceToken === question.correctChoiceToken);
   const currentDurationMs = PROGRESSIVE_DURATIONS_MS[attempt - 1] ?? PROGRESSIVE_DURATIONS_MS[0];
   const currentDurationLabel = `${(currentDurationMs / 1_000).toLocaleString("fr-FR", {
     maximumFractionDigits: 1,
@@ -160,10 +160,10 @@ export default function Bandle({ playlists }: Props) {
             <div className="choices-grid bandle-choices">
               {question.choices.map((choice) => (
                 <button
-                  key={choice.id}
+                  key={choice.choiceToken}
                   disabled={Boolean(result)}
                   onClick={() => answer(choice)}
-                  className={`choice-btn ${result && choice.id === question.correctTrackId ? "practice-correct" : ""}`}
+                  className={`choice-btn ${result && choice.choiceToken === question.correctChoiceToken ? "practice-correct" : ""}`}
                 >
                   <span className="choice-title">{choice.title}</span>
                   <span className="choice-artist">{choice.artist}</span>

@@ -22,6 +22,7 @@ export interface ApiDefinition {
     show: typeof routes['profile.show']
     view: typeof routes['profile.view']
     update: typeof routes['profile.update']
+    password: typeof routes['profile.password']
   }
   leaderboard: {
     index: typeof routes['leaderboard.index']
@@ -69,6 +70,7 @@ export interface ApiDefinition {
       search: typeof routes['game.tracks.search']
     }
     create: typeof routes['game.create']
+    roundPreview: typeof routes['game.round_preview']
     lobby: typeof routes['game.lobby']
     join: typeof routes['game.join']
     start: typeof routes['game.start']
@@ -85,6 +87,15 @@ export interface ApiDefinition {
   }
   admin: {
     dashboard: typeof routes['admin.dashboard']
+    games: {
+      official: {
+        create: typeof routes['admin.games.official.create']
+      }
+      update: typeof routes['admin.games.update']
+      disable: typeof routes['admin.games.disable']
+      reactivate: typeof routes['admin.games.reactivate']
+      delete: typeof routes['admin.games.delete']
+    }
     users: typeof routes['admin.users']
     ban: typeof routes['admin.ban']
     suspend: typeof routes['admin.suspend']

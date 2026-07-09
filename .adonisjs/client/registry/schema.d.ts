@@ -163,6 +163,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/profile_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'profile.password': {
+    methods: ["POST"]
+    pattern: '/profile/password'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/profile_validators').updatePasswordValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/profile_validators').updatePasswordValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/profile_controller').default['updatePassword']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/profile_controller').default['updatePassword']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'leaderboard.index': {
     methods: ["GET","HEAD"]
     pattern: '/leaderboard'
@@ -487,6 +499,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['create']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'game.round_preview': {
+    methods: ["GET","HEAD"]
+    pattern: '/game/:id/round-preview'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/game_controller').default['roundPreview']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/game_controller').default['roundPreview']>>>
+    }
+  }
   'game.lobby': {
     methods: ["GET","HEAD"]
     pattern: '/game/:id'
@@ -653,6 +677,66 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['dashboard']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['dashboard']>>>
+    }
+  }
+  'admin.games.official.create': {
+    methods: ["POST"]
+    pattern: '/admin/games/official'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').createOfficialGameValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').createOfficialGameValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['createOfficialGame']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['createOfficialGame']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'admin.games.update': {
+    methods: ["POST"]
+    pattern: '/admin/games/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/admin_validators').updateAdminGameValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin_validators').updateAdminGameValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['updateGame']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['updateGame']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'admin.games.disable': {
+    methods: ["POST"]
+    pattern: '/admin/games/:id/disable'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['disableGame']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['disableGame']>>>
+    }
+  }
+  'admin.games.reactivate': {
+    methods: ["POST"]
+    pattern: '/admin/games/:id/reactivate'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['reactivateGame']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['reactivateGame']>>>
+    }
+  }
+  'admin.games.delete': {
+    methods: ["POST"]
+    pattern: '/admin/games/:id/delete'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['deleteGame']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/admin_controller').default['deleteGame']>>>
     }
   }
   'admin.users': {

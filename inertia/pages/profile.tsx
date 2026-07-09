@@ -134,9 +134,15 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
       </div>
 
       {isCurrentUser && (
-        <div
+        <dialog
+          open={editOpen}
           className={`modal ${editOpen ? "open" : ""}`}
-          onClick={(event) => event.target === event.currentTarget && setEditOpen(false)}
+          aria-modal="true"
+          aria-labelledby="profile-edit-title"
+          onCancel={(event) => {
+            event.preventDefault();
+            setEditOpen(false);
+          }}
         >
           <div className="modal-box max-h-[88vh] !max-w-5xl overflow-y-auto !p-0">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-[#11111d]/95 px-6 py-5 backdrop-blur">
@@ -144,7 +150,9 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
                 <p className="text-xs font-black uppercase tracking-[0.28em] text-violet-300">
                   Compte joueur
                 </p>
-                <h2 className="!mb-0 mt-1 text-2xl font-black text-white">Modifier le profil</h2>
+                <h2 id="profile-edit-title" className="!mb-0 mt-1 text-2xl font-black text-white">
+                  Modifier le profil
+                </h2>
               </div>
               <button
                 type="button"
@@ -384,7 +392,7 @@ export default function Profile({ profileUser, isCurrentUser, recentGames }: Pro
               </aside>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

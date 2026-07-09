@@ -56,12 +56,12 @@ export class RoundService {
     return rounds;
   }
 
-  async startRound(round: Round, durationMs: number): Promise<Round> {
-    const now = DateTime.now();
+  async startRound(round: Round, durationMs: number, startDelayMs = 0): Promise<Round> {
+    const startsAt = DateTime.now().plus({ milliseconds: startDelayMs });
     return round
       .merge({
-        startsAt: now,
-        endsAt: now.plus({ milliseconds: durationMs }),
+        startsAt,
+        endsAt: startsAt.plus({ milliseconds: durationMs }),
       })
       .save();
   }
@@ -75,6 +75,7 @@ export class RoundService {
     round: Round,
     serverNow: number,
     answerMode: "choices" | "text" = "choices",
+    gamePublicId?: string | null,
   ) {
     if (!round.track) await round.load("track");
 
@@ -86,12 +87,7 @@ export class RoundService {
     const trackMap = Object.fromEntries(tracks.map((t) => [t.id, t]));
 
     const choices = shuffled.map((id) => ({
-      choiceToken: crypto
-        .createHash("sha256")
-        .update(`${round.roundToken}:${id}`)
-        .digest("hex")
-        .substring(0, 16),
-      trackId: id, // Envoyé pour référence interne (le client ne peut pas tricher car le score est côté serveur)
+      choiceToken: this.choiceToken(round.roundToken, id),
       title: trackMap[id]?.title ?? "Inconnu",
       artist: trackMap[id]?.artist ?? "",
     }));
@@ -99,13 +95,20 @@ export class RoundService {
     return {
       roundNumber: round.roundNumber,
       roundToken: round.roundToken,
-      previewUrl: round.track.previewUrl ? `/audio/preview?trackId=${round.trackId}` : null,
+      previewUrl:
+        round.track.previewUrl && gamePublicId
+          ? `/game/${gamePublicId}/round-preview?roundNumber=${round.roundNumber}&token=${round.roundToken}`
+          : null,
       coverUrl: round.track.coverUrl, // Révéler la cover est OK pour l'ambiance
       startsAt: round.startsAt?.toMillis() ?? serverNow,
       endsAt: round.endsAt?.toMillis() ?? serverNow + 30000,
       serverNow,
       choices: answerMode === "choices" ? choices : [],
     };
+  }
+
+  buildChoiceToken(roundToken: string, trackId: string): string {
+    return this.choiceToken(roundToken, trackId);
   }
 
   // Payload de révélation (après la fin du round)
@@ -157,5 +160,13 @@ export class RoundService {
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
+  }
+
+  private choiceToken(roundToken: string, trackId: string): string {
+    return crypto
+      .createHash("sha256")
+      .update(`${roundToken}:${trackId}`)
+      .digest("hex")
+      .substring(0, 32);
   }
 }

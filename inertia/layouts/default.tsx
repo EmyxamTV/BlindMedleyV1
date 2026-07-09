@@ -90,7 +90,12 @@ export default function Layout({ children }: { children: ReactElement<Data.Share
                   <span className="user-name">{displayName}</span>
                 </Link>
                 <Form route="session.destroy">
-                  <button type="submit" className="logout-btn" title="Se déconnecter">
+                  <button
+                    type="submit"
+                    className="logout-btn"
+                    title="Se déconnecter"
+                    aria-label="Se déconnecter"
+                  >
                     <svg
                       width="16"
                       height="16"

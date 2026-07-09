@@ -22,6 +22,7 @@ export default class GameTransformer extends BaseTransformer<Game> {
         "mode",
         "answerMode",
         "answerTarget",
+        "autoStartsAt",
         "status",
         "playlistId",
         "genreFilter",
@@ -30,6 +31,7 @@ export default class GameTransformer extends BaseTransformer<Game> {
         "maxPlayers",
         "roundCount",
         "roundDurationMs",
+        "source",
         "currentRound",
         "hostId",
         "winnerId",
@@ -41,13 +43,19 @@ export default class GameTransformer extends BaseTransformer<Game> {
       id: this.resource.publicId ?? String(this.resource.id),
       numericId: this.resource.id,
       publicId: this.resource.publicId,
+      isOfficial: this.resource.source === "blindmedley",
       playlistName: this.resource.playlist?.name ?? "?",
       hostUsername: displayUsernameForUser({
         username: this.resource.host?.profile?.username,
         fullName: this.resource.host?.fullName,
         fallback: "Hôte",
       }),
-      playerCount: this.resource.players?.length ?? 0,
+      playerCount:
+        this.resource.players?.filter(
+          (player) =>
+            player.isConnected &&
+            !(this.resource.source === "blindmedley" && player.userId === this.resource.hostId),
+        ).length ?? 0,
       host: UserTransformer.transform(this.whenLoaded(this.resource.host)),
       winner: UserTransformer.transform(this.whenLoaded(this.resource.winner)),
       playlist: PlaylistTransformer.transform(this.whenLoaded(this.resource.playlist)),

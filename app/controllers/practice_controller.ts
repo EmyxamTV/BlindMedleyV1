@@ -4,9 +4,14 @@ import Playlist from "#models/playlist";
 import TrackCache from "#models/track_cache";
 import type User from "#models/user";
 import { Readable } from "node:stream";
+import crypto from "node:crypto";
 import { DeezerService } from "#services/deezer_service";
 import { PlaylistAccessService } from "#services/playlist_access_service";
 import TrackCacheTransformer from "#transformers/track_cache_transformer";
+import {
+  createAudioPreviewToken,
+  resolveAudioPreviewToken,
+} from "#services/audio_preview_token_service";
 import {
   practiceQuestionQueryValidator,
   previewQueryValidator,
@@ -69,19 +74,28 @@ export default class PracticeController {
     const serializedTracks = await serialize.withoutWrapping(
       TrackCacheTransformer.transform(tracks),
     );
+    const correctChoiceToken = this.generateChoiceToken();
     const choices = serializedTracks
-      .map((track) => ({ id: track.id, title: track.title, artist: track.artist }))
+      .map((track) => ({
+        choiceToken: track.id === correct.id ? correctChoiceToken : this.generateChoiceToken(),
+        title: track.title,
+        artist: track.artist,
+      }))
       .sort(() => Math.random() - 0.5);
+    const previewToken = createAudioPreviewToken(correct.id);
 
     return response.json({
-      correctTrackId: correct.id,
-      previewUrl: `/audio/preview?trackId=${correct.id}`,
+      correctChoiceToken,
+      previewUrl: `/audio/preview?token=${previewToken}`,
       choices,
     });
   }
 
   async preview({ request, response }: HttpContext) {
-    const { trackId } = await request.validateUsing(previewQueryValidator, { data: request.qs() });
+    const { token } = await request.validateUsing(previewQueryValidator, { data: request.qs() });
+    const trackId = resolveAudioPreviewToken(token);
+    if (!trackId) return response.notFound("Preview not found");
+
     const track = await TrackCache.find(trackId);
     if (!track?.previewUrl) return response.notFound("Preview not found");
 
@@ -127,5 +141,9 @@ export default class PracticeController {
         trackCount: playlist.tracks.length,
       }))
       .filter((playlist) => playlist.trackCount >= 4);
+  }
+
+  private generateChoiceToken(): string {
+    return crypto.randomBytes(24).toString("base64url");
   }
 }

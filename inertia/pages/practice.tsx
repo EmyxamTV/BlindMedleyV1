@@ -5,8 +5,8 @@ import { buttonClassName } from "~/components/ui/button";
 import { useAudioVolume } from "~/hooks/use_audio_volume";
 import type { InertiaProps } from "~/types";
 
-type Choice = { id: string; title: string; artist: string };
-type Question = { correctTrackId: string; previewUrl: string; choices: Choice[] };
+type Choice = { choiceToken: string; title: string; artist: string };
+type Question = { correctChoiceToken: string; previewUrl: string; choices: Choice[] };
 type PlaylistOption = { id: string; name: string; trackCount: number };
 
 type Props = InertiaProps<{
@@ -74,15 +74,15 @@ export default function Practice({ playlists }: Props) {
 
   function answer(choice: Choice) {
     if (!question || answered !== null) return;
-    setAnswered(choice.id);
-    const correct = choice.id === question.correctTrackId;
+    setAnswered(choice.choiceToken);
+    const correct = choice.choiceToken === question.correctChoiceToken;
     if (correct) {
       const earned = Math.max(100, 1_000 - Math.floor((Date.now() - startedAt.current) / 12));
       setScore((current) => current + earned);
       setStreak((current) => current + 1);
       setFeedback(`Bien joué ! +${earned} points`);
     } else {
-      const solution = question.choices.find((item) => item.id === question.correctTrackId);
+      const solution = question.choices.find((item) => item.choiceToken === question.correctChoiceToken);
       setStreak(0);
       setFeedback(`Pas cette fois — c’était ${solution?.title} · ${solution?.artist}`);
     }
@@ -159,11 +159,11 @@ export default function Practice({ playlists }: Props) {
               </div>
               <div className="choices-grid practice-choices">
                 {question.choices.map((choice) => {
-                  const isCorrect = answered !== null && choice.id === question.correctTrackId;
-                  const isWrong = answered === choice.id && !isCorrect;
+                  const isCorrect = answered !== null && choice.choiceToken === question.correctChoiceToken;
+                  const isWrong = answered === choice.choiceToken && !isCorrect;
                   return (
                     <button
-                      key={choice.id}
+                      key={choice.choiceToken}
                       className={`choice-btn ${isCorrect ? "practice-correct" : ""} ${isWrong ? "practice-wrong" : ""}`}
                       disabled={answered !== null}
                       onClick={() => answer(choice)}
@@ -176,7 +176,7 @@ export default function Practice({ playlists }: Props) {
               </div>
               {feedback && (
                 <div
-                  className={`practice-feedback ${answered === question.correctTrackId ? "correct" : "incorrect"}`}
+                  className={`practice-feedback ${answered === question.correctChoiceToken ? "correct" : "incorrect"}`}
                 >
                   {feedback}
                 </div>

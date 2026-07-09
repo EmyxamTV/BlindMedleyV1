@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
+import { Transmit } from "@adonisjs/transmit-client";
 import { buttonClassName } from "~/components/ui/button";
+import { createRealtimeUid } from "~/lib/realtime";
 import type { GameData, InertiaProps } from "~/types";
 
 type TrackOption = {
@@ -42,8 +44,23 @@ const DIFFICULTIES = [
   { value: 5, label: "Légendaire", desc: "10 secondes" },
 ] as const;
 
+function publicGameStatusLabel(status: string) {
+  if (status === "waiting") return "En attente";
+  if (status === "starting") return "Démarrage";
+  if (status === "active") return "En cours";
+  if (status === "paused") return "En pause";
+  return status;
+}
+
+function publicGameStatusClass(status: string) {
+  if (status === "active") return "border-emerald-300/25 bg-emerald-500/10 text-emerald-200";
+  if (status === "paused") return "border-amber-300/25 bg-amber-500/10 text-amber-200";
+  if (status === "starting") return "border-violet-300/25 bg-violet-500/10 text-violet-200";
+  return "border-sky-300/25 bg-sky-500/10 text-sky-200";
+}
+
 export default function GameIndex({ playlists, publicGames, myActiveGameId }: Props) {
-  const [tab, setTab] = useState<"create" | "join" | "public">("create");
+  const [tab, setTab] = useState<"create" | "join" | "public">("public");
   const [gameName, setGameName] = useState("");
   const [mode, setMode] = useState<"solo" | "public" | "private">("solo");
   const [answerMode, setAnswerMode] = useState<"choices" | "text">("choices");
@@ -87,10 +104,33 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
   const canCreate = selectedPlaylistIds.length > 0 || selectedTrackIds.length > 0;
 
   useEffect(() => {
-    if (tab !== "public") return;
-    const interval = window.setInterval(() => router.reload({ only: ["publicGames"] }), 5_000);
-    return () => window.clearInterval(interval);
-  }, [tab]);
+    const transmit = new Transmit({
+      baseUrl: window.location.origin,
+      uidGenerator: createRealtimeUid,
+    });
+    const subscription = transmit.subscription("games/public");
+
+    subscription.create().then(() => {
+      subscription.onMessage<{ event: string }>((message) => {
+        if (message.event === "public_games_changed") {
+          router.reload({ only: ["publicGames", "myActiveGameId"] });
+        }
+      });
+    });
+
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        router.reload({ only: ["publicGames", "myActiveGameId"] });
+      }
+    };
+
+    document.addEventListener("visibilitychange", syncWhenVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+      subscription.delete();
+    };
+  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(async () => {
@@ -130,6 +170,7 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
     router.post("/game", {
       name: gameName.trim() || undefined,
       mode,
+      source: "player",
       answerMode,
       answerTarget: answerMode === "text" ? answerTarget : "both",
       playlistIds: selectedPlaylistIds,
@@ -539,7 +580,6 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
               onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="A1B2C3"
               maxLength={8}
-              autoFocus
               className="rounded-2xl border border-white/10 bg-[#11111d] px-5 py-4 text-center text-2xl font-black uppercase tracking-[0.4em] text-white outline-none focus:border-violet-300/50"
             />
             <button type="submit" className={buttonClassName({ size: "lg" })} disabled={!joinCode.trim()}>
@@ -550,9 +590,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
       )}
 
       {tab === "public" && (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className="grid gap-4 lg:grid-cols-2">
           {publicGames.length === 0 ? (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center md:col-span-2 xl:col-span-3">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center lg:col-span-2">
               <div className="text-5xl">🎮</div>
               <p className="mt-4 text-slate-400">Aucune partie publique en attente.</p>
               <button className={buttonClassName({ variant: "ghost", className: "mt-4" })} onClick={() => setTab("create")}>
@@ -560,29 +600,104 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
               </button>
             </div>
           ) : (
-            publicGames.map((game) => (
+            publicGames.map((game) => {
+              const gameCard = game as GameData & {
+                isOfficial?: boolean;
+                name?: string | null;
+                playlist?: { coverUrl?: string | null } | null;
+              };
+              const title = gameCard.name || game.playlistName;
+              const coverUrl = gameCard.playlist?.coverUrl;
+              return (
               <div
                 key={game.id}
-                className="grid min-h-56 content-between gap-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-violet-300/35 hover:bg-white/[0.05]"
+                className={`group grid overflow-hidden rounded-3xl border shadow-2xl shadow-black/20 transition hover:-translate-y-1 md:grid-cols-[150px_1fr] ${
+                  gameCard.isOfficial
+                    ? "border-amber-300/30 bg-amber-500/10 hover:border-amber-200/50"
+                    : "border-white/10 bg-white/[0.03] hover:border-violet-300/35 hover:bg-white/[0.05]"
+                }`}
               >
-                <div>
-                  <h3 className="text-xl font-black text-white">
-                    {(game as GameData & { name?: string | null }).name || game.playlistName}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-400">
-                    {((game as GameData & { name?: string | null }).name && `${game.playlistName} · `) || ""}
-                    par {game.hostUsername} · {game.playerCount}/{game.maxPlayers} joueurs · {game.mode}
-                  </p>
-                </div>
-                <Form route="game.join" routeParams={{ id: game.id }}>
-                  {() => (
-                    <button type="submit" className={buttonClassName()}>
-                      Rejoindre
-                    </button>
+                <div
+                  className={`relative min-h-40 overflow-hidden ${
+                    gameCard.isOfficial ? "bg-amber-400/10" : "bg-violet-500/10"
+                  }`}
+                >
+                  {coverUrl ? (
+                    <img
+                      src={coverUrl}
+                      alt=""
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full min-h-40 w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.35),transparent_35%),radial-gradient(circle_at_70%_70%,rgba(124,58,237,0.35),transparent_40%)]">
+                      <span className="text-4xl font-black text-white/80">♪</span>
+                    </div>
                   )}
-                </Form>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                  {gameCard.isOfficial && (
+                    <span className="absolute left-3 top-3 rounded-full border border-amber-200/50 bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-200 backdrop-blur">
+                      Officiel
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex min-h-56 flex-col justify-between gap-5 p-5">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {!gameCard.isOfficial && (
+                        <span className="rounded-full border border-violet-300/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-200">
+                          Public
+                        </span>
+                      )}
+                      <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                        {game.answerMode === "text" ? "Écrit" : "QCM"}
+                      </span>
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${publicGameStatusClass(game.status)}`}
+                      >
+                        {publicGameStatusLabel(game.status)}
+                      </span>
+                    </div>
+                    <h3 className="mt-3 line-clamp-2 text-2xl font-black leading-tight text-white">
+                      {title}
+                    </h3>
+                    <p className="mt-2 text-sm font-semibold text-slate-400">
+                      {gameCard.name ? game.playlistName : "Playlist publique"}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold text-slate-400">
+                      <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                        <strong className="block text-base text-white">{game.playerCount}/{game.maxPlayers}</strong>
+                        joueurs
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                        <strong className="block text-base text-white">{game.roundCount}</strong>
+                        rounds
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                        <strong className="block text-base text-white">{Math.round(game.roundDurationMs / 1000)}s</strong>
+                        round
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-slate-500">
+                        {gameCard.isOfficial ? "Créée par BlindMedley" : `Créée par ${game.hostUsername}`}
+                      </p>
+                      <Form route="game.join" routeParams={{ id: game.id }}>
+                        {() => (
+                          <button type="submit" className={buttonClassName()}>
+                            {game.status === "waiting" ? "Rejoindre" : "Rejoindre en cours"}
+                          </button>
+                        )}
+                      </Form>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))
+              );
+            })
           )}
         </section>
       )}

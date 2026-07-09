@@ -3,6 +3,7 @@ import vine from "@vinejs/vine";
 export const createGameValidator = vine.create({
   name: vine.string().trim().maxLength(120).optional(),
   mode: vine.enum(["solo", "public", "private"]),
+  source: vine.enum(["player", "blindmedley"]).optional(),
   answerMode: vine.enum(["choices", "text"]).optional(),
   answerTarget: vine.enum(["title", "artist", "both", "separate"]).optional(),
   playlistId: vine.string().uuid().optional(),
@@ -20,6 +21,7 @@ export const gameTrackSearchValidator = vine.create({
 export const submitAnswerValidator = vine.create({
   roundNumber: vine.number().positive(),
   answerTrackId: vine.string().uuid().optional(),
+  choiceToken: vine.string().trim().maxLength(64).optional(),
   answerText: vine.string().maxLength(500).optional(),
 });
 

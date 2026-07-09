@@ -106,12 +106,14 @@ export class GamePlayerSchema extends BaseModel {
 }
 
 export class GameSchema extends BaseModel {
-  static $columns = ['answerMode', 'answerTarget', 'code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'name', 'pausedAt', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
+  static $columns = ['answerMode', 'answerTarget', 'autoStartsAt', 'code', 'createdAt', 'currentRound', 'decadeFilter', 'difficulty', 'finishedAt', 'genreFilter', 'hostId', 'id', 'maxPlayers', 'mode', 'name', 'pausedAt', 'playlistId', 'publicId', 'roundCount', 'roundDurationMs', 'source', 'startedAt', 'status', 'updatedAt', 'winnerId'] as const
   $columns = GameSchema.$columns
   @column()
   declare answerMode: string
   @column()
   declare answerTarget: string
+  @column.dateTime()
+  declare autoStartsAt: DateTime | null
   @column()
   declare code: string | null
   @column.dateTime({ autoCreate: true })
@@ -146,6 +148,8 @@ export class GameSchema extends BaseModel {
   declare roundCount: number
   @column()
   declare roundDurationMs: number
+  @column()
+  declare source: string
   @column.dateTime()
   declare startedAt: DateTime | null
   @column()
