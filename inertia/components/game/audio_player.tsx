@@ -1,38 +1,60 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { getGameAudioContext } from "~/lib/audio_unlock";
 
-const audioSourceCache = new Map<string, string>();
-const audioSourceLoads = new Map<string, Promise<string>>();
+const MAX_CACHED_SOURCES = 12;
+const audioBufferCache = new Map<string, AudioBuffer>();
+const audioBufferLoads = new Map<string, Promise<AudioBuffer>>();
 
-function cachedAudioSource(previewUrl: string): Promise<string> {
-  if (previewUrl.startsWith("blob:") || previewUrl.startsWith("data:")) {
-    return Promise.resolve(previewUrl);
+function rememberAudioBuffer(previewUrl: string, buffer: AudioBuffer) {
+  audioBufferCache.delete(previewUrl);
+  audioBufferCache.set(previewUrl, buffer);
+  while (audioBufferCache.size > MAX_CACHED_SOURCES) {
+    const oldest = audioBufferCache.keys().next().value as string | undefined;
+    if (!oldest) return;
+    audioBufferCache.delete(oldest);
   }
+}
 
-  const cached = audioSourceCache.get(previewUrl);
+function loadAudioBuffer(previewUrl: string): Promise<AudioBuffer> {
+  const cached = audioBufferCache.get(previewUrl);
   if (cached) return Promise.resolve(cached);
 
-  const pending = audioSourceLoads.get(previewUrl);
+  const pending = audioBufferLoads.get(previewUrl);
   if (pending) return pending;
 
-  const load = fetch(previewUrl, { headers: { Accept: "audio/*" } })
+  const load = fetch(previewUrl, { headers: { Accept: "audio/*" }, cache: "force-cache" })
     .then((response) => {
       if (!response.ok) throw new Error("AUDIO_PREVIEW_UNAVAILABLE");
-      return response.blob();
+      return response.arrayBuffer();
     })
-    .then((blob) => {
-      const objectUrl = URL.createObjectURL(blob);
-      audioSourceCache.set(previewUrl, objectUrl);
-      audioSourceLoads.delete(previewUrl);
-      return objectUrl;
+    .then((data) => {
+      if (data.byteLength === 0) throw new Error("AUDIO_PREVIEW_EMPTY");
+      return getGameAudioContext().decodeAudioData(data);
+    })
+    .then((buffer) => {
+      rememberAudioBuffer(previewUrl, buffer);
+      audioBufferLoads.delete(previewUrl);
+      return buffer;
     })
     .catch((error) => {
-      audioSourceLoads.delete(previewUrl);
+      audioBufferLoads.delete(previewUrl);
       throw error;
     });
 
-  audioSourceLoads.set(previewUrl, load);
+  audioBufferLoads.set(previewUrl, load);
   return load;
 }
+
+/** Précharge et décode l’extrait suivant sans démarrer sa lecture. */
+export function prefetchAudioSource(previewUrl: string | null | undefined): void {
+  if (!previewUrl) return;
+  void loadAudioBuffer(previewUrl).catch(() => undefined);
+}
+
+type ActivePlayback = {
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+};
 
 export function AudioPlayer({
   previewUrl,
@@ -47,6 +69,8 @@ export function AudioPlayer({
   serverNow,
   onPlayError,
   disabled = false,
+  roundKey,
+  shouldPlay = true,
 }: {
   previewUrl: string;
   volume: number;
@@ -60,180 +84,240 @@ export function AudioPlayer({
   serverNow?: number;
   onPlayError?: () => void;
   disabled?: boolean;
+  roundKey?: string;
+  shouldPlay?: boolean;
 }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const stopTimer = useRef<number | null>(null);
-  const startTimer = useRef<number | null>(null);
-  const disabledRef = useRef(disabled);
-  const maxPlayMsRef = useRef(maxPlayMs);
-  const startAtMsRef = useRef(startAtMs);
+  const playbackRef = useRef<ActivePlayback | null>(null);
+  const bufferRef = useRef<AudioBuffer | null>(null);
+  const visualStartTimerRef = useRef<number | null>(null);
+  const visualEndTimerRef = useRef<number | null>(null);
   const serverClockOffsetRef = useRef(0);
   const scheduledStartAtRef = useRef(scheduledStartAt);
   const scheduledEndAtRef = useRef(scheduledEndAt);
-  const onPlayErrorRef = useRef(onPlayError);
+  const startAtMsRef = useRef(startAtMs);
+  const maxPlayMsRef = useRef(maxPlayMs);
+  const disabledRef = useRef(disabled);
+  const shouldPlayRef = useRef(shouldPlay);
+  const autoPlayRef = useRef(autoPlay);
   const volumeRef = useRef(volume);
+  const onPlayErrorRef = useRef(onPlayError);
+  const loadGenerationRef = useRef(0);
+  const [buffer, setBuffer] = useState<AudioBuffer | null>(null);
   const [playing, setPlaying] = useState(false);
   const [blocked, setBlocked] = useState(false);
-  const [audioSrc, setAudioSrc] = useState<string | null>(null);
 
-  const clearStopTimer = useCallback(() => {
-    if (stopTimer.current !== null) window.clearTimeout(stopTimer.current);
-    stopTimer.current = null;
+  const clearVisualTimers = useCallback(() => {
+    if (visualStartTimerRef.current !== null) {
+      window.clearTimeout(visualStartTimerRef.current);
+      visualStartTimerRef.current = null;
+    }
+    if (visualEndTimerRef.current !== null) {
+      window.clearTimeout(visualEndTimerRef.current);
+      visualEndTimerRef.current = null;
+    }
   }, []);
 
-  const clearStartTimer = useCallback(() => {
-    if (startTimer.current !== null) window.clearTimeout(startTimer.current);
-    startTimer.current = null;
-  }, []);
+  const stopPlayback = useCallback(() => {
+    clearVisualTimers();
+    const playback = playbackRef.current;
+    playbackRef.current = null;
+    if (playback) {
+      playback.source.onended = null;
+      try {
+        playback.source.stop();
+      } catch {
+        // La source était déjà terminée.
+      }
+      playback.source.disconnect();
+      playback.gain.disconnect();
+    }
+    setPlaying(false);
+  }, [clearVisualTimers]);
 
   const currentServerNow = useCallback(() => Date.now() + serverClockOffsetRef.current, []);
 
-  const scheduledOffsetMs = useCallback(() => {
-    if (!scheduledStartAtRef.current) return startAtMsRef.current;
-    return Math.max(startAtMsRef.current, currentServerNow() - scheduledStartAtRef.current);
-  }, [currentServerNow]);
+  const startPlayback = useCallback(
+    async (userInitiated = false) => {
+      const audioBuffer = bufferRef.current;
+      if (!audioBuffer) return;
 
-  const scheduleStop = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    clearStopTimer();
+      const now = currentServerNow();
+      const startsAt = scheduledStartAtRef.current;
+      const endsAt = scheduledEndAtRef.current;
+      if (
+        !autoPlayRef.current ||
+        !shouldPlayRef.current ||
+        disabledRef.current ||
+        (endsAt !== undefined && now >= endsAt)
+      ) {
+        stopPlayback();
+        return;
+      }
 
-    if (scheduledEndAtRef.current) {
-      const remainingMs = Math.max(0, scheduledEndAtRef.current - currentServerNow());
-      stopTimer.current = window.setTimeout(() => audio.pause(), remainingMs);
-      return;
-    }
+      const context = getGameAudioContext();
+      if (context.state !== "running") {
+        if (!userInitiated) {
+          setBlocked(true);
+          stopPlayback();
+          return;
+        }
+        try {
+          await context.resume();
+        } catch {
+          setBlocked(true);
+          onPlayErrorRef.current?.();
+          return;
+        }
+      }
 
-    if (maxPlayMsRef.current) {
-      stopTimer.current = window.setTimeout(() => audio.pause(), maxPlayMsRef.current);
-    }
-  }, [clearStopTimer, currentServerNow]);
+      const delayMs = startsAt ? Math.max(0, startsAt - now) : 0;
+      const elapsedMs = startsAt ? Math.max(0, now - startsAt) : 0;
+      const offsetSeconds = Math.max(0, (startAtMsRef.current + elapsedMs) / 1_000);
+      if (offsetSeconds >= audioBuffer.duration) {
+        stopPlayback();
+        return;
+      }
 
-  const play = useCallback((fromStart = false) => {
-    const audio = audioRef.current;
-    if (!audio || disabledRef.current || !audio.src) return;
-    clearStopTimer();
-    if (fromStart || scheduledStartAtRef.current) {
-      const startSeconds = scheduledOffsetMs() / 1000;
-      audio.currentTime =
-        Number.isFinite(audio.duration) && audio.duration > 0
-          ? Math.min(Math.max(0, startSeconds), Math.max(0, audio.duration - 0.2))
-          : Math.max(0, startSeconds);
-    }
-    audio.play().catch(() => {
-      setBlocked(true);
-      onPlayErrorRef.current?.();
-    });
-    scheduleStop();
-  }, [clearStopTimer, scheduleStop, scheduledOffsetMs]);
+      let playDurationSeconds = audioBuffer.duration - offsetSeconds;
+      if (endsAt !== undefined) {
+        playDurationSeconds = Math.min(
+          playDurationSeconds,
+          Math.max(0, (endsAt - Math.max(now, startsAt ?? now)) / 1_000),
+        );
+      } else if (maxPlayMsRef.current !== undefined) {
+        playDurationSeconds = Math.min(playDurationSeconds, maxPlayMsRef.current / 1_000);
+      }
+      if (playDurationSeconds <= 0) {
+        stopPlayback();
+        return;
+      }
+
+      stopPlayback();
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = audioBuffer;
+      gain.gain.value = volumeRef.current / 100;
+      source.connect(gain);
+      gain.connect(context.destination);
+      playbackRef.current = { source, gain };
+
+      source.onended = () => {
+        if (playbackRef.current?.source !== source) return;
+        playbackRef.current = null;
+        setPlaying(false);
+      };
+
+      const startWhen = context.currentTime + delayMs / 1_000;
+      source.start(startWhen, offsetSeconds, playDurationSeconds);
+      visualStartTimerRef.current = window.setTimeout(() => setPlaying(true), delayMs);
+      visualEndTimerRef.current = window.setTimeout(
+        () => setPlaying(false),
+        delayMs + playDurationSeconds * 1_000,
+      );
+      setBlocked(false);
+    },
+    [currentServerNow, stopPlayback],
+  );
 
   useEffect(() => {
-    disabledRef.current = disabled;
-    maxPlayMsRef.current = maxPlayMs;
-    startAtMsRef.current = startAtMs;
+    const previousOffset = serverClockOffsetRef.current;
+    serverClockOffsetRef.current = serverNow === undefined ? 0 : serverNow - Date.now();
+    if (
+      bufferRef.current &&
+      playbackRef.current &&
+      Math.abs(previousOffset - serverClockOffsetRef.current) > 250
+    ) {
+      void startPlayback();
+    }
+  }, [serverNow, startPlayback]);
+
+  useEffect(() => {
     scheduledStartAtRef.current = scheduledStartAt;
     scheduledEndAtRef.current = scheduledEndAt;
-    onPlayErrorRef.current = onPlayError;
+    startAtMsRef.current = startAtMs;
+    maxPlayMsRef.current = maxPlayMs;
+    disabledRef.current = disabled;
+    shouldPlayRef.current = shouldPlay;
+    autoPlayRef.current = autoPlay;
     volumeRef.current = volume;
-  }, [disabled, maxPlayMs, onPlayError, scheduledEndAt, scheduledStartAt, startAtMs, volume]);
+    onPlayErrorRef.current = onPlayError;
+  }, [
+    autoPlay,
+    disabled,
+    maxPlayMs,
+    onPlayError,
+    scheduledEndAt,
+    scheduledStartAt,
+    shouldPlay,
+    startAtMs,
+    volume,
+  ]);
 
   useEffect(() => {
-    const audio = audioRef.current;
+    const generation = ++loadGenerationRef.current;
     let cancelled = false;
-    serverClockOffsetRef.current = serverNow ? serverNow - Date.now() : 0;
-    setAudioSrc(null);
-    clearStartTimer();
-    clearStopTimer();
+    stopPlayback();
+    bufferRef.current = null;
+    setBuffer(null);
     setBlocked(false);
-    setPlaying(false);
-    audio?.pause();
 
-    cachedAudioSource(previewUrl)
-      .then((source) => {
-        if (!cancelled) setAudioSrc(source);
+    loadAudioBuffer(previewUrl)
+      .then((loadedBuffer) => {
+        if (cancelled || loadGenerationRef.current !== generation) return;
+        bufferRef.current = loadedBuffer;
+        setBuffer(loadedBuffer);
       })
       .catch(() => {
-        if (!cancelled) setAudioSrc(previewUrl);
+        if (cancelled || loadGenerationRef.current !== generation) return;
+        setBlocked(true);
+        onPlayErrorRef.current?.();
       });
 
     return () => {
       cancelled = true;
-      clearStartTimer();
-      clearStopTimer();
+      stopPlayback();
     };
-  }, [previewUrl, clearStartTimer, clearStopTimer, serverNow]);
+  }, [previewUrl, roundKey, stopPlayback]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) return;
-    clearStartTimer();
-    audio.volume = volumeRef.current / 100;
-    if (disabled) {
-      audio.pause();
-      return () => {
-        clearStartTimer();
-        clearStopTimer();
-      };
-    }
-    if (autoPlay && !disabled) {
-      const delayMs = scheduledStartAt
-        ? Math.max(0, scheduledStartAt - (Date.now() + serverClockOffsetRef.current))
-        : 0;
-      if (delayMs > 0) {
-        startTimer.current = window.setTimeout(() => play(true), delayMs);
-      } else {
-        play(Boolean(scheduledStartAt));
-      }
-    }
-    return () => {
-      clearStartTimer();
-      clearStopTimer();
-    };
-  }, [
-    audioSrc,
-    autoPlay,
-    clearStartTimer,
-    clearStopTimer,
-    disabled,
-    play,
-    scheduledEndAt,
-    scheduledStartAt,
-  ]);
+    if (!buffer) return;
+    void startPlayback();
+  }, [autoPlay, buffer, disabled, scheduledEndAt, scheduledStartAt, shouldPlay, startPlayback]);
 
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume / 100;
+    volumeRef.current = volume;
+    if (playbackRef.current) playbackRef.current.gain.gain.value = volume / 100;
   }, [volume]);
 
   useEffect(() => {
-    if (playKey) play(true);
-  }, [playKey, play]);
+    if (!playKey || !bufferRef.current) return;
+    void startPlayback(true);
+  }, [playKey, startPlayback]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden || !bufferRef.current) return;
+      const context = getGameAudioContext();
+      void context.resume().then(() => startPlayback());
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [startPlayback]);
+
+  useEffect(() => stopPlayback, [stopPlayback]);
 
   function updateVolume(value: number) {
     onVolumeChange(value);
-    if (audioRef.current) audioRef.current.volume = value / 100;
+    volumeRef.current = value;
+    if (playbackRef.current) playbackRef.current.gain.gain.value = value / 100;
   }
 
   return (
-    <div className={`audio-card ${blocked ? "needs-click" : ""}`}>
-      <audio
-        ref={audioRef}
-        src={audioSrc ?? undefined}
-        preload="auto"
-        onPlay={() => {
-          setPlaying(true);
-          setBlocked(false);
-        }}
-        onPause={() => {
-          clearStopTimer();
-          setPlaying(false);
-        }}
-        onEnded={() => {
-          clearStopTimer();
-          setPlaying(false);
-        }}
-      >
-        <track kind="captions" />
-      </audio>
+    <div
+      className={`audio-card ${blocked ? "needs-click" : ""}`}
+      data-audio-state={blocked ? "blocked" : playing ? "playing" : "waiting"}
+      data-audio-round={roundKey}
+    >
       <div className={`audio-wave ${playing ? "" : "paused"}`}>
         <span />
         <span />
@@ -259,7 +343,7 @@ export function AudioPlayer({
       {blocked && (
         <button
           type="button"
-          onClick={() => play(Boolean(maxPlayMs))}
+          onClick={() => void startPlayback(true)}
           className="mt-2 border-0 bg-transparent font-[inherit] text-inherit opacity-70"
         >
           Appuie ici pour lancer l’audio

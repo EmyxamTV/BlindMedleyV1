@@ -4,6 +4,8 @@ import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
 import { buttonClassName } from "~/components/ui/button";
 import { createRealtimeUid } from "~/lib/realtime";
+import { unlockAudio } from "~/lib/audio_unlock";
+import { routeUrl } from "~/lib/routes";
 import type { GameData, InertiaProps } from "~/types";
 
 type TrackOption = {
@@ -64,7 +66,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
   const [gameName, setGameName] = useState("");
   const [mode, setMode] = useState<"solo" | "public" | "private">("solo");
   const [answerMode, setAnswerMode] = useState<"choices" | "text">("choices");
-  const [answerTarget, setAnswerTarget] = useState<"title" | "artist" | "both" | "separate">("both");
+  const [answerTarget, setAnswerTarget] = useState<"title" | "artist" | "both" | "separate">(
+    "both",
+  );
   const [roundCount, setRoundCount] = useState(10);
   const [maxPlayers, setMaxPlayers] = useState(8);
   const [difficulty, setDifficulty] = useState(2);
@@ -109,28 +113,63 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
       uidGenerator: createRealtimeUid,
     });
     const subscription = transmit.subscription("games/public");
+    let cancelled = false;
+    let reloadTimer: number | null = null;
+    let reloading = false;
+    let reloadQueued = false;
 
-    subscription.create().then(() => {
-      subscription.onMessage<{ event: string }>((message) => {
-        if (message.event === "public_games_changed") {
-          router.reload({ only: ["publicGames", "myActiveGameId"] });
-        }
+    const reloadPublicGames = () => {
+      if (cancelled || tab !== "public" || document.visibilityState !== "visible") return;
+      if (reloading) {
+        reloadQueued = true;
+        return;
+      }
+
+      reloading = true;
+      router.reload({
+        only: ["publicGames", "myActiveGameId"],
+        onFinish: () => {
+          reloading = false;
+          if (reloadQueued) {
+            reloadQueued = false;
+            scheduleReload();
+          }
+        },
       });
+    };
+
+    const scheduleReload = () => {
+      if (reloadTimer !== null) window.clearTimeout(reloadTimer);
+      reloadTimer = window.setTimeout(reloadPublicGames, 350);
+    };
+
+    const removeMessageHandler = subscription.onMessage<{ event: string }>((message) => {
+      if (cancelled) return;
+      if (message.event === "public_games_changed") {
+        scheduleReload();
+      }
+    });
+
+    void subscription.create().then(() => {
+      if (!cancelled) scheduleReload();
     });
 
     const syncWhenVisible = () => {
       if (document.visibilityState === "visible") {
-        router.reload({ only: ["publicGames", "myActiveGameId"] });
+        scheduleReload();
       }
     };
 
     document.addEventListener("visibilitychange", syncWhenVisible);
 
     return () => {
+      cancelled = true;
+      removeMessageHandler();
+      if (reloadTimer !== null) window.clearTimeout(reloadTimer);
       document.removeEventListener("visibilitychange", syncWhenVisible);
-      subscription.delete();
+      void subscription.delete().finally(() => transmit.close());
     };
-  }, []);
+  }, [tab]);
 
   useEffect(() => {
     const timeout = window.setTimeout(async () => {
@@ -166,7 +205,8 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
     );
   }
 
-  function createGame() {
+  async function createGame() {
+    await unlockAudio();
     router.post("/game", {
       name: gameName.trim() || undefined,
       mode,
@@ -181,9 +221,10 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
     });
   }
 
-  function joinByCode(event: React.FormEvent) {
+  async function joinByCode(event: React.FormEvent) {
     event.preventDefault();
     if (!joinCode.trim()) return;
+    await unlockAudio();
     router.post("/game/0/join", { code: joinCode.trim().toUpperCase() });
   }
 
@@ -199,7 +240,11 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
           </p>
         </div>
         {myActiveGameId && (
-          <Link route="game.play" routeParams={{ id: myActiveGameId }} className={buttonClassName()}>
+          <Link
+            route="game.play"
+            routeParams={{ id: myActiveGameId }}
+            className={buttonClassName()}
+          >
             Reprendre ma partie →
           </Link>
         )}
@@ -216,7 +261,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
             type="button"
             onClick={() => setTab(value as "create" | "join" | "public")}
             className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-              tab === value ? "bg-violet-500 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"
+              tab === value
+                ? "bg-violet-500 text-white"
+                : "text-slate-400 hover:bg-white/5 hover:text-white"
             }`}
           >
             {label}
@@ -245,7 +292,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
           </section>
 
           <section className="grid gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-violet-200">Mode de jeu</h2>
+            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-violet-200">
+              Mode de jeu
+            </h2>
             <div className="grid gap-3 md:grid-cols-3">
               {Object.entries(MODES).map(([value, config]) => (
                 <button
@@ -276,7 +325,10 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                   Compose le pool musical avant de lancer la game.
                 </p>
               </div>
-              <Link route="playlists.create" className={buttonClassName({ variant: "ghost", size: "sm" })}>
+              <Link
+                route="playlists.create"
+                className={buttonClassName({ variant: "ghost", size: "sm" })}
+              >
                 Importer une playlist
               </Link>
             </div>
@@ -328,9 +380,15 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                           >
                             <div className="h-16 w-16 overflow-hidden rounded-xl bg-violet-500/20">
                               {playlist.coverUrl ? (
-                                <img src={playlist.coverUrl} alt="" className="h-full w-full object-cover" />
+                                <img
+                                  src={playlist.coverUrl}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center text-2xl">♪</div>
+                                <div className="flex h-full w-full items-center justify-center text-2xl">
+                                  ♪
+                                </div>
                               )}
                             </div>
                             <div className="min-w-0">
@@ -383,7 +441,10 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                         className={buttonClassName({ variant: "ghost", size: "sm" })}
                         onClick={() =>
                           setSelectedTrackIds((current) => [
-                            ...new Set([...current, ...tracksFromSelectedPlaylists.map((track) => track.id)]),
+                            ...new Set([
+                              ...current,
+                              ...tracksFromSelectedPlaylists.map((track) => track.id),
+                            ]),
                           ])
                         }
                       >
@@ -440,16 +501,24 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
               <aside className="border-t border-white/10 bg-black/20 p-5 lg:border-l lg:border-t-0">
                 <div className="sticky top-24 grid gap-4">
                   <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-200">Mix final</p>
-                    <strong className="mt-2 block text-4xl font-black text-white">{estimatedTrackCount}</strong>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-200">
+                      Mix final
+                    </p>
+                    <strong className="mt-2 block text-4xl font-black text-white">
+                      {estimatedTrackCount}
+                    </strong>
                     <span className="text-sm text-slate-400">titre(s) jouable(s)</span>
                     <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs font-bold text-slate-300">
                       <div className="rounded-xl bg-black/25 p-3">
-                        <strong className="block text-lg text-white">{selectedPlaylistIds.length}</strong>
+                        <strong className="block text-lg text-white">
+                          {selectedPlaylistIds.length}
+                        </strong>
                         playlists
                       </div>
                       <div className="rounded-xl bg-black/25 p-3">
-                        <strong className="block text-lg text-white">{selectedTrackIds.length}</strong>
+                        <strong className="block text-lg text-white">
+                          {selectedTrackIds.length}
+                        </strong>
                         sons ajoutés
                       </div>
                     </div>
@@ -490,7 +559,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                             className="rounded-xl bg-black/25 px-3 py-2 text-left text-xs font-bold text-white"
                           >
                             <span className="block truncate">{track.title}</span>
-                            <span className="block truncate text-slate-500">{track.artist} · retirer</span>
+                            <span className="block truncate text-slate-500">
+                              {track.artist} · retirer
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -502,7 +573,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
           </section>
 
           <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-violet-200">Réponses</h2>
+            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-violet-200">
+              Réponses
+            </h2>
             <div className="grid gap-3 md:grid-cols-2">
               <ChoiceCard
                 active={answerMode === "choices"}
@@ -530,7 +603,9 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
                     active={answerTarget === value}
                     title={label}
                     description=""
-                    onClick={() => setAnswerTarget(value as "title" | "artist" | "both" | "separate")}
+                    onClick={() =>
+                      setAnswerTarget(value as "title" | "artist" | "both" | "separate")
+                    }
                   />
                 ))}
               </div>
@@ -538,9 +613,21 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
           </section>
 
           <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:grid-cols-3">
-            <SelectField label="Rounds" value={roundCount} onChange={setRoundCount} options={[5, 10, 15, 20, 30]} suffix=" rounds" />
+            <SelectField
+              label="Rounds"
+              value={roundCount}
+              onChange={setRoundCount}
+              options={[5, 10, 15, 20, 30]}
+              suffix=" rounds"
+            />
             {mode !== "solo" && (
-              <SelectField label="Joueurs max" value={maxPlayers} onChange={setMaxPlayers} options={[2, 4, 6, 8, 10]} suffix=" joueurs" />
+              <SelectField
+                label="Joueurs max"
+                value={maxPlayers}
+                onChange={setMaxPlayers}
+                options={[2, 4, 6, 8, 10]}
+                suffix=" joueurs"
+              />
             )}
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.14em] text-slate-400">
               Difficulté
@@ -582,7 +669,11 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
               maxLength={8}
               className="rounded-2xl border border-white/10 bg-[#11111d] px-5 py-4 text-center text-2xl font-black uppercase tracking-[0.4em] text-white outline-none focus:border-violet-300/50"
             />
-            <button type="submit" className={buttonClassName({ size: "lg" })} disabled={!joinCode.trim()}>
+            <button
+              type="submit"
+              className={buttonClassName({ size: "lg" })}
+              disabled={!joinCode.trim()}
+            >
               Rejoindre
             </button>
           </form>
@@ -595,7 +686,10 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center lg:col-span-2">
               <div className="text-5xl">🎮</div>
               <p className="mt-4 text-slate-400">Aucune partie publique en attente.</p>
-              <button className={buttonClassName({ variant: "ghost", className: "mt-4" })} onClick={() => setTab("create")}>
+              <button
+                className={buttonClassName({ variant: "ghost", className: "mt-4" })}
+                onClick={() => setTab("create")}
+              >
                 Créer une partie →
               </button>
             </div>
@@ -609,93 +703,107 @@ export default function GameIndex({ playlists, publicGames, myActiveGameId }: Pr
               const title = gameCard.name || game.playlistName;
               const coverUrl = gameCard.playlist?.coverUrl;
               return (
-              <div
-                key={game.id}
-                className={`group grid overflow-hidden rounded-3xl border shadow-2xl shadow-black/20 transition hover:-translate-y-1 md:grid-cols-[150px_1fr] ${
-                  gameCard.isOfficial
-                    ? "border-amber-300/30 bg-amber-500/10 hover:border-amber-200/50"
-                    : "border-white/10 bg-white/[0.03] hover:border-violet-300/35 hover:bg-white/[0.05]"
-                }`}
-              >
                 <div
-                  className={`relative min-h-40 overflow-hidden ${
-                    gameCard.isOfficial ? "bg-amber-400/10" : "bg-violet-500/10"
+                  key={game.id}
+                  className={`group grid overflow-hidden rounded-3xl border shadow-2xl shadow-black/20 transition hover:-translate-y-1 md:grid-cols-[150px_1fr] ${
+                    gameCard.isOfficial
+                      ? "border-amber-300/30 bg-amber-500/10 hover:border-amber-200/50"
+                      : "border-white/10 bg-white/[0.03] hover:border-violet-300/35 hover:bg-white/[0.05]"
                   }`}
                 >
-                  {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt=""
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full min-h-40 w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.35),transparent_35%),radial-gradient(circle_at_70%_70%,rgba(124,58,237,0.35),transparent_40%)]">
-                      <span className="text-4xl font-black text-white/80">♪</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  {gameCard.isOfficial && (
-                    <span className="absolute left-3 top-3 rounded-full border border-amber-200/50 bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-200 backdrop-blur">
-                      Officiel
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex min-h-56 flex-col justify-between gap-5 p-5">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {!gameCard.isOfficial && (
-                        <span className="rounded-full border border-violet-300/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-200">
-                          Public
-                        </span>
-                      )}
-                      <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
-                        {game.answerMode === "text" ? "Écrit" : "QCM"}
+                  <div
+                    className={`relative min-h-40 overflow-hidden ${
+                      gameCard.isOfficial ? "bg-amber-400/10" : "bg-violet-500/10"
+                    }`}
+                  >
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt=""
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full min-h-40 w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.35),transparent_35%),radial-gradient(circle_at_70%_70%,rgba(124,58,237,0.35),transparent_40%)]">
+                        <span className="text-4xl font-black text-white/80">♪</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                    {gameCard.isOfficial && (
+                      <span className="absolute left-3 top-3 rounded-full border border-amber-200/50 bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-200 backdrop-blur">
+                        Officiel
                       </span>
-                      <span
-                        className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${publicGameStatusClass(game.status)}`}
-                      >
-                        {publicGameStatusLabel(game.status)}
-                      </span>
-                    </div>
-                    <h3 className="mt-3 line-clamp-2 text-2xl font-black leading-tight text-white">
-                      {title}
-                    </h3>
-                    <p className="mt-2 text-sm font-semibold text-slate-400">
-                      {gameCard.name ? game.playlistName : "Playlist publique"}
-                    </p>
+                    )}
                   </div>
 
-                  <div className="grid gap-4">
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold text-slate-400">
-                      <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                        <strong className="block text-base text-white">{game.playerCount}/{game.maxPlayers}</strong>
-                        joueurs
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                        <strong className="block text-base text-white">{game.roundCount}</strong>
-                        rounds
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                        <strong className="block text-base text-white">{Math.round(game.roundDurationMs / 1000)}s</strong>
-                        round
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm text-slate-500">
-                        {gameCard.isOfficial ? "Créée par BlindMedley" : `Créée par ${game.hostUsername}`}
-                      </p>
-                      <Form route="game.join" routeParams={{ id: game.id }}>
-                        {() => (
-                          <button type="submit" className={buttonClassName()}>
-                            {game.status === "waiting" ? "Rejoindre" : "Rejoindre en cours"}
-                          </button>
+                  <div className="flex min-h-56 flex-col justify-between gap-5 p-5">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {!gameCard.isOfficial && (
+                          <span className="rounded-full border border-violet-300/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-200">
+                            Public
+                          </span>
                         )}
-                      </Form>
+                        <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                          {game.answerMode === "text" ? "Écrit" : "QCM"}
+                        </span>
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${publicGameStatusClass(game.status)}`}
+                        >
+                          {publicGameStatusLabel(game.status)}
+                        </span>
+                      </div>
+                      <h3 className="mt-3 line-clamp-2 text-2xl font-black leading-tight text-white">
+                        {title}
+                      </h3>
+                      <p className="mt-2 text-sm font-semibold text-slate-400">
+                        {gameCard.name ? game.playlistName : "Playlist publique"}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold text-slate-400">
+                        <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                          <strong className="block text-base text-white">
+                            {game.playerCount}/{game.maxPlayers}
+                          </strong>
+                          joueurs
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                          <strong className="block text-base text-white">{game.roundCount}</strong>
+                          rounds
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                          <strong className="block text-base text-white">
+                            {Math.round(game.roundDurationMs / 1000)}s
+                          </strong>
+                          round
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-slate-500">
+                          {gameCard.isOfficial
+                            ? "Créée par BlindMedley"
+                            : `Créée par ${game.hostUsername}`}
+                        </p>
+                        <Form route="game.join" routeParams={{ id: game.id }}>
+                          {() => (
+                            <button
+                              type="button"
+                              className={buttonClassName()}
+                              onClick={() => {
+                                void unlockAudio().then(() =>
+                                  router.post(routeUrl("game.join", { params: { id: game.id } })),
+                                );
+                              }}
+                            >
+                              {game.status === "waiting" ? "Rejoindre" : "Rejoindre en cours"}
+                            </button>
+                          )}
+                        </Form>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
               );
             })
           )}
@@ -719,11 +827,15 @@ function TrackToggle({
       type="button"
       onClick={onToggle}
       className={`grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-xl border p-2 text-left transition ${
-        selected ? "border-emerald-300/50 bg-emerald-500/15" : "border-white/10 bg-white/[0.03] hover:border-violet-300/30"
+        selected
+          ? "border-emerald-300/50 bg-emerald-500/15"
+          : "border-white/10 bg-white/[0.03] hover:border-violet-300/30"
       }`}
     >
       <div className="h-11 w-11 overflow-hidden rounded-lg bg-violet-500/20">
-        {track.coverUrl ? <img src={track.coverUrl} alt="" className="h-full w-full object-cover" /> : null}
+        {track.coverUrl ? (
+          <img src={track.coverUrl} alt="" className="h-full w-full object-cover" />
+        ) : null}
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-black text-white">{track.title}</p>
@@ -750,7 +862,9 @@ function ChoiceCard({
       type="button"
       onClick={onClick}
       className={`rounded-2xl border p-4 text-left transition ${
-        active ? "border-violet-300/60 bg-violet-500/15" : "border-white/10 bg-black/20 hover:border-violet-300/30"
+        active
+          ? "border-violet-300/60 bg-violet-500/15"
+          : "border-white/10 bg-black/20 hover:border-violet-300/30"
       }`}
     >
       <strong className="text-white">{title}</strong>

@@ -4,6 +4,9 @@ type ParamValue = string | number | bigint | boolean
 
 export type ScannedRoutes = {
   ALL: {
+    'event_stream': { paramsTuple?: []; params?: {} }
+    'subscribe': { paramsTuple?: []; params?: {} }
+    'unsubscribe': { paramsTuple?: []; params?: {} }
     'home': { paramsTuple?: []; params?: {} }
     'privacy_policy': { paramsTuple?: []; params?: {} }
     'cgu': { paramsTuple?: []; params?: {} }
@@ -56,6 +59,7 @@ export type ScannedRoutes = {
     'game.play': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.heartbeat': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.results': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.state': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -76,6 +80,7 @@ export type ScannedRoutes = {
     'admin.playlists.tracks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'trackId': ParamValue} }
   }
   GET: {
+    'event_stream': { paramsTuple?: []; params?: {} }
     'home': { paramsTuple?: []; params?: {} }
     'privacy_policy': { paramsTuple?: []; params?: {} }
     'cgu': { paramsTuple?: []; params?: {} }
@@ -109,6 +114,7 @@ export type ScannedRoutes = {
     'admin.playlists': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
+    'event_stream': { paramsTuple?: []; params?: {} }
     'home': { paramsTuple?: []; params?: {} }
     'privacy_policy': { paramsTuple?: []; params?: {} }
     'cgu': { paramsTuple?: []; params?: {} }
@@ -142,6 +148,8 @@ export type ScannedRoutes = {
     'admin.playlists': { paramsTuple?: []; params?: {} }
   }
   POST: {
+    'subscribe': { paramsTuple?: []; params?: {} }
+    'unsubscribe': { paramsTuple?: []; params?: {} }
     'new_account.store': { paramsTuple?: []; params?: {} }
     'session.store': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
@@ -168,6 +176,7 @@ export type ScannedRoutes = {
     'game.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.leave': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'game.heartbeat': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'game.replay': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.games.official.create': { paramsTuple?: []; params?: {} }
     'admin.games.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

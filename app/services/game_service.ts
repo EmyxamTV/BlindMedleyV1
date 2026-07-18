@@ -16,10 +16,28 @@ import { displayUsernameForUser } from "#services/display_name";
 export class GameService {
   private readonly officialFirstStartDelayMs = 30_000;
   private readonly officialRestartDelayMs = 45_000;
-  private readonly roundPrerollMs = 3_000;
-  private readonly firstRoundDelayMs = 4_000;
-  private readonly officialStartTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly gameProgressTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /**
+   * La manche est annoncée avant son début. Ce délai laisse le navigateur
+   * charger l'extrait sans entamer le chronomètre de jeu.
+   */
+  private readonly firstRoundPrerollMs = 4_000;
+  private readonly nextRoundPrerollMs = 2_000;
+  /** Un filet de sécurité après un redémarrage, pas le moteur temps réel. */
+  private readonly lifecycleRecoveryMs = 60_000;
+  private readonly presenceGraceMs = 45_000;
+  /**
+   * Une partie ne possède qu'une seule échéance active. Cela évite qu'un ancien
+   * timeout de révélation, de pause ou de relance puisse se déclencher après
+   * qu'une nouvelle phase a déjà été programmée.
+   */
+  private readonly transitionTimers = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout>; kind: "official" | "progress" }
+  >();
+  private readonly progressingGameIds = new Set<string>();
+  private lifecycleRecoveryTimer: ReturnType<typeof setInterval> | null = null;
+  private lifecycleStarted = false;
+  private lifecycleRecoveryInFlight = false;
 
   constructor(
     private readonly roundService: RoundService,
@@ -34,6 +52,71 @@ export class GameService {
     4: 15_000,
     5: 10_000,
   };
+
+  /**
+   * Démarre l'ordonnanceur unique du processus. Les pages HTTP ne font que
+   * lire l'état ; les changements de phase viennent uniquement d'ici.
+   */
+  async startLifecycle(): Promise<void> {
+    if (this.lifecycleStarted) return;
+    this.lifecycleStarted = true;
+
+    await GamePlayer.query()
+      .where("is_connected", true)
+      .whereNull("last_seen_at")
+      .update({ lastSeenAt: DateTime.now() });
+    await this.cleanupDuplicateOfficialGames();
+    await this.runLifecycleRecovery();
+    this.lifecycleRecoveryTimer = setInterval(() => {
+      this.runLifecycleRecovery().catch(console.error);
+    }, this.lifecycleRecoveryMs);
+  }
+
+  stopLifecycle(): void {
+    this.lifecycleStarted = false;
+    if (this.lifecycleRecoveryTimer) {
+      clearInterval(this.lifecycleRecoveryTimer);
+      this.lifecycleRecoveryTimer = null;
+    }
+
+    for (const gameId of this.transitionTimers.keys()) this.clearTransition(gameId);
+  }
+
+  private async recoverLifecycle(): Promise<void> {
+    const games = await Game.query()
+      .whereIn("status", ["waiting", "starting", "active", "finished"])
+      .select(["id"]);
+
+    // Les timestamps stockés en base restent la source de vérité. Au démarrage
+    // ou après une longue suspension, cette passe remet chaque échéance en
+    // route ; en fonctionnement normal les timeouts ci-dessous suffisent.
+    await Promise.all(games.map((game) => this.syncGameProgress(game.id)));
+  }
+
+  private async runLifecycleRecovery(): Promise<void> {
+    if (this.lifecycleRecoveryInFlight) return;
+    this.lifecycleRecoveryInFlight = true;
+    try {
+      await this.expireStalePlayers();
+      await this.recoverLifecycle();
+    } finally {
+      this.lifecycleRecoveryInFlight = false;
+    }
+  }
+
+  private async expireStalePlayers(): Promise<void> {
+    const staleBefore = DateTime.now().minus({ milliseconds: this.presenceGraceMs });
+    const stalePlayers = await GamePlayer.query()
+      .where("is_connected", true)
+      .where((query) => {
+        query.where("last_seen_at", "<", staleBefore.toSQL()!).orWhereNull("last_seen_at");
+      })
+      .select(["gameId", "userId"]);
+
+    for (const player of stalePlayers) {
+      await this.leaveGame(player.gameId, player.userId);
+    }
+  }
 
   async createGame(options: CreateGameOptions): Promise<Game> {
     const game = await Game.create({
@@ -57,35 +140,44 @@ export class GameService {
     });
 
     // Ajouter l'hôte en tant que joueur
-    const playerIds = new Set(options.initialPlayerIds ?? []);
+    try {
+      const playerIds = new Set(options.initialPlayerIds ?? []);
 
-    if (options.addHost !== false) {
-      playerIds.delete(options.hostId);
-      await GamePlayer.create({
-        gameId: game.id,
-        userId: options.hostId,
-        joinedAt: DateTime.now(),
-      });
-    }
-
-    if (playerIds.size > 0) {
-      await GamePlayer.createMany(
-        [...playerIds].map((userId) => ({
+      if (options.addHost !== false) {
+        playerIds.delete(options.hostId);
+        await GamePlayer.create({
           gameId: game.id,
-          userId,
+          userId: options.hostId,
           joinedAt: DateTime.now(),
-        })),
-      );
-    }
+          lastSeenAt: DateTime.now(),
+        });
+      }
 
-    // Pré-générer tous les rounds
-    await this.roundService.pregenerateRounds(game.id, options.playlistId, game.roundCount);
+      if (playerIds.size > 0) {
+        await GamePlayer.createMany(
+          [...playerIds].map((userId) => ({
+            gameId: game.id,
+            userId,
+            joinedAt: DateTime.now(),
+            lastSeenAt: DateTime.now(),
+          })),
+        );
+      }
 
-    if (game.source === "blindmedley" && options.autoStartsAt && playerIds.size > 0) {
-      this.scheduleOfficialStart(
-        game.id,
-        Math.max(0, options.autoStartsAt.toMillis() - DateTime.now().toMillis()),
-      );
+      // Pré-générer tous les rounds
+      await this.roundService.pregenerateRounds(game.id, options.playlistId, game.roundCount);
+
+      if (game.source === "blindmedley" && options.autoStartsAt && playerIds.size > 0) {
+        this.scheduleOfficialStart(
+          game.id,
+          Math.max(0, options.autoStartsAt.toMillis() - DateTime.now().toMillis()),
+        );
+      }
+    } catch (error) {
+      this.clearOfficialStart(game.id);
+      this.clearProgressSync(game.id);
+      await game.delete();
+      throw error;
     }
 
     if (game.mode === "public") this.broadcastPublicGamesChanged();
@@ -95,8 +187,6 @@ export class GameService {
 
   async leaveGame(gameId: string, userId: string): Promise<void> {
     const game = await Game.findOrFail(gameId);
-    if (game.status === "finished" || game.status === "cancelled") return;
-
     const player = await GamePlayer.query()
       .where("game_id", gameId)
       .where("user_id", userId)
@@ -114,7 +204,10 @@ export class GameService {
     if (Number(connected[0].$extras.total) === 0) {
       if (game.source === "blindmedley") {
         this.clearOfficialStart(game.id);
-        this.clearProgressSync(game.id);
+        if (game.status === "finished") {
+          await this.prepareOfficialGameRestart(game);
+          return;
+        }
         if (game.status === "waiting") {
           await game.merge({ autoStartsAt: null }).save();
           transmit.broadcast(`game/${game.publicId}`, { event: "official_countdown_cancelled" });
@@ -124,6 +217,17 @@ export class GameService {
         return;
       }
       // Plus personne → annuler la partie
+      if (game.status === "finished" || game.status === "cancelled") return;
+
+      if (
+        game.mode === "public" &&
+        (game.status === "starting" || game.status === "active" || game.status === "paused")
+      ) {
+        this.broadcastLobbyChanged(game.publicId);
+        this.broadcastPublicGamesChanged();
+        return;
+      }
+
       const publicId = game.publicId;
       this.clearProgressSync(game.id);
       await game.delete();
@@ -156,11 +260,12 @@ export class GameService {
       .where("user_id", userId)
       .first();
     const player = existing
-      ? await existing.merge({ isConnected: true, leftAt: null }).save()
+      ? await existing.merge({ isConnected: true, leftAt: null, lastSeenAt: DateTime.now() }).save()
       : await GamePlayer.create({
           gameId,
           userId,
           joinedAt: DateTime.now(),
+          lastSeenAt: DateTime.now(),
         });
 
     if (game.status === "waiting" && game.source === "blindmedley" && connectedBefore === 0) {
@@ -180,37 +285,49 @@ export class GameService {
   }
 
   async markPlayerConnected(gameId: string, userId: string): Promise<void> {
-    await GamePlayer.query()
+    await this.heartbeatPlayer(gameId, userId);
+  }
+
+  async heartbeatPlayer(gameId: string, userId: string): Promise<void> {
+    const player = await GamePlayer.query()
       .where("game_id", gameId)
       .where("user_id", userId)
-      .update({ isConnected: true, leftAt: null });
+      .first();
+    if (!player) return;
+
+    const wasConnected = player.isConnected;
+    await player.merge({ isConnected: true, leftAt: null, lastSeenAt: DateTime.now() }).save();
+    if (wasConnected) return;
+
+    const game = await Game.find(gameId);
+    if (!game) return;
+
+    if (game.source === "blindmedley" && game.status === "waiting" && !game.autoStartsAt) {
+      const autoStartsAt = DateTime.now().plus({ milliseconds: this.officialFirstStartDelayMs });
+      await game.merge({ autoStartsAt }).save();
+      this.scheduleOfficialStart(game.id, this.officialFirstStartDelayMs);
+      transmit.broadcast(`game/${game.publicId}`, {
+        event: "official_countdown_started",
+        autoStartsAt: autoStartsAt.toMillis(),
+      });
+    }
+
+    this.broadcastLobbyChanged(game.publicId);
+    if (game.mode === "public") this.broadcastPublicGamesChanged();
   }
 
   async syncOfficialGames(): Promise<void> {
-    await this.cleanupDuplicateOfficialGames();
-
     const games = await Game.query()
       .where("source", "blindmedley")
-      .whereIn("status", ["waiting", "finished"]);
+      .whereIn("status", ["waiting", "starting", "active", "finished"])
+      .select(["id"]);
 
-    const now = DateTime.now();
-    for (const game of games) {
-      if (!game.autoStartsAt) {
-        if (game.status === "finished") await this.ensureOfficialRestartCountdown(game.id);
-        continue;
-      }
-      const delayMs = game.autoStartsAt.toMillis() - now.toMillis();
-      if (delayMs <= 0) {
-        await this.startOfficialGameIfReady(game.id);
-      } else if (!this.officialStartTimers.has(game.id)) {
-        this.scheduleOfficialStart(game.id, delayMs);
-      }
-    }
+    await Promise.all(games.map((game) => this.syncGameProgress(game.id)));
   }
 
   async deleteEmptyPlayerGames(): Promise<void> {
     const games = await Game.query()
-      .whereIn("status", ["waiting", "starting", "active", "paused"])
+      .where("status", "waiting")
       .whereIn("mode", ["solo", "public", "private"])
       .preload("players", (query) => query.where("is_connected", true));
 
@@ -229,7 +346,7 @@ export class GameService {
     const games = await Game.query()
       .where("source", "blindmedley")
       .where("mode", "public")
-      .whereIn("status", ["waiting", "starting", "active", "paused", "finished"])
+      .whereIn("status", ["waiting", "starting", "active", "paused"])
       .preload("players", (query) => query.where("is_connected", true));
 
     const groups = new Map<string, Game[]>();
@@ -313,41 +430,47 @@ export class GameService {
 
     this.clearOfficialStart(game.id);
     this.clearProgressSync(game.id);
-    const startedAt = DateTime.now();
-    const startsAt = startedAt.plus({ milliseconds: this.firstRoundDelayMs });
-    await game.merge({ status: "starting", startedAt, autoStartsAt: null }).save();
+    const claimed = await Game.query()
+      .where("id", game.id)
+      .where("status", "waiting")
+      .update({ status: "starting", startedAt: DateTime.now(), autoStartsAt: null });
+    if (claimed.length === 0) return Game.findOrFail(game.id);
 
     // Notifier le lobby que la partie démarre
     transmit.broadcast(`game/${game.publicId}`, {
       event: "game_starting",
-      startsAt: startsAt.toMillis(),
       serverNow: Date.now(),
     });
     if (game.mode === "public") this.broadcastPublicGamesChanged();
 
     // Démarrer le premier round après un court temps de chargement client.
-    this.scheduleProgressSync(game.id, this.firstRoundDelayMs);
+    await this.startRound(game.id, 1);
 
-    return game;
+    return Game.findOrFail(game.id);
   }
 
   async startRound(gameId: string, roundNumber: number): Promise<void> {
     const game = await Game.findOrFail(gameId);
-    if (game.status === "finished" || game.status === "cancelled" || game.status === "paused") return;
+    if (game.status === "finished" || game.status === "cancelled" || game.status === "paused")
+      return;
     if (game.currentRound > roundNumber) return;
 
-    const round = await Round.query()
+    const prerollMs = roundNumber === 1 ? this.firstRoundPrerollMs : this.nextRoundPrerollMs;
+    const startsAt = DateTime.now().plus({ milliseconds: prerollMs });
+    const endsAt = startsAt.plus({ milliseconds: game.roundDurationMs });
+    const claimed = await Round.query()
       .where("game_id", gameId)
       .where("round_number", roundNumber)
-      .firstOrFail();
-    if (round.startsAt && !round.revealedAt) return;
-    if (round.revealedAt) return;
+      .whereNull("starts_at")
+      .whereNull("revealed_at")
+      .update({ startsAt, endsAt });
+    if (claimed.length === 0) return;
 
-    const startedRound = await this.roundService.startRound(
-      round,
-      game.roundDurationMs,
-      this.roundPrerollMs,
-    );
+    const startedRound = await Round.query()
+      .where("game_id", gameId)
+      .where("round_number", roundNumber)
+      .preload("track")
+      .firstOrFail();
     await game.merge({ status: "active", currentRound: roundNumber }).save();
     if (game.mode === "public") this.broadcastPublicGamesChanged();
 
@@ -372,8 +495,22 @@ export class GameService {
     options: { force?: boolean } = {},
   ): Promise<void> {
     const game = await Game.findOrFail(gameId);
-    if (game.status === "finished" || game.status === "cancelled" || game.status === "paused") return;
+    if (game.status === "finished" || game.status === "cancelled" || game.status === "paused")
+      return;
     if (game.currentRound !== roundNumber) return;
+
+    const now = DateTime.now();
+    const claim = Round.query()
+      .where("game_id", gameId)
+      .where("round_number", roundNumber)
+      .whereNull("revealed_at");
+    if (!options.force) claim.where("ends_at", "<=", now.toSQL()!);
+
+    const claimed = await claim.update({
+      revealedAt: now,
+      ...(options.force ? { endsAt: now } : {}),
+    });
+    if (claimed.length === 0) return;
 
     const round = await Round.query()
       .where("game_id", gameId)
@@ -382,32 +519,35 @@ export class GameService {
       .firstOrFail();
 
     // Éviter la double exécution (solo : timer annulé mais callback déjà parti)
-    if (round.revealedAt) return;
-    if (!options.force && round.endsAt && round.endsAt > DateTime.now()) return;
-
-    if (options.force && (!round.endsAt || round.endsAt > DateTime.now())) {
-      await round.merge({ endsAt: DateTime.now() }).save();
-    }
-
-    await this.roundService.revealRound(round);
 
     // Broadcaster la révélation de la bonne réponse
     const revealPayload = this.roundService.buildRevealPayload(round);
-    transmit.broadcast(`game/${game.publicId}`, { event: "round_revealed", ...revealPayload });
+    transmit.broadcast(`game/${game.publicId}`, {
+      event: "round_revealed",
+      ...revealPayload,
+      serverNow: Date.now(),
+    });
 
     if (roundNumber >= game.roundCount) {
       await this.finishGame(game.id);
     } else {
-      // Pause entre les rounds (2s en solo, 5s en multi)
-      const pause = game.mode === "solo" ? 2000 : 5000;
+      const pause = this.betweenRoundPauseMs(game.mode);
       this.scheduleProgressSync(game.id, pause);
     }
   }
 
   async finishGame(gameId: string): Promise<Game> {
+    const initialGame = await Game.findOrFail(gameId);
+    this.clearProgressSync(initialGame.id);
+
+    const claimed = await Game.query()
+      .where("id", gameId)
+      .whereIn("status", ["active", "starting"])
+      .update({ status: "finished", finishedAt: DateTime.now(), pausedAt: null });
+    if (claimed.length === 0) return Game.findOrFail(gameId);
+
     const game = await Game.query().where("id", gameId).preload("playlist").firstOrFail();
     const isOfficialGame = game.source === "blindmedley";
-    this.clearProgressSync(game.id);
 
     const players = await GamePlayer.query().where("game_id", gameId).orderBy("score", "desc");
 
@@ -423,20 +563,16 @@ export class GameService {
     }
 
     const winner = players[0];
-    const finishedGame = await game
-      .merge({
-        status: "finished",
-        finishedAt: DateTime.now(),
-        winnerId: winner?.userId ?? null,
-      })
-      .save();
+    const finishedGame = await game.merge({ winnerId: winner?.userId ?? null }).save();
 
     // Broadcaster en premier — la partie est terminée quoi qu'il arrive
     let nextAutoStartsAt: DateTime | null = null;
     if (isOfficialGame) {
       const connectedCount = await this.connectedPlayerCount(game.id);
       nextAutoStartsAt =
-        connectedCount > 0 ? DateTime.now().plus({ milliseconds: this.officialRestartDelayMs }) : null;
+        connectedCount > 0
+          ? DateTime.now().plus({ milliseconds: this.officialRestartDelayMs })
+          : null;
       await finishedGame.merge({ autoStartsAt: nextAutoStartsAt }).save();
       if (nextAutoStartsAt) {
         this.scheduleOfficialStart(
@@ -467,6 +603,13 @@ export class GameService {
         .catch(console.error);
     }
 
+    // Une partie officielle vide doit rester disponible dans l'onglet Public.
+    // On réinitialise immédiatement son cycle sans lui attribuer de compte à rebours.
+    if (isOfficialGame && !nextAutoStartsAt) {
+      await this.prepareOfficialGameRestart(finishedGame);
+      return Game.findOrFail(gameId);
+    }
+
     return finishedGame;
   }
 
@@ -476,7 +619,10 @@ export class GameService {
 
     this.clearProgressSync(game.id);
     const pausedGame = await game.merge({ status: "paused", pausedAt: DateTime.now() }).save();
-    transmit.broadcast(`game/${game.publicId}`, { event: "game_paused" });
+    transmit.broadcast(`game/${game.publicId}`, {
+      event: "game_paused",
+      serverNow: Date.now(),
+    });
     if (game.mode === "public") this.broadcastPublicGamesChanged();
     return pausedGame;
   }
@@ -495,19 +641,39 @@ export class GameService {
         .preload("track")
         .first();
 
-      if (currentRound?.endsAt) {
+      if (currentRound?.revealedAt) {
+        await currentRound
+          .merge({ revealedAt: currentRound.revealedAt.plus({ milliseconds: pauseMs }) })
+          .save();
+      } else if (currentRound?.endsAt) {
         await currentRound
           .merge({
-            startsAt: currentRound.startsAt?.plus({ milliseconds: pauseMs }) ?? currentRound.startsAt,
+            startsAt:
+              currentRound.startsAt?.plus({ milliseconds: pauseMs }) ?? currentRound.startsAt,
             endsAt: currentRound.endsAt.plus({ milliseconds: pauseMs }),
           })
           .save();
       }
     }
 
+    if (!currentRound) {
+      const resumedGame = await game.merge({ status: "starting", pausedAt: null }).save();
+      transmit.broadcast(`game/${game.publicId}`, { event: "game_resumed" });
+      await this.startRound(game.id, game.currentRound > 0 ? game.currentRound : 1);
+      return Game.findOrFail(resumedGame.id);
+    }
+
     const resumedGame = await game.merge({ status: "active", pausedAt: null }).save();
 
-    if (currentRound?.endsAt) {
+    if (currentRound.revealedAt) {
+      const pause = this.betweenRoundPauseMs(game.mode);
+      const remainingMs = Math.max(
+        0,
+        currentRound.revealedAt.plus({ milliseconds: pause }).toMillis() - now.toMillis(),
+      );
+      this.scheduleProgressSync(game.id, remainingMs);
+      transmit.broadcast(`game/${game.publicId}`, { event: "game_resumed" });
+    } else if (currentRound.endsAt) {
       const remainingMs = Math.max(0, currentRound.endsAt.toMillis() - now.toMillis());
       this.scheduleProgressSync(game.id, remainingMs);
 
@@ -536,7 +702,12 @@ export class GameService {
     this.clearOfficialStart(game.id);
     this.clearProgressSync(game.id);
     const stoppedGame = await game
-      .merge({ status: "cancelled", finishedAt: DateTime.now(), pausedAt: null, autoStartsAt: null })
+      .merge({
+        status: "cancelled",
+        finishedAt: DateTime.now(),
+        pausedAt: null,
+        autoStartsAt: null,
+      })
       .save();
     transmit.broadcast(`game/${game.publicId}`, { event: "game_stopped" });
     if (game.mode === "public") this.broadcastPublicGamesChanged();
@@ -648,9 +819,6 @@ export class GameService {
   }
 
   async getGameState(gameId: string) {
-    await this.syncGameProgress(gameId);
-    await this.ensureOfficialRestartCountdown(gameId);
-
     const game = await Game.query()
       .where("id", gameId)
       .preload("players", (q) => q.preload("user", (uq) => uq.preload("profile")))
@@ -670,6 +838,17 @@ export class GameService {
   }
 
   async syncGameProgress(gameId: string): Promise<void> {
+    if (this.progressingGameIds.has(gameId)) return;
+    this.progressingGameIds.add(gameId);
+
+    try {
+      await this.syncGameProgressUnsafe(gameId);
+    } finally {
+      this.progressingGameIds.delete(gameId);
+    }
+  }
+
+  private async syncGameProgressUnsafe(gameId: string): Promise<void> {
     const game = await Game.find(gameId);
     if (!game) return;
     const now = DateTime.now();
@@ -706,12 +885,6 @@ export class GameService {
     }
 
     if (game.status === "starting") {
-      const startsAt = (game.startedAt ?? now).plus({ milliseconds: this.firstRoundDelayMs });
-      const delayMs = startsAt.toMillis() - now.toMillis();
-      if (delayMs > 0) {
-        this.scheduleProgressSync(game.id, delayMs);
-        return;
-      }
       await this.startRound(game.id, game.currentRound > 0 ? game.currentRound : 1);
       return;
     }
@@ -744,7 +917,7 @@ export class GameService {
       return;
     }
 
-    const pauseMs = game.mode === "solo" ? 2_000 : 5_000;
+    const pauseMs = this.betweenRoundPauseMs(game.mode);
     const nextRoundAt = round.revealedAt.plus({ milliseconds: pauseMs });
     const delayMs = nextRoundAt.toMillis() - now.toMillis();
     if (delayMs <= 0) {
@@ -773,6 +946,7 @@ export class GameService {
       GamePlayer.query()
         .where("game_id", params.gameId)
         .where("user_id", params.userId)
+        .where("is_connected", true)
         .firstOrFail(),
     ]);
 
@@ -789,13 +963,13 @@ export class GameService {
     });
 
     // Broadcaster la mise à jour des scores
-    if (result.correct) {
+    if (!result.partial) {
       transmit.broadcast(`game/${game.publicId}`, {
         event: "answer_submitted",
         userId: params.userId,
         roundNumber: params.roundNumber,
         responseMs: result.responseMs,
-        isCorrect: true,
+        isCorrect: result.correct,
       });
     }
 
@@ -841,6 +1015,10 @@ export class GameService {
     return result;
   }
 
+  private betweenRoundPauseMs(mode: string): number {
+    return mode === "solo" ? 1_500 : 3_000;
+  }
+
   private async connectedPlayerCount(gameId: string): Promise<number> {
     const connected = await GamePlayer.query()
       .where("game_id", gameId)
@@ -851,43 +1029,83 @@ export class GameService {
   }
 
   private scheduleOfficialStart(gameId: string, delayMs: number): void {
-    this.clearOfficialStart(gameId);
-
-    const timer = setTimeout(() => {
-      this.startOfficialGameIfReady(gameId).catch(console.error);
-    }, Math.max(0, delayMs));
-
-    this.officialStartTimers.set(gameId, timer);
+    this.scheduleTransition(gameId, delayMs, "official");
   }
 
   private scheduleProgressSync(gameId: string, delayMs: number): void {
-    this.clearProgressSync(gameId);
-
-    const timer = setTimeout(() => {
-      this.gameProgressTimers.delete(gameId);
-      this.syncGameProgress(gameId).catch(console.error);
-    }, Math.max(0, delayMs));
-
-    this.gameProgressTimers.set(gameId, timer);
+    this.scheduleTransition(gameId, delayMs, "progress");
   }
 
   private clearOfficialStart(gameId: string): void {
-    const timer = this.officialStartTimers.get(gameId);
-    if (!timer) return;
-    clearTimeout(timer);
-    this.officialStartTimers.delete(gameId);
+    this.clearTransition(gameId, "official");
   }
 
   private clearProgressSync(gameId: string): void {
-    const timer = this.gameProgressTimers.get(gameId);
-    if (!timer) return;
-    clearTimeout(timer);
-    this.gameProgressTimers.delete(gameId);
+    this.clearTransition(gameId, "progress");
+  }
+
+  private scheduleTransition(gameId: string, delayMs: number, kind: "official" | "progress"): void {
+    this.clearTransition(gameId);
+
+    const timer = setTimeout(
+      () => {
+        // clearTimeout ne peut pas arrêter un callback déjà placé dans la file
+        // d'événements. Cette garde élimine donc les anciennes échéances.
+        if (this.transitionTimers.get(gameId)?.timer !== timer) return;
+        this.transitionTimers.delete(gameId);
+        this.syncGameProgress(gameId).catch(console.error);
+      },
+      Math.max(0, delayMs),
+    );
+
+    this.transitionTimers.set(gameId, { timer, kind });
+  }
+
+  private clearTransition(gameId: string, kind?: "official" | "progress"): void {
+    const scheduled = this.transitionTimers.get(gameId);
+    if (!scheduled || (kind && scheduled.kind !== kind)) return;
+    clearTimeout(scheduled.timer);
+    this.transitionTimers.delete(gameId);
   }
 
   private broadcastLobbyChanged(publicId: string | null): void {
     if (!publicId) return;
-    transmit.broadcast(`game/${publicId}`, { event: "players_updated" });
+    void this.broadcastLobbyPlayers(publicId).catch(console.error);
+  }
+
+  private async broadcastLobbyPlayers(publicId: string): Promise<void> {
+    const game = await Game.query().where("public_id", publicId).select("id").first();
+    if (!game) return;
+
+    const players = await GamePlayer.query()
+      .where("game_id", game.id)
+      .preload("user", (query) => query.preload("profile"))
+      .orderBy("joined_at", "asc");
+
+    transmit.broadcast(`game/${publicId}`, {
+      event: "players_updated",
+      players: players.map((player) => ({
+        id: player.id,
+        gameId: player.gameId,
+        userId: player.userId,
+        score: player.score,
+        correct: player.correct,
+        incorrect: player.incorrect,
+        streak: player.streak,
+        bestStreak: player.bestStreak,
+        rank: player.rank,
+        xpEarned: player.xpEarned,
+        isConnected: player.isConnected,
+        joinedAt: player.joinedAt.toISO(),
+        leftAt: player.leftAt?.toISO() ?? null,
+        username: displayUsernameForUser({
+          username: player.user?.profile?.username,
+          fullName: player.user?.fullName,
+          fallback: `User${player.userId}`,
+        }),
+        avatarUrl: player.user?.profile?.avatarUrl ?? null,
+      })),
+    });
   }
 
   private broadcastPublicGamesChanged(): void {

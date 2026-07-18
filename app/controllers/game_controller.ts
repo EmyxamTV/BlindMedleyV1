@@ -44,7 +44,6 @@ export default class GameController {
   // Page de création / liste des parties publiques
   async index({ inertia, auth }: HttpContext) {
     const user = auth.user!;
-    await this.gameService.syncOfficialGames();
     await this.gameService.deleteEmptyPlayerGames();
 
     const [playlists, publicGames, activePlayer] = await Promise.all([
@@ -68,7 +67,9 @@ export default class GameController {
       GamePlayer.query()
         .where("user_id", user.id)
         .where("is_connected", true)
-        .whereHas("game", (query) => query.whereIn("status", ["waiting", "starting", "active", "paused"]))
+        .whereHas("game", (query) =>
+          query.whereIn("status", ["waiting", "starting", "active", "paused"]),
+        )
         .preload("game")
         .first(),
     ]);
@@ -114,11 +115,19 @@ export default class GameController {
         roundCount: payload.roundCount ?? 10,
       });
     } catch (error) {
-      session.flash("error", error instanceof Error ? error.message : "Impossible de créer la partie.");
+      session.flash(
+        "error",
+        error instanceof Error ? error.message : "Impossible de créer la partie.",
+      );
       return response.redirect().back();
     }
 
-    const game = await this.gameService.createGame({ ...payload, source, playlistId, hostId: user.id });
+    const game = await this.gameService.createGame({
+      ...payload,
+      source,
+      playlistId,
+      hostId: user.id,
+    });
 
     return response.redirect().toRoute("game.lobby", { id: game.publicId! });
   }
@@ -180,7 +189,8 @@ export default class GameController {
       const key = this.trackKey(title, artist);
       if (tracks.has(key)) continue;
 
-      const previewUrl = track.preview_url ?? (await this.spotifyService.getDeezerPreview(title, artist));
+      const previewUrl =
+        track.preview_url ?? (await this.spotifyService.getDeezerPreview(title, artist));
       const record = await TrackCache.updateOrCreate(
         { spotifyId: track.id },
         {
@@ -215,7 +225,6 @@ export default class GameController {
 
   // Page lobby d'une partie
   async lobby({ inertia, params, auth }: HttpContext) {
-    await this.gameService.syncOfficialGames();
     const resolved = await this.resolveGame(params.id);
     const { game } = await this.gameService.getGameState(resolved.id);
 
@@ -402,11 +411,20 @@ export default class GameController {
     const resolved = await this.resolveGame(params.id);
     const payload = await request.validateUsing(submitAnswerValidator);
 
-    const result = await this.gameService.submitAnswer({
-      ...payload,
-      gameId: resolved.id,
-      userId: auth.user!.id,
-    });
+    let result;
+    try {
+      result = await this.gameService.submitAnswer({
+        ...payload,
+        gameId: resolved.id,
+        userId: auth.user!.id,
+      });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "ANSWER_REJECTED";
+      if (request.accepts(["json"])) {
+        return response.status(409).json({ success: false, code });
+      }
+      throw error;
+    }
 
     if (request.accepts(["json"])) {
       return response.json({ success: true, ...result });
@@ -445,7 +463,14 @@ export default class GameController {
       return response.forbidden("Hôte audio non autorisé");
     }
 
-    let upstream = await fetch(url, { headers: { "User-Agent": "BlindMedley/1.0" } });
+    const range = request.header("range");
+    const upstreamHeaders: Record<string, string> = {
+      "User-Agent": "BlindMedley/1.0",
+      Accept: "audio/*",
+    };
+    if (range) upstreamHeaders.Range = range;
+
+    let upstream = await fetch(url, { headers: upstreamHeaders });
     if (!upstream.ok) {
       const refreshed = await this.deezerService.getPreview(round.track.title, round.track.artist);
       if (refreshed) {
@@ -455,12 +480,17 @@ export default class GameController {
           return response.forbidden("Hôte audio non autorisé");
         }
         await round.track.merge({ previewUrl: rawUrl, hasPreview: true }).save();
-        upstream = await fetch(url, { headers: { "User-Agent": "BlindMedley/1.0" } });
+        upstream = await fetch(url, { headers: upstreamHeaders });
       }
     }
     if (!upstream.ok || !upstream.body) return response.status(502).send("Preview indisponible");
 
+    response.status(upstream.status);
     response.header("Content-Type", upstream.headers.get("content-type") ?? "audio/mpeg");
+    for (const header of ["accept-ranges", "content-length", "content-range"] as const) {
+      const value = upstream.headers.get(header);
+      if (value) response.header(header, value);
+    }
     response.header("Cache-Control", "private, max-age=300");
     return response.stream(
       Readable.fromWeb(upstream.body as unknown as Parameters<typeof Readable.fromWeb>[0]),
@@ -471,6 +501,12 @@ export default class GameController {
   async leave({ params, auth, response }: HttpContext) {
     const resolved = await this.resolveGame(params.id);
     await this.gameService.leaveGame(resolved.id, auth.user!.id);
+    return response.json({ ok: true });
+  }
+
+  async heartbeat({ params, auth, response }: HttpContext) {
+    const resolved = await this.resolveGame(params.id);
+    await this.gameService.heartbeatPlayer(resolved.id, auth.user!.id);
     return response.json({ ok: true });
   }
 
@@ -523,7 +559,12 @@ export default class GameController {
 
   async state({ params, auth, response, serialize }: HttpContext) {
     const resolved = await this.resolveGame(params.id);
-    await this.gameService.markPlayerConnected(resolved.id, auth.user!.id);
+    const player = await GamePlayer.query()
+      .where("game_id", resolved.id)
+      .where("user_id", auth.user!.id)
+      .first();
+    if (!player) return response.forbidden();
+
     const { game, currentRound } = await this.gameService.getGameState(resolved.id);
     const serverNow = Date.now();
 
@@ -561,13 +602,15 @@ export default class GameController {
               }));
             })
         : [];
+    response.header("Cache-Control", "no-store, private");
     return response.json({
       status: game.status,
       currentRound: game.currentRound,
       round: roundPayload,
       serverNow,
       nextGameId: game.source === "blindmedley" ? game.publicId : null,
-      nextAutoStartsAt: game.source === "blindmedley" ? game.autoStartsAt?.toMillis() ?? null : null,
+      nextAutoStartsAt:
+        game.source === "blindmedley" ? (game.autoStartsAt?.toMillis() ?? null) : null,
       scores: await serialize.withoutWrapping(GamePlayerTransformer.transform(game.players)),
       answerPings,
       answerProgress,
@@ -608,7 +651,10 @@ export default class GameController {
           avatarUrl: player.user?.profile?.avatarUrl ?? null,
           won: answers.some(
             (answer) =>
-              answer.isCorrect || answer.titleCorrect || answer.artistCorrect || answer.scoreEarned > 0,
+              answer.isCorrect ||
+              answer.titleCorrect ||
+              answer.artistCorrect ||
+              answer.scoreEarned > 0,
           ),
           scoreEarned,
         };
@@ -671,9 +717,13 @@ export default class GameController {
       lastSyncedAt: DateTime.now(),
     });
 
-    await playlist.related("tracks").attach(
-      Object.fromEntries(selectedTracks.map((track, index) => [track.id, { position: index + 1 }])),
-    );
+    await playlist
+      .related("tracks")
+      .attach(
+        Object.fromEntries(
+          selectedTracks.map((track, index) => [track.id, { position: index + 1 }]),
+        ),
+      );
 
     return playlist.id;
   }

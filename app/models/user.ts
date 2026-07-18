@@ -15,7 +15,12 @@ import Playlist from "#models/playlist";
 import Answer from "#models/answer";
 import LeaderboardSnapshot from "#models/leaderboard_snapshot";
 
-export default class User extends compose(UserSchema, withAuthFinder(hash)) {
+/**
+ * Le service `hash` est initialisé une fois l'application Adonis démarrée.
+ * Le fournir via une fonction évite de capturer sa valeur `undefined` lors de
+ * l'import initial du modèle, avant que le provider de hash soit prêt.
+ */
+export default class User extends compose(UserSchema, withAuthFinder(() => hash.use())) {
   declare role: "player" | "moderator" | "admin";
 
   declare status: "active" | "suspended" | "banned";

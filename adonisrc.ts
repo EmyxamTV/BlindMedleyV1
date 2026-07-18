@@ -1,7 +1,7 @@
-import { indexPages } from "@adonisjs/inertia"
-import { indexEntities } from "@adonisjs/core"
-import { defineConfig } from "@adonisjs/core/app"
-import { generateRegistry } from "@tuyau/core/hooks"
+import { indexPages } from "@adonisjs/inertia";
+import { indexEntities } from "@adonisjs/core";
+import { defineConfig } from "@adonisjs/core/app";
+import { generateRegistry } from "@tuyau/core/hooks";
 
 export default defineConfig({
   /*
@@ -60,6 +60,10 @@ export default defineConfig({
     () => import("@adonisjs/auth/auth_provider"),
     () => import("@adonisjs/transmit/transmit_provider"),
     () => import("#providers/api_provider"),
+    {
+      file: () => import("#providers/game_provider"),
+      environment: ["web"],
+    },
   ],
 
   /*
@@ -136,4 +140,4 @@ export default defineConfig({
     ],
     buildStarting: [() => import("@adonisjs/vite/build_hook")],
   },
-})
+});

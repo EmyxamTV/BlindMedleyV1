@@ -2,6 +2,9 @@
 import type { routes } from './index.ts'
 
 export interface ApiDefinition {
+  eventStream: typeof routes['event_stream']
+  subscribe: typeof routes['subscribe']
+  unsubscribe: typeof routes['unsubscribe']
   home: typeof routes['home']
   privacyPolicy: typeof routes['privacy_policy']
   cgu: typeof routes['cgu']
@@ -81,6 +84,7 @@ export interface ApiDefinition {
     play: typeof routes['game.play']
     answer: typeof routes['game.answer']
     leave: typeof routes['game.leave']
+    heartbeat: typeof routes['game.heartbeat']
     results: typeof routes['game.results']
     replay: typeof routes['game.replay']
     state: typeof routes['game.state']

@@ -79,9 +79,17 @@ export class RoundService {
   ) {
     if (!round.track) await round.load("track");
 
+    const nextRound = gamePublicId
+      ? await Round.query()
+          .where("game_id", round.gameId)
+          .where("round_number", round.roundNumber + 1)
+          .preload("track")
+          .first()
+      : null;
+
     // Charger les distractors (sans révéler le bon)
     const allIds = [...(JSON.parse(round.distractors) as string[]), round.trackId];
-    const shuffled = this.shuffle(allIds);
+    const shuffled = this.shuffle(allIds, round.roundToken);
 
     const tracks = await TrackCache.query().whereIn("id", allIds);
     const trackMap = Object.fromEntries(tracks.map((t) => [t.id, t]));
@@ -98,6 +106,12 @@ export class RoundService {
       previewUrl:
         round.track.previewUrl && gamePublicId
           ? `/game/${gamePublicId}/round-preview?roundNumber=${round.roundNumber}&token=${round.roundToken}`
+          : null,
+      // L'extrait suivant ne contient ni titre ni artiste. Le précharger pendant
+      // la manche courante évite une attente audio entre deux rounds.
+      nextPreviewUrl:
+        nextRound?.track?.previewUrl && gamePublicId
+          ? `/game/${gamePublicId}/round-preview?roundNumber=${nextRound.roundNumber}&token=${nextRound.roundToken}`
           : null,
       coverUrl: round.track.coverUrl, // Révéler la cover est OK pour l'ambiance
       startsAt: round.startsAt?.toMillis() ?? serverNow,
@@ -153,10 +167,19 @@ export class RoundService {
     return distractors.map((t) => t.id);
   }
 
-  private shuffle<T>(arr: T[]): T[] {
+  private shuffle<T>(arr: T[], seed: string): T[] {
     const a = [...arr];
+    let state = Number.parseInt(
+      crypto.createHash("sha256").update(seed).digest("hex").slice(0, 8),
+      16,
+    );
+    const next = () => {
+      state = (state * 1_664_525 + 1_013_904_223) >>> 0;
+      return state / 0x1_0000_0000;
+    };
+
     for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(next() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;

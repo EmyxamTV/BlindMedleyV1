@@ -38,6 +38,7 @@ export type ClientRound = {
   roundNumber: number;
   roundToken: string;
   previewUrl: string | null;
+  nextPreviewUrl?: string | null;
   coverUrl: string | null;
   startsAt: number;
   endsAt: number;

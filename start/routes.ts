@@ -1,5 +1,8 @@
 import { middleware } from "#start/kernel";
 import router from "@adonisjs/core/services/router";
+import transmit from "@adonisjs/transmit/services/main";
+
+transmit.registerRoutes((route) => route.use(middleware.auth()));
 
 const NewAccountController = () => import("#controllers/new_account_controller");
 const SessionController = () => import("#controllers/session_controller");
@@ -106,7 +109,9 @@ router
       .as("game.starter_playlist");
     router.get("/game/tracks/search", [GameController, "searchTracks"]).as("game.tracks.search");
     router.post("/game", [GameController, "create"]).as("game.create");
-    router.get("/game/:id/round-preview", [GameController, "roundPreview"]).as("game.round_preview");
+    router
+      .get("/game/:id/round-preview", [GameController, "roundPreview"])
+      .as("game.round_preview");
     router.get("/game/:id", [GameController, "lobby"]).as("game.lobby");
     router.post("/game/:id/join", [GameController, "join"]).as("game.join");
     router.post("/game/:id/start", [GameController, "start"]).as("game.start");
@@ -117,6 +122,7 @@ router
     router.get("/game/:id/play", [GameController, "play"]).as("game.play");
     router.post("/game/:id/answer", [GameController, "answer"]).as("game.answer");
     router.post("/game/:id/leave", [GameController, "leave"]).as("game.leave");
+    router.post("/game/:id/heartbeat", [GameController, "heartbeat"]).as("game.heartbeat");
     router.get("/game/:id/results", [GameController, "results"]).as("game.results");
     router.post("/game/:id/replay", [GameController, "replay"]).as("game.replay");
     router.get("/game/:id/state", [GameController, "state"]).as("game.state");
@@ -127,11 +133,19 @@ router
 router
   .group(() => {
     router.get("/admin", [AdminController, "dashboard"]).as("admin.dashboard");
-    router.post("/admin/games/official", [AdminController, "createOfficialGame"]).as("admin.games.official.create");
+    router
+      .post("/admin/games/official", [AdminController, "createOfficialGame"])
+      .as("admin.games.official.create");
     router.post("/admin/games/:id", [AdminController, "updateGame"]).as("admin.games.update");
-    router.post("/admin/games/:id/disable", [AdminController, "disableGame"]).as("admin.games.disable");
-    router.post("/admin/games/:id/reactivate", [AdminController, "reactivateGame"]).as("admin.games.reactivate");
-    router.post("/admin/games/:id/delete", [AdminController, "deleteGame"]).as("admin.games.delete");
+    router
+      .post("/admin/games/:id/disable", [AdminController, "disableGame"])
+      .as("admin.games.disable");
+    router
+      .post("/admin/games/:id/reactivate", [AdminController, "reactivateGame"])
+      .as("admin.games.reactivate");
+    router
+      .post("/admin/games/:id/delete", [AdminController, "deleteGame"])
+      .as("admin.games.delete");
     router.get("/admin/users", [AdminController, "users"]).as("admin.users");
     router.post("/admin/users/:id/ban", [AdminController, "banUser"]).as("admin.ban");
     router.post("/admin/users/:id/suspend", [AdminController, "suspendUser"]).as("admin.suspend");

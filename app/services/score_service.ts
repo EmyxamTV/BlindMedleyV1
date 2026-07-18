@@ -4,11 +4,7 @@ import Answer from "#models/answer";
 import { DateTime } from "luxon";
 import type { AnswerTarget } from "#models/game";
 import crypto from "node:crypto";
-import type {
-  AnswerResult,
-  ProcessAnswerParams,
-  ProcessSeparateAnswerParams,
-} from "#types/score";
+import type { AnswerResult, ProcessAnswerParams, ProcessSeparateAnswerParams } from "#types/score";
 
 const BASE_SCORE = 500;
 const SPEED_BONUS_MAX = 350;
@@ -24,6 +20,9 @@ export class ScoreService {
     // Vérifier que le round est actif (horloge serveur fait autorité)
     const now = DateTime.now();
     if (!round.startsAt || !round.endsAt) {
+      throw new Error("ROUND_NOT_STARTED");
+    }
+    if (now < round.startsAt) {
       throw new Error("ROUND_NOT_STARTED");
     }
     if (now > round.endsAt) {
@@ -43,7 +42,7 @@ export class ScoreService {
     }
 
     // Temps de réponse — calculé côté serveur uniquement
-    const responseMs = serverReceivedAt - round.startsAt.toMillis();
+    const responseMs = Math.max(0, serverReceivedAt - round.startsAt.toMillis());
 
     if (params.answerTarget === "separate" && params.answerText) {
       return this.processSeparateAnswer({
@@ -320,7 +319,10 @@ export class ScoreService {
     // Le streak donne un avantage, sans transformer la partie en x2.5 permanent.
     const streakBonus = Math.min(STREAK_BONUS_MAX, Math.max(0, streak) * STREAK_BONUS_STEP);
 
-    return Math.max(100, Math.round((BASE_SCORE + speedBonus + instantBonus) * durationModifier + streakBonus));
+    return Math.max(
+      100,
+      Math.round((BASE_SCORE + speedBonus + instantBonus) * durationModifier + streakBonus),
+    );
   }
 
   private durationModifier(roundDurationMs: number): number {

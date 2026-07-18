@@ -26,37 +26,43 @@ export function Timer({
   paused?: boolean;
   onExpire?: () => void;
 }) {
-  const [remaining, setRemaining] = useState(0);
+  const [displayNow, setDisplayNow] = useState(serverNow);
   const expiredEndsAtRef = useRef<number | null>(null);
+  const onExpireRef = useRef(onExpire);
+  const clockOffsetRef = useRef(0);
 
   useEffect(() => {
-    const effectiveStartsAt = startsAt ?? endsAt - durationMs;
-    if (paused) {
-      setRemaining(serverNow < effectiveStartsAt ? durationMs : Math.max(0, endsAt - serverNow));
-      return;
-    }
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
 
-    const clockOffset = serverNow - Date.now();
+  useEffect(() => {
+    clockOffsetRef.current = serverNow - Date.now();
+    setDisplayNow(serverNow);
+  }, [serverNow]);
+
+  useEffect(() => {
+    if (paused) return;
+
     const update = () => {
-      const now = Date.now() + clockOffset;
-      const nextRemaining = now < effectiveStartsAt ? durationMs : Math.max(0, endsAt - now);
-      setRemaining(nextRemaining);
-      if (now >= endsAt) {
-        clearInterval(interval);
-        if (expiredEndsAtRef.current !== endsAt) {
-          expiredEndsAtRef.current = endsAt;
-          onExpire?.();
-        }
+      const now = Date.now() + clockOffsetRef.current;
+      setDisplayNow(now);
+      if (now >= endsAt && expiredEndsAtRef.current !== endsAt) {
+        expiredEndsAtRef.current = endsAt;
+        onExpireRef.current?.();
       }
     };
-    const interval = setInterval(update, 100);
-    update();
-    return () => clearInterval(interval);
-  }, [durationMs, endsAt, onExpire, paused, serverNow, startsAt]);
 
+    const interval = window.setInterval(update, 100);
+    update();
+    return () => window.clearInterval(interval);
+  }, [endsAt, paused]);
+
+  const effectiveStartsAt = startsAt ?? endsAt - durationMs;
+  const preRollMs = Math.max(0, effectiveStartsAt - displayNow);
+  const remaining = displayNow < effectiveStartsAt ? durationMs : Math.max(0, endsAt - displayNow);
   const pct = Math.min(100, (remaining / durationMs) * 100);
   const secs = Math.ceil(remaining / 1000);
-  const urgent = secs <= 5;
+  const urgent = preRollMs === 0 && secs <= 5;
 
   return (
     <div className={`timer ${urgent ? "urgent" : ""}`}>
@@ -77,7 +83,13 @@ export function Timer({
           </span>
         ))}
       </div>
-      <span className="timer-secs">{paused ? "Pause" : `${secs}s`}</span>
+      <span className="timer-secs">
+        {paused
+          ? "Pause"
+          : preRollMs > 0
+            ? `Prêt dans ${Math.ceil(preRollMs / 1000)}s`
+            : `${secs}s`}
+      </span>
     </div>
   );
 }

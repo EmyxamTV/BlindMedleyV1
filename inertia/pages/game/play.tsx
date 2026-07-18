@@ -2,13 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Form } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
-import { AudioPlayer } from "~/components/game/audio_player";
+import { AudioPlayer, prefetchAudioSource } from "~/components/game/audio_player";
 import { PlaySidebar, type AnswerProgress } from "~/components/game/play_sidebar";
 import { TextAnswerForm } from "~/components/game/text_answer_form";
 import { Timer, type AnswerPing } from "~/components/game/timer";
 import { TrackLinks } from "~/components/track_links";
 import { useAudioVolume } from "~/hooks/use_audio_volume";
-import { useLeaveBeacon } from "~/hooks/use_leave_beacon";
 import { createRealtimeUid } from "~/lib/realtime";
 import { routeUrl } from "~/lib/routes";
 import type {
@@ -80,16 +79,26 @@ export default function Play({
   );
   const [now, setNow] = useState(Date.now());
   const textInputRef = useRef<HTMLInputElement>(null);
+  const syncInFlightRef = useRef(false);
+  const syncRequestIdRef = useRef(0);
+  const syncAbortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  const submittingRef = useRef(false);
   const isPaused = gameStatus === "paused";
   const currentRoundNumber = currentRound?.roundNumber ?? null;
   const currentRoundNumberRef = useRef<number | null>(currentRoundNumber);
   const isOfficialGame = Boolean((game as GameWithPlayers & { isOfficial?: boolean }).isOfficial);
 
-  useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
-
   useEffect(() => {
     currentRoundNumberRef.current = currentRoundNumber;
   }, [currentRoundNumber]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      syncAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (game.answerMode !== "text" || currentRoundNumber === null) return;
@@ -99,13 +108,26 @@ export default function Play({
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [currentRoundNumber, game.answerMode]);
 
+  useEffect(() => {
+    prefetchAudioSource(currentRound?.nextPreviewUrl);
+  }, [currentRound?.nextPreviewUrl]);
+
   const syncGameState = useCallback(async () => {
+    if (syncInFlightRef.current) return;
+    syncInFlightRef.current = true;
+    const requestId = ++syncRequestIdRef.current;
+    const controller = new AbortController();
+    syncAbortRef.current = controller;
+
     try {
       const res = await fetch(routeUrl("game.state", { params: { id: game.id } }), {
         headers: { Accept: "application/json" },
+        cache: "no-store",
+        signal: controller.signal,
       });
       if (!res.ok) return;
       const data = (await res.json()) as GameStateResponse;
+      if (!mountedRef.current || requestId !== syncRequestIdRef.current) return;
 
       if (data.scores) {
         setScores(data.scores);
@@ -142,6 +164,7 @@ export default function Play({
       if (data.round) {
         const activeRoundNumber = currentRoundNumberRef.current;
         if (!activeRoundNumber || data.round.roundNumber > activeRoundNumber) {
+          currentRoundNumberRef.current = data.round.roundNumber;
           setCurrentRound(data.round);
           setAnswered(false);
           setLastResult(null);
@@ -157,55 +180,17 @@ export default function Play({
       }
     } catch {
       // Les events temps réel ou le prochain resync discret reprennent le relais.
+    } finally {
+      if (requestId === syncRequestIdRef.current) syncAbortRef.current = null;
+      syncInFlightRef.current = false;
     }
   }, [game.id, initialMyPlayer.userId, isOfficialGame]);
 
-  const handleTimerExpire = useCallback(() => {
-    void syncGameState();
-  }, [syncGameState]);
-
-  useEffect(() => {
-    void syncGameState();
-
-    const interval = window.setInterval(() => {
-      void syncGameState();
-    }, 30_000);
-
-    const syncWhenVisible = () => {
-      if (document.visibilityState === "visible") void syncGameState();
-    };
-
-    document.addEventListener("visibilitychange", syncWhenVisible);
-    window.addEventListener("focus", syncWhenVisible);
-
-    return () => {
-      document.removeEventListener("visibilitychange", syncWhenVisible);
-      window.removeEventListener("focus", syncWhenVisible);
-      window.clearInterval(interval);
-    };
-  }, [syncGameState]);
-
-  useEffect(() => {
-    if (currentRound !== null && gameStatus !== "starting" && gameStatus !== "waiting") return;
-
-    const interval = window.setInterval(() => {
-      void syncGameState();
-    }, isOfficialGame ? 2_500 : 1_500);
-
-    return () => window.clearInterval(interval);
-  }, [currentRound, gameStatus, isOfficialGame, syncGameState]);
-
   useEffect(() => {
     if (!isOfficialGame || gameStatus !== "finished") return;
-    const clock = window.setInterval(() => setNow(Date.now()), 250);
-    const resync = window.setInterval(() => {
-      void syncGameState();
-    }, 2_000);
-    return () => {
-      window.clearInterval(clock);
-      window.clearInterval(resync);
-    };
-  }, [gameStatus, isOfficialGame, syncGameState]);
+    const clock = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(clock);
+  }, [gameStatus, isOfficialGame]);
 
   useEffect(() => {
     const transmit = new Transmit({
@@ -213,113 +198,150 @@ export default function Play({
       uidGenerator: createRealtimeUid,
     });
     const subscription = transmit.subscription(`game/${game.id}`);
+    let cancelled = false;
+    let hasConnected = false;
+    const handleConnected = () => {
+      if (hasConnected) void syncGameState();
+      hasConnected = true;
+    };
+    transmit.on("connected", handleConnected);
 
-    subscription.create().then(() => {
-      subscription.onMessage<{ event: string } & Record<string, unknown>>((message) => {
-        const activeRoundNumber = currentRoundNumberRef.current;
-        if (message.event === "round_started") {
-          const { event: _, ...roundData } = message;
-          setCurrentRound(roundData as ClientRound);
-          setOfficialRestartAt(null);
-          setAnswered(false);
-          setLastResult(null);
-          setRevealed(null);
-          setAnswerPings([]);
-          setAnswerProgress({});
-          setGameStatus("active");
-        } else if (message.event === "game_starting") {
-          setGameStatus("starting");
-          setCurrentRound(null);
-          setOfficialRestartAt(null);
-        } else if (message.event === "official_game_reset") {
-          setGameStatus("waiting");
-          setCurrentRound(null);
-          setAnswered(false);
-          setLastResult(null);
-          setRevealed(null);
-          setAnswerPings([]);
-          setAnswerProgress({});
-        } else if (
-          message.event === "answer_submitted" &&
-          message.roundNumber === activeRoundNumber
-        ) {
-          setAnswerPings((current) =>
-            current.some((ping) => ping.userId === message.userId)
-              ? current
-              : [
-                  ...current,
-                  {
-                    userId: message.userId as string,
-                    responseMs: message.responseMs as number,
-                    isCorrect: message.isCorrect as boolean,
-                  },
-                ],
+    const removeMessageHandler = subscription.onMessage<
+      { event: string } & Record<string, unknown>
+    >((message) => {
+      if (cancelled) return;
+      const activeRoundNumber = currentRoundNumberRef.current;
+      if (message.event === "round_started") {
+        const { event: _, ...roundData } = message;
+        const incomingRound = roundData as ClientRound;
+        if (!incomingRound.roundNumber || incomingRound.roundNumber < (activeRoundNumber ?? 0))
+          return;
+        if (incomingRound.roundNumber === activeRoundNumber) {
+          setCurrentRound((current) =>
+            current ? { ...current, ...incomingRound } : incomingRound,
           );
-        } else if (message.event === "round_revealed") {
-          setCurrentRound((round) =>
-            round
-              ? {
-                  ...round,
-                  endsAt: Date.now(),
-                  serverNow: Date.now(),
-                }
-              : round,
-          );
-          const revealedTrack = {
-            roundNumber: message.roundNumber as number,
-            title: message.title as string,
-            artist: message.artist as string,
-            coverUrl: (message.coverUrl as string | null) ?? null,
-          };
-          setRevealed(revealedTrack);
-          setHistory((current) => [
-            revealedTrack,
-            ...current.filter((track) => track.roundNumber !== revealedTrack.roundNumber),
-          ]);
-        } else if (
-          message.event === "answer_progress" &&
-          message.roundNumber === activeRoundNumber
-        ) {
-          const progress = {
-            userId: message.userId as string,
-            titleFound: Boolean(message.titleFound),
-            artistFound: Boolean(message.artistFound),
-          };
-          setAnswerProgress((current) => ({ ...current, [progress.userId]: progress }));
-        } else if (message.event === "scores_updated") {
-          const players = message.players as GamePlayerData[];
+          return;
+        }
+
+        currentRoundNumberRef.current = incomingRound.roundNumber;
+        setCurrentRound(incomingRound);
+        setOfficialRestartAt(null);
+        setAnswered(false);
+        setLastResult(null);
+        setRevealed(null);
+        setAnswerPings([]);
+        setAnswerProgress({});
+        setGameStatus("active");
+      } else if (message.event === "game_starting") {
+        currentRoundNumberRef.current = null;
+        setGameStatus("starting");
+        setCurrentRound(null);
+        setOfficialRestartAt(null);
+      } else if (message.event === "official_game_reset") {
+        currentRoundNumberRef.current = null;
+        setGameStatus("waiting");
+        setCurrentRound(null);
+        setAnswered(false);
+        setLastResult(null);
+        setRevealed(null);
+        setAnswerPings([]);
+        setAnswerProgress({});
+      } else if (
+        message.event === "answer_submitted" &&
+        message.roundNumber === activeRoundNumber
+      ) {
+        const incomingPing: AnswerPing = {
+          userId: message.userId as string,
+          responseMs: message.responseMs as number,
+          isCorrect: message.isCorrect as boolean,
+        };
+        setAnswerPings((current) => {
+          const index = current.findIndex((ping) => ping.userId === incomingPing.userId);
+          if (index === -1) return [...current, incomingPing];
+          return current.map((ping, pingIndex) => (pingIndex === index ? incomingPing : ping));
+        });
+      } else if (message.event === "round_revealed" && message.roundNumber === activeRoundNumber) {
+        const revealedAt = Number(message.serverNow) || Date.now();
+        setCurrentRound((round) =>
+          round
+            ? {
+                ...round,
+                endsAt: revealedAt,
+                serverNow: revealedAt,
+              }
+            : round,
+        );
+        const revealedTrack = {
+          roundNumber: message.roundNumber as number,
+          title: message.title as string,
+          artist: message.artist as string,
+          coverUrl: (message.coverUrl as string | null) ?? null,
+        };
+        setRevealed(revealedTrack);
+        setHistory((current) => [
+          revealedTrack,
+          ...current.filter((track) => track.roundNumber !== revealedTrack.roundNumber),
+        ]);
+      } else if (message.event === "answer_progress" && message.roundNumber === activeRoundNumber) {
+        const progress = {
+          userId: message.userId as string,
+          titleFound: Boolean(message.titleFound),
+          artistFound: Boolean(message.artistFound),
+        };
+        setAnswerProgress((current) => ({ ...current, [progress.userId]: progress }));
+      } else if (message.event === "scores_updated") {
+        const players = message.players as GamePlayerData[];
+        setScores(players);
+        const me = players.find((player) => player.userId === initialMyPlayer.userId);
+        if (me) setMyPlayer((previous) => ({ ...previous, ...me }));
+      } else if (message.event === "players_updated") {
+        const players = message.players as GamePlayerData[] | undefined;
+        if (players) {
           setScores(players);
           const me = players.find((player) => player.userId === initialMyPlayer.userId);
           if (me) setMyPlayer((previous) => ({ ...previous, ...me }));
-        } else if (message.event === "game_finished") {
-          setGameStatus("finished");
-          if (isOfficialGame) {
-            setCurrentRound(null);
-            setOfficialRestartAt((message.nextAutoStartsAt as number | null | undefined) ?? null);
-          } else {
-            router.visit(routeUrl("game.results", { params: { id: game.id } }));
-          }
-        } else if (message.event === "game_paused") {
-          setGameStatus("paused");
-          void syncGameState();
-        } else if (message.event === "game_resumed") {
-          const { event: _, ...roundData } = message;
-          if (roundData.roundNumber) setCurrentRound(roundData as ClientRound);
-          setGameStatus("active");
-        } else if (message.event === "game_stopped" || message.event === "game_deleted") {
-          router.visit(routeUrl("game.index"));
         }
-      });
+      } else if (message.event === "game_finished") {
+        currentRoundNumberRef.current = null;
+        setGameStatus("finished");
+        if (isOfficialGame) {
+          setCurrentRound(null);
+          setOfficialRestartAt((message.nextAutoStartsAt as number | null | undefined) ?? null);
+        } else {
+          router.visit(routeUrl("game.results", { params: { id: game.id } }));
+        }
+      } else if (message.event === "game_paused") {
+        const pausedAt = Number(message.serverNow) || Date.now();
+        setCurrentRound((round) => (round ? { ...round, serverNow: pausedAt } : round));
+        setGameStatus("paused");
+      } else if (message.event === "game_resumed") {
+        const { event: _, ...roundData } = message;
+        if (roundData.roundNumber) {
+          currentRoundNumberRef.current = roundData.roundNumber as number;
+          setCurrentRound(roundData as ClientRound);
+        }
+        setGameStatus("active");
+      } else if (message.event === "game_stopped" || message.event === "game_deleted") {
+        router.visit(routeUrl("game.index"));
+      }
+    });
+
+    void subscription.create().then(() => {
+      if (!cancelled) void syncGameState();
     });
 
     return () => {
-      subscription.delete();
+      cancelled = true;
+      removeMessageHandler();
+      transmit.off("connected", handleConnected);
+      void subscription.delete().finally(() => transmit.close());
     };
   }, [game.id, initialMyPlayer.userId, isOfficialGame, syncGameState]);
 
   const handleAnswer = useCallback(
     async (choice: RoundChoice | string) => {
-      if (answered || !currentRound || isPaused) return;
+      if (answered || !currentRound || isPaused || submittingRef.current) return;
+      submittingRef.current = true;
       setAnswered(true);
 
       try {
@@ -337,8 +359,14 @@ export default function Play({
             answerText: typeof choice === "string" ? choice : undefined,
           }),
         });
-        const data = await res.json();
-        if (!data.success) return;
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.success) {
+          setAnswered(false);
+          if (game.answerMode === "text") {
+            window.setTimeout(() => textInputRef.current?.focus({ preventScroll: true }), 50);
+          }
+          return;
+        }
 
         setLastResult({
           correct: data.correct,
@@ -362,24 +390,6 @@ export default function Play({
           setAnswered(false);
           window.setTimeout(() => textInputRef.current?.focus({ preventScroll: true }), 50);
         }
-        if (data.correct) {
-          setAnswerPings((current) =>
-            current.some((ping) => ping.userId === initialMyPlayer.userId)
-              ? current
-              : [
-                  ...current,
-                  {
-                    userId: initialMyPlayer.userId,
-                    responseMs: Math.min(
-                      game.roundDurationMs,
-                      Math.max(0, Date.now() - currentRound.startsAt),
-                    ),
-                    isCorrect: true,
-                  },
-                ],
-          );
-        }
-
         setMyPlayer((previous) => ({
           ...previous,
           score: previous.score + data.scoreEarned,
@@ -400,6 +410,9 @@ export default function Play({
         );
       } catch {
         // Network errors are recovered by the polling loop.
+        setAnswered(false);
+      } finally {
+        submittingRef.current = false;
       }
     },
     [
@@ -408,14 +421,15 @@ export default function Play({
       game.answerMode,
       game.answerTarget,
       game.id,
-      game.roundDurationMs,
       initialMyPlayer.userId,
       isPaused,
     ],
   );
 
   if (isOfficialGame && gameStatus === "finished") {
-    const seconds = officialRestartAt ? Math.max(0, Math.ceil((officialRestartAt - now) / 1000)) : null;
+    const seconds = officialRestartAt
+      ? Math.max(0, Math.ceil((officialRestartAt - now) / 1000))
+      : null;
     return (
       <div className="grid min-h-[70vh] place-items-center px-4 text-slate-100">
         <div className="w-full max-w-xl rounded-3xl border border-amber-300/20 bg-amber-500/10 p-8 text-center shadow-2xl shadow-amber-950/20">
@@ -533,7 +547,6 @@ export default function Play({
             pings={answerPings}
             players={scores}
             paused={isPaused}
-            onExpire={handleTimerExpire}
           />
           <div className="my-score-mini">
             {myPlayer.score} pts
@@ -555,11 +568,12 @@ export default function Play({
 
         {currentRound.previewUrl ? (
           <AudioPlayer
-            key={currentRound.previewUrl}
             previewUrl={currentRound.previewUrl}
             volume={volume}
             onVolumeChange={setVolume}
             disabled={isPaused}
+            shouldPlay={!revealed && gameStatus === "active"}
+            roundKey={currentRound.roundToken}
             scheduledStartAt={currentRound.startsAt}
             scheduledEndAt={currentRound.endsAt}
             serverNow={currentRound.serverNow ?? serverNow}

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, Link } from "@adonisjs/inertia/react";
 import { router } from "@inertiajs/react";
 import { Transmit } from "@adonisjs/transmit-client";
-import { useLeaveBeacon } from "~/hooks/use_leave_beacon";
 import { buttonClassName } from "~/components/ui/button";
 import { routeUrl } from "~/lib/routes";
+import { unlockAudio } from "~/lib/audio_unlock";
 import type { GamePlayerData, GameWithPlayers, InertiaProps } from "~/types";
 import { createRealtimeUid } from "~/lib/realtime";
 
@@ -12,14 +12,6 @@ interface Props extends InertiaProps {
   game: GameWithPlayers;
   isHost: boolean;
   canModerate: boolean;
-}
-
-const SILENT_WAV =
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-
-function unlockAudio() {
-  const audio = new Audio(SILENT_WAV);
-  audio.play().catch(() => {});
 }
 
 function timestampFromDate(value: unknown) {
@@ -32,16 +24,15 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
   const gameAutoStartsAt = (game as GameWithPlayers & { autoStartsAt?: string | null })
     .autoStartsAt;
   const [players, setPlayers] = useState<GamePlayerData[]>(game.players);
-  const [autoStartsAt, setAutoStartsAt] = useState<number | null>(timestampFromDate(gameAutoStartsAt));
+  const [autoStartsAt, setAutoStartsAt] = useState<number | null>(
+    timestampFromDate(gameAutoStartsAt),
+  );
   const [now, setNow] = useState(Date.now());
-  const countdownSyncTriggered = useRef(false);
   const canStart = isHost || canModerate;
   const needsMorePlayers = game.mode !== "solo" && players.length < 2;
   const isOfficial = Boolean((game as GameWithPlayers & { isOfficial?: boolean }).isOfficial);
   const countdownSeconds =
     autoStartsAt === null ? null : Math.max(0, Math.ceil((autoStartsAt - now) / 1000));
-
-  useLeaveBeacon(routeUrl("game.leave", { params: { id: game.id } }));
 
   useEffect(() => {
     const transmit = new Transmit({
@@ -49,37 +40,55 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
       uidGenerator: createRealtimeUid,
     });
     const subscription = transmit.subscription(`game/${game.id}`);
+    let cancelled = false;
+    let reloadTimer: number | null = null;
+    const reloadLobby = () => {
+      if (reloadTimer !== null) window.clearTimeout(reloadTimer);
+      reloadTimer = window.setTimeout(() => router.reload({ only: ["game"] }), 250);
+    };
 
-    subscription.create().then(() => {
-      subscription.onMessage<{ event: string; autoStartsAt?: number }>((message) => {
-        if (message.event === "game_starting") {
-          unlockAudio();
-          router.visit(routeUrl("game.play", { params: { id: game.id } }));
-        }
-        if (message.event === "official_countdown_started") {
-          setAutoStartsAt(Number(message.autoStartsAt));
-        }
-        if (message.event === "official_countdown_cancelled") {
-          setAutoStartsAt(null);
-        }
-        if (message.event === "game_stopped" || message.event === "game_deleted") {
-          router.visit(routeUrl("game.index"));
-        }
-        if (message.event === "players_updated" || message.event === "game_updated") {
-          router.reload({ only: ["game"] });
-        }
-      });
+    const removeMessageHandler = subscription.onMessage<{
+      event: string;
+      autoStartsAt?: number;
+      players?: GamePlayerData[];
+    }>((message) => {
+      if (cancelled) return;
+      if (message.event === "game_starting" || message.event === "round_started") {
+        unlockAudio();
+        router.visit(routeUrl("game.play", { params: { id: game.id } }));
+      }
+      if (message.event === "official_countdown_started") {
+        setAutoStartsAt(Number(message.autoStartsAt));
+      }
+      if (message.event === "official_countdown_cancelled") {
+        setAutoStartsAt(null);
+      }
+      if (message.event === "game_stopped" || message.event === "game_deleted") {
+        router.visit(routeUrl("game.index"));
+      }
+      if (message.event === "players_updated" && message.players) {
+        setPlayers(message.players);
+      }
+      if (message.event === "game_updated") {
+        reloadLobby();
+      }
+    });
+
+    void subscription.create().then(() => {
+      if (!cancelled) reloadLobby();
     });
 
     return () => {
-      subscription.delete();
+      cancelled = true;
+      removeMessageHandler();
+      if (reloadTimer !== null) window.clearTimeout(reloadTimer);
+      void subscription.delete().finally(() => transmit.close());
     };
   }, [game.id]);
 
   useEffect(() => {
     setPlayers(game.players);
     setAutoStartsAt(timestampFromDate(gameAutoStartsAt));
-    countdownSyncTriggered.current = false;
     if (game.status !== "waiting") {
       unlockAudio();
       router.visit(routeUrl("game.play", { params: { id: game.id } }));
@@ -87,17 +96,9 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
   }, [game.id, game.players, game.status, gameAutoStartsAt]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 250);
+    const interval = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (autoStartsAt === null || countdownSyncTriggered.current || game.status !== "waiting") return;
-    if (autoStartsAt > now) return;
-
-    countdownSyncTriggered.current = true;
-    router.reload({ only: ["game"] });
-  }, [autoStartsAt, game.status, now]);
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-slate-100">
@@ -208,10 +209,14 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
             <Form route="game.start" routeParams={{ id: game.id }}>
               {() => (
                 <button
-                  type="submit"
+                  type="button"
                   className={buttonClassName({ size: "xl", className: "w-full" })}
                   disabled={!canModerate && needsMorePlayers}
-                  onClick={unlockAudio}
+                  onClick={() => {
+                    void unlockAudio().then(() =>
+                      router.post(routeUrl("game.start", { params: { id: game.id } })),
+                    );
+                  }}
                 >
                   {isHost ? "Démarrer la partie" : "Forcer le lancement"}
                 </button>
@@ -232,7 +237,10 @@ export default function Lobby({ game, isHost, canModerate, user }: Props) {
             </p>
           )}
 
-          <Link route="playlists.index" className={buttonClassName({ variant: "ghost", className: "w-full" })}>
+          <Link
+            route="playlists.index"
+            className={buttonClassName({ variant: "ghost", className: "w-full" })}
+          >
             Quitter
           </Link>
 

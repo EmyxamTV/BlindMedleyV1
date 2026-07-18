@@ -75,7 +75,7 @@ export class FriendshipSchema extends BaseModel {
 }
 
 export class GamePlayerSchema extends BaseModel {
-  static $columns = ['bestStreak', 'correct', 'gameId', 'id', 'incorrect', 'isConnected', 'joinedAt', 'leftAt', 'rank', 'score', 'streak', 'userId', 'xpEarned'] as const
+  static $columns = ['bestStreak', 'correct', 'gameId', 'id', 'incorrect', 'isConnected', 'joinedAt', 'lastSeenAt', 'leftAt', 'rank', 'score', 'streak', 'userId', 'xpEarned'] as const
   $columns = GamePlayerSchema.$columns
   @column()
   declare bestStreak: number
@@ -91,6 +91,8 @@ export class GamePlayerSchema extends BaseModel {
   declare isConnected: boolean
   @column.dateTime()
   declare joinedAt: DateTime
+  @column.dateTime()
+  declare lastSeenAt: DateTime | null
   @column.dateTime()
   declare leftAt: DateTime | null
   @column()
